@@ -79,16 +79,18 @@ export function parseLockfile(text: string, label = 'lockfile'): Map<string, Loc
 }
 
 /**
- * True when two entries of the same version would install the same thing. With
- * an integrity on both sides npm checks the content against it, so equal
- * integrities are enough. Otherwise the URLs must be equal, and a field one
- * side has and the other lacks counts as a difference.
+ * What an entry installs, as a key: two entries of the same package and
+ * version install the same thing exactly when their keys are equal. With an
+ * integrity, npm checks the content against it, so the integrity identifies
+ * the artifact whatever `resolved` says; without one, only the URL does. A
+ * field one side has and the other lacks therefore makes the keys differ.
+ * This is the one place that decides it.
  */
-function sameArtifact(a: LockPackage, b: LockPackage): boolean {
-  if (a.elsewhere !== b.elsewhere) return false;
-  if (a.integrity && b.integrity) return a.integrity === b.integrity;
-  if (a.integrity || b.integrity) return false;
-  return a.resolved === b.resolved;
+function artifactKey(p: LockPackage): string {
+  return JSON.stringify([
+    p.elsewhere,
+    p.integrity ? `integrity:${p.integrity}` : `url:${p.resolved ?? ''}`,
+  ]);
 }
 
 /**
@@ -104,7 +106,8 @@ export function diffLockfiles(oldText: string | null, newText: string): Change[]
   const changes: Change[] = [];
   for (const [path, pkg] of parseLockfile(newText, 'the new lockfile')) {
     const sameVersion = old.filter((p) => p.name === pkg.name && p.version === pkg.version);
-    if (sameVersion.some((p) => sameArtifact(p, pkg))) continue;
+    const artifact = artifactKey(pkg);
+    if (sameVersion.some((p) => artifactKey(p) === artifact)) continue;
 
     const atPath = before.get(path);
     const prev =
@@ -128,14 +131,8 @@ export function diffLockfiles(oldText: string | null, newText: string): Change[]
       change.fromIntegrity = prev.integrity;
     }
 
-    // What gets vetted is the new artifact; it is listed once, against the first version it
-    // replaces. As in sameArtifact, an integrity identifies it; only without one does the URL.
-    const key = JSON.stringify([
-      change.name,
-      change.to,
-      change.source,
-      change.integrity ?? change.resolved,
-    ]);
+    // What gets vetted is the new artifact; it is listed once, against the first version it replaces.
+    const key = JSON.stringify([change.name, change.to, artifact]);
     if (seen.has(key)) continue;
     seen.add(key);
     changes.push(change);
