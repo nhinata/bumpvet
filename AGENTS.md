@@ -19,11 +19,20 @@ tend to get wrong.
 5. **No runtime dependencies, and never run package code**, in the tool or in
    tests.
 6. **Review code changes before opening the pull request.** Run a code review
-   on any change to code, tests or CI, fix what it finds, and list the
-   findings and fixes in the pull request description. Documentation-only
-   changes need their facts checked against the code instead.
-7. **Check that a new or changed test can fail.** Break the code it covers on
-   purpose, confirm the test fails, then restore the code. A test that passes
-   either way checks nothing.
-8. **Commit messages and pull request descriptions state checkable facts:**
-   what changed, why, and the numbers behind it.
+   on any change to code, tests or CI, sort the findings as
+   [CONTRIBUTING.md](CONTRIBUTING.md#review-findings) says, and list them and
+   what was done in the pull request description. Documentation-only changes
+   need their facts checked against the code instead.
+7. **Never fix only the line a finding points at.** Find the rule behind it,
+   every place that uses that rule, and what the fix changes elsewhere
+   ([Review findings](CONTRIBUTING.md#review-findings)). Patching spot by spot
+   is how one fix opens the next hole.
+8. **Keep one rule in one place** ([Writing code](CONTRIBUTING.md#writing-code)).
+   If you are about to write "as in X" in a comment, merge the two instead.
+9. **Check what an installer or platform really does before relying on it**:
+   run the experiment or read the official documentation, and record the
+   result in DESIGN.md if a check depends on it.
+10. **Check that a new or changed test can fail**, and that it protects one of
+    the three things in [Tests](CONTRIBUTING.md#tests).
+11. **Commit messages and pull request descriptions state checkable facts:**
+    what changed, why, and the numbers behind it.

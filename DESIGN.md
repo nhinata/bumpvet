@@ -23,6 +23,25 @@ what it deliberately does not do, and why.
 6. **A rule is added only when the evaluation says it helps:** detection goes
    up and false positives do not get worse. See [eval/README.md](eval/README.md).
 
+## Terms
+
+| Term             | Where                | What it is                                                                                                                         |
+| ---------------- | -------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| registry         | `registry.npmjs.org` | the server npm downloads packages from                                                                                             |
+| packument        | registry             | the registry's document for one package: every version's publisher, publish time and `dist` fields                                 |
+| tarball          | registry             | a version's content, the `.tgz` npm downloads                                                                                      |
+| `resolved`       | lockfile             | the URL npm downloads the tarball from                                                                                             |
+| `integrity`      | lockfile             | a hash of the tarball; npm checks the download against it                                                                          |
+| `dist.tarball`   | registry             | the version's own tarball URL                                                                                                      |
+| `dist.integrity` | registry             | a hash of the version's tarball: sha512 for 13,728 of the 13,730 versions of the 60 packages in `eval/packages.txt`, missing for 2 |
+| `dist.shasum`    | registry             | the version's sha1 hash, the older field; present for all 13,730                                                                   |
+
+A hash has an algorithm (sha1, sha512) and a notation. `integrity` fields use
+SRI notation, the algorithm and the base64 hash (`sha1-q47ODEBi2l9tL6HQf8TNtfi5sls=`);
+`shasum` is the same sha1 in hex (`ab8ece0c4062da5f6d2fa1d07fc4cdb5f8b9b25b`).
+bumpvet compares a lockfile `integrity` with the registry's hash of the same
+algorithm, converting `shasum` to SRI for sha1.
+
 ## Threat model
 
 What bumpvet assumes about who controls what. A check that relies on something

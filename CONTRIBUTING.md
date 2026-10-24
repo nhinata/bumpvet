@@ -107,13 +107,45 @@ that is not obvious from the code: a threshold, a registry quirk, a trade-off.
 _content_, _timing_, _tamper_. Signal ids are kebab-case and describe what was
 observed (`publisher-changed`), not what to do about it.
 
+**One rule, one place.** A rule the code relies on, such as what counts as the
+same artifact (`artifactKey()` in `src/lockfile.ts`), is written once, in one
+function, and every place that needs it calls that function. Code that looks different
+can still encode the same rule: a comparison and a lookup key, for example.
+Before writing a rule, look for code that already encodes it; before changing
+one, find every place that uses it. If you are about to write a comment such
+as "as in X" or "keep in sync with Y", move the rule into one place instead.
+
+**Checks on outside data start from the threat model.** Before writing a check
+that decides whether to trust a lockfile entry or a registry response, write
+down in DESIGN.md ([Threat model](DESIGN.md#threat-model)) what an attacker
+controls and what the installer actually does with it, and check the second
+by experiment (for example with `npm ci`), not from memory. Compare with what
+the registry says, exactly, rather than matching patterns of what bad input
+looks like: a pattern check invites one bypass after another.
+
 ## Tests
 
+Every test protects one of three things, and should say which by its name and
+place:
+
+1. **a documented behavior**: a signal, a row of the verdict table, an exit
+   code, an option (DESIGN.md, README.md);
+2. **a past bug or attack**, so it does not come back. A fix comes with a test
+   that fails without it;
+3. **a message users see**, when its content matters to them.
+
+A test that protects none of these is not added. When a behavior is removed,
+its tests go with it.
+
+- Group tests by the public function they exercise (`parseLockfile`,
+  `diffLockfiles`, `computeSignals`, `decide`, `vetChanges`, `runCli`), not
+  private helpers, and put a new test in the group of the function it calls.
+- Build fixtures that could really occur: a signal with its real group, a
+  lockfile entry npm could write.
+- Check that a new or changed test can fail: break the code it covers, see it
+  fail, restore the code.
 - Tests never touch the network. Use the fakes in `test/helpers.ts`
   (`packument`, `fakeRegistry`, `lockfile`).
-- Test behavior through the public functions (`diffLockfiles`,
-  `computeSignals`, `decide`, `vetChanges`, `runCli`), not private helpers.
-- A bug fix comes with a test that fails without it.
 - `test/incidents.test.ts` replays real incidents. Say where each value comes
   from: the live registry, or a named public report. If a value is a guess,
   say so in the comment.
@@ -127,6 +159,29 @@ network and caches packuments in `eval/.cache/`.
 Run it for any change that can change a verdict. If the numbers move, update
 [eval/README.md](eval/README.md) and, when a decision rests on them,
 [DESIGN.md](DESIGN.md), in the same pull request.
+
+## Review findings
+
+Review findings, from people or tools, are sorted before anything is changed:
+
+| Finding                                                                                   | What to do                                          |
+| ----------------------------------------------------------------------------------------- | --------------------------------------------------- |
+| a malicious update comes out `OK`, or a check is skipped (fails open)                     | fix in this pull request                            |
+| a regression this pull request introduced                                                 | fix in this pull request                            |
+| an error within this pull request's topic                                                 | fix in this pull request                            |
+| anything else: other topics, older problems, unlikely false positives, messages, cleanups | open an issue                                       |
+| against a principle in DESIGN.md, or speculative with no realistic case                   | reply with the reason and leave it                  |
+| fixing it needs a new concept or mechanism                                                | stop and rethink the design; do not patch around it |
+
+When fixing one, do not change only the line it points at:
+
+1. **Find the cause**: the rule or assumption behind the line, not just the line.
+2. **Find every place that uses that rule or assumption**, and fix them
+   together, after moving the rule into one place if it is in several.
+3. **Check the fix against DESIGN.md and earlier decisions.** A fix that
+   contradicts them is the wrong fix.
+4. **Check the effect**: the tests and behavior of every place that uses the
+   rule. Say in the pull request what was checked.
 
 ## Security issues
 
