@@ -81,6 +81,15 @@ describe('slim', () => {
     });
   });
 
+  it("turns the registry's hex shasum into a sha1 integrity", () => {
+    const p = slim(
+      { versions: { '1.0.0': { dist: { shasum: 'ab8ece0c4062da5f6d2fa1d07fc4cdb5f8b9b25b' } } } },
+      'pkg',
+    );
+    // async@0.1.0's shasum
+    expect(p.versions['1.0.0']?.dist?.sha1).toBe('sha1-q47ODEBi2l9tL6HQf8TNtfi5sls=');
+  });
+
   it('drops fields of the wrong type', () => {
     const odd = {
       name: 42,
@@ -150,11 +159,16 @@ describe('registryFetcher', () => {
     ).rejects.toThrow('terminated');
   });
 
-  it('names the package when the request itself fails', async () => {
-    const down = () => Promise.reject(new TypeError('fetch failed'));
+  it('names the package and the reason when the request itself fails', async () => {
+    const down = () =>
+      Promise.reject(
+        new TypeError('fetch failed', { cause: new Error('getaddrinfo ENOTFOUND r') }),
+      );
     await expect(
       registryFetcher('https://r/', down as unknown as typeof fetch)('pkg'),
-    ).rejects.toThrow('fetching pkg from the registry failed: fetch failed');
+    ).rejects.toThrow(
+      'fetching pkg from the registry failed: fetch failed (getaddrinfo ENOTFOUND r)',
+    );
   });
 
   it('fails on other errors', async () => {

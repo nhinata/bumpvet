@@ -50,7 +50,7 @@ export function lockfile(
   const entries: Record<string, unknown> = { '': { name: 'app', version: '1.0.0' } };
   for (const [path, p] of Object.entries(packages)) {
     // an alias entry (`name` set) is fetched from the aliased package's URL
-    const name = p.name ?? path.slice(path.lastIndexOf('node_modules/') + 'node_modules/'.length);
+    const name = p.name || path.slice(path.lastIndexOf('node_modules/') + 'node_modules/'.length);
     entries[path] = {
       resolved: `https://registry.npmjs.org/${name}/-/x-${p.version}.tgz`,
       // the same integrity packument() gives the version, as npm would record it

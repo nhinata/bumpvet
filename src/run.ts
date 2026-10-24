@@ -1,6 +1,7 @@
 import { execFileSync } from 'node:child_process';
-import { existsSync, readFileSync, statSync } from 'node:fs';
+import { readFileSync, statSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { messageOf } from './errors.js';
 import { registryFetcher, type FetchPackument } from './registry.js';
 import { formatJson, formatText } from './report.js';
 import { vetLockfiles } from './vet.js';
@@ -83,15 +84,15 @@ function whyGitFailed(err: unknown): string {
   const parts = [stderrOf(err).trim()];
   if (e.signal) parts.push(`killed by ${e.signal}`);
   if (e.code === 'ENOBUFS') parts.push('output too large');
-  return parts.filter(Boolean).join('; ') || (err instanceof Error ? err.message : String(err));
+  return parts.filter(Boolean).join('; ') || messageOf(err);
 }
 
 /** The lockfile at `ref`, or null when it did not exist there (every package is then new). */
 function lockfileAt(cwd: string, ref: string): string | null {
   // Spawning git in a missing directory fails with ENOENT too; say which it is.
-  if (!existsSync(cwd) || !statSync(cwd).isDirectory()) {
-    throw new Error(`working directory ${cwd} is not a directory`);
-  }
+  const stat = statSync(cwd, { throwIfNoEntry: false });
+  if (!stat) throw new Error(`working directory ${cwd} does not exist`);
+  if (!stat.isDirectory()) throw new Error(`working directory ${cwd} is not a directory`);
   let prefix: string;
   try {
     prefix = git(cwd, ['rev-parse', '--show-prefix']).trim();
@@ -169,7 +170,7 @@ export async function runCli(argv: string[], env: CliEnv): Promise<number> {
     env.stdout(args.json ? formatJson(results) : formatText(results));
     return results.some((r) => r.verdict === 'block') ? 1 : 0;
   } catch (err) {
-    env.stderr(`bumpvet: ${err instanceof Error ? err.message : String(err)}\n`);
+    env.stderr(`bumpvet: ${messageOf(err)}\n`);
     return 2;
   }
 }

@@ -1,3 +1,4 @@
+import { messageOf, messageWithCause } from './errors.js';
 import { isObject, str } from './json.js';
 import { INSTALL_HOOKS } from './signals.js';
 import type { Packument, VersionManifest } from './types.js';
@@ -21,7 +22,7 @@ export function registryFetcher(
             signal: AbortSignal.timeout(60_000),
           });
         } catch (err) {
-          const reason = err instanceof Error ? err.message : String(err);
+          const reason = messageWithCause(err);
           throw new Error(`fetching ${name} from the registry failed: ${reason}`, { cause: err });
         }
         if (res.status === 404) return null;
@@ -31,7 +32,7 @@ export function registryFetcher(
         try {
           text = await res.text();
         } catch (err) {
-          const reason = err instanceof Error ? err.message : String(err);
+          const reason = messageOf(err);
           throw new Error(`reading the registry response for ${name} failed: ${reason}`, {
             cause: err,
           });
@@ -87,6 +88,7 @@ export function slim(raw: unknown, name: string): Packument {
           ),
         dist: {
           integrity: str(dist.integrity),
+          sha1: sha1Integrity(str(dist.shasum)),
           tarball: str(dist.tarball),
           attestations: dist.attestations ? true : undefined,
         },
@@ -94,4 +96,11 @@ export function slim(raw: unknown, name: string): Packument {
     }
   }
   return { name: str(raw.name) || name, time, versions };
+}
+
+/** The registry's hex `shasum` as an integrity string (`sha1-<base64>`). */
+function sha1Integrity(shasum: string | undefined): string | undefined {
+  return shasum && /^[0-9a-f]{40}$/i.test(shasum)
+    ? `sha1-${Buffer.from(shasum, 'hex').toString('base64')}`
+    : undefined;
 }

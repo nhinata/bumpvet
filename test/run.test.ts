@@ -231,14 +231,26 @@ describe('errors exit 2 with a message', () => {
   it('when the working directory does not exist', async () => {
     const r = await run([], join(tempDir(), 'gone'));
     expect(r.code).toBe(2);
-    expect(r.stderr).toMatch(/working directory .+ is not a directory/);
+    expect(r.stderr).toMatch(/working directory .+ does not exist/);
   });
 
   it('when the working directory is a file', async () => {
     const file = join(tempDir(), 'file');
     writeFileSync(file, '');
     const r = await run([], file);
+    expect(r.code).toBe(2);
     expect(r.stderr).toMatch(/working directory .+ is not a directory/);
+  });
+
+  it('with a shallow-clone hint when the commit was not fetched', async () => {
+    const origin = repo(v1);
+    writeFileSync(join(origin, 'package-lock.json'), v11);
+    git(origin, 'commit', '-q', '-am', 'bump');
+    const clone = tempDir();
+    git(clone, 'clone', '-q', '--depth', '1', `file://${origin}`, '.');
+    const r = await run(['--base', 'HEAD~1'], clone);
+    expect(r.code).toBe(2);
+    expect(r.stderr).toMatch(/HEAD~1 does not name a commit .+this is a shallow clone/);
   });
 
   it('without a shallow-clone hint when the ref is just wrong', async () => {

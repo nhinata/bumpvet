@@ -59,7 +59,8 @@ export function computeSignals(
     ];
   }
 
-  const expected = next.dist?.integrity;
+  // The registry's hash in the lockfile's algorithm: sha512 usually, sha1 for old lockfiles.
+  const expected = change.integrity?.startsWith('sha1-') ? next.dist?.sha1 : next.dist?.integrity;
   const comparable = !!change.integrity && !!expected && sameAlgorithm(change.integrity, expected);
   // One integrity signal is enough; the lockfile-to-lockfile one above is the more direct.
   if (
@@ -80,12 +81,13 @@ export function computeSignals(
   // integrity pins the content whatever `resolved` says. Without one it checks
   // nothing: `resolved` must then be exactly the registry's tarball for this
   // version, or npm installs whatever it points at.
+  // A registry that gives no tarball URL leaves nothing to vouch for `resolved`: that fails too.
   const tarball = next.dist?.tarball;
-  if (!comparable && change.resolved !== undefined && tarball && change.resolved !== tarball) {
+  if (!comparable && change.resolved !== undefined && change.resolved !== tarball) {
     signals.push({
       id: 'tarball-mismatch',
       group: 'tamper',
-      before: tarball,
+      before: tarball ?? 'no tarball URL in the registry',
       after: change.resolved,
     });
   }

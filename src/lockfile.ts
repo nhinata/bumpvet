@@ -70,12 +70,16 @@ export function parseLockfile(text: string, label = 'lockfile'): Map<string, Loc
   return out;
 }
 
-/** True when two entries of the same version would install the same thing. */
+/**
+ * True when two entries of the same version would install the same thing. With
+ * an integrity on both sides npm checks the content against it, so equal
+ * integrities are enough. Otherwise only the same URL, recorded on both sides,
+ * is the same thing: a missing field must not match anything.
+ */
 function sameArtifact(a: LockPackage, b: LockPackage): boolean {
-  const same = (x?: string, y?: string) => !x || !y || x === y;
-  return (
-    a.elsewhere === b.elsewhere && same(a.resolved, b.resolved) && same(a.integrity, b.integrity)
-  );
+  if (a.elsewhere !== b.elsewhere) return false;
+  if (a.integrity && b.integrity) return a.integrity === b.integrity;
+  return !a.integrity && !b.integrity && !!a.resolved && a.resolved === b.resolved;
 }
 
 /**

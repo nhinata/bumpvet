@@ -256,6 +256,34 @@ describe('computeSignals', () => {
       ]);
     });
 
+    it('flags a URL the registry gives nothing to compare with', () => {
+      const bare = packument('lodash', [{ version: '1.2.0', time: '2025-12-01T00:00:00Z' }]);
+      delete bare.versions['1.2.0']!.dist!.tarball;
+      const change = { name: 'lodash', from: null, to: '1.2.0', resolved: canonical };
+      expect(computeSignals(change, bare, { now })[0]).toEqual({
+        id: 'tarball-mismatch',
+        group: 'tamper',
+        before: 'no tarball URL in the registry',
+        after: canonical,
+      });
+    });
+
+    it('compares a sha1 integrity with the registry shasum', () => {
+      const old = packument('lodash', [{ version: '1.2.0', time: '2025-12-01T00:00:00Z' }]);
+      old.versions['1.2.0']!.dist!.sha1 = 'sha1-good';
+      const change = (integrity: string) => ({
+        name: 'lodash',
+        from: null,
+        to: '1.2.0',
+        integrity,
+        resolved: 'https://registry.npmjs.org/elsewhere.tgz',
+      });
+      expect(ids(computeSignals(change('sha1-good'), old, { now }))).toEqual([]);
+      expect(ids(computeSignals(change('sha1-evil'), old, { now }))).toEqual([
+        'integrity-mismatch',
+      ]);
+    });
+
     it("trusts the registry's own tarball URL without an integrity", () => {
       expect(vet(canonical)).toEqual([]);
     });

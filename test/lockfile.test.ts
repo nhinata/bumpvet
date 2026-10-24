@@ -179,6 +179,31 @@ describe('parseLockfile', () => {
     expect(parseLockfile(text).get('node_modules/a')?.elsewhere).toBe('unknown source');
   });
 
+  it('reports an entry that drops its integrity, even if the old one had no `resolved`', () => {
+    const before = lockfile({
+      'node_modules/ms': { version: '2.1.3', integrity: 'sha512-good', resolved: undefined },
+    });
+    const after = lockfile({
+      'node_modules/ms': {
+        version: '2.1.3',
+        integrity: undefined,
+        resolved: 'https://registry.npmjs.org/evil/-/evil-1.0.0.tgz',
+      },
+    });
+    expect(diffLockfiles(before, after)).toHaveLength(1);
+  });
+
+  it('does not report a new `resolved` when the integrity is the same', () => {
+    const before = lockfile({ 'node_modules/ms': { version: '2.1.3' } });
+    const after = lockfile({
+      'node_modules/ms': {
+        version: '2.1.3',
+        resolved: 'https://registry.npmjs.org/ms/-/other.tgz',
+      },
+    });
+    expect(diffLockfiles(before, after)).toEqual([]);
+  });
+
   it('reports the same version when only its `resolved` changed', () => {
     const before = lockfile({ 'node_modules/ms': { version: '2.1.3', integrity: undefined } });
     const after = lockfile({
