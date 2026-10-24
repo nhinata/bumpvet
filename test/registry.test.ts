@@ -35,6 +35,16 @@ describe('slim', () => {
       },
     });
   });
+
+  it('tolerates missing fields', () => {
+    expect(slim({})).toEqual({ name: '', time: {}, versions: {} });
+    expect(slim({ name: 'pkg', versions: { '1.0.0': {} } }).versions['1.0.0']).toEqual({
+      version: '1.0.0',
+      _npmUser: undefined,
+      scripts: undefined,
+      dist: { integrity: undefined, attestations: undefined },
+    });
+  });
 });
 
 describe('registryFetcher', () => {

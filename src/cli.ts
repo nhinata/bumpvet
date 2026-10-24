@@ -1,7 +1,7 @@
-#!/usr/bin/env node
 import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
-import { registryFetcher } from './registry.js';
+import { resolve } from 'node:path';
+import { registryFetcher, type FetchPackument } from './registry.js';
 import { formatJson, formatText } from './report.js';
 import { vetLockfiles } from './vet.js';
 
@@ -12,14 +12,34 @@ const USAGE = `Usage:
 Exit codes: 0 nothing to block, 1 at least one BLOCK, 2 error.
 `;
 
+/** Everything the CLI touches outside its arguments, so tests can replace it. */
+export interface CliEnv {
+  cwd: string;
+  stdout: (text: string) => void;
+  stderr: (text: string) => void;
+  fetchPackument: FetchPackument;
+  now: Date;
+}
+
+export function defaultEnv(): CliEnv {
+  return {
+    cwd: process.cwd(),
+    stdout: (text) => process.stdout.write(text),
+    stderr: (text) => process.stderr.write(text),
+    fetchPackument: registryFetcher(),
+    now: new Date(),
+  };
+}
+
 interface Args {
+  help: boolean;
   base: string;
   json: boolean;
   files: string[];
 }
 
 function parseArgs(argv: string[]): Args {
-  const args: Args = { base: 'HEAD', json: false, files: [] };
+  const args: Args = { help: false, base: 'HEAD', json: false, files: [] };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i]!;
     if (a === '--json') args.json = true;
@@ -27,10 +47,8 @@ function parseArgs(argv: string[]): Args {
       const ref = argv[++i];
       if (!ref) throw new Error('--base needs a git ref');
       args.base = ref;
-    } else if (a === '-h' || a === '--help') {
-      process.stdout.write(USAGE);
-      process.exit(0);
-    } else if (a.startsWith('-')) throw new Error(`unknown option ${a}`);
+    } else if (a === '-h' || a === '--help') args.help = true;
+    else if (a.startsWith('-')) throw new Error(`unknown option ${a}`);
     else args.files.push(a);
   }
   if (args.files.length !== 0 && args.files.length !== 2)
@@ -38,9 +56,10 @@ function parseArgs(argv: string[]): Args {
   return args;
 }
 
-function git(args: string[]): string {
+function git(cwd: string, args: string[]): string {
   // LC_ALL=C keeps git's messages in English so the checks below can read them.
   return execFileSync('git', args, {
+    cwd,
     encoding: 'utf8',
     stdio: ['ignore', 'pipe', 'pipe'],
     maxBuffer: 1 << 30,
@@ -49,10 +68,10 @@ function git(args: string[]): string {
 }
 
 /** The lockfile at `ref`, or null when it did not exist there (every package is then new). */
-function lockfileAt(ref: string): string | null {
+function lockfileAt(cwd: string, ref: string): string | null {
   let prefix: string;
   try {
-    prefix = git(['rev-parse', '--show-prefix']).trim();
+    prefix = git(cwd, ['rev-parse', '--show-prefix']).trim();
   } catch {
     throw new Error(
       'not inside a git repository; compare two files instead: bumpvet <old-lock> <new-lock>',
@@ -60,13 +79,13 @@ function lockfileAt(ref: string): string | null {
   }
   if (ref === 'HEAD') {
     try {
-      git(['rev-parse', '--verify', 'HEAD']);
+      git(cwd, ['rev-parse', '--verify', 'HEAD']);
     } catch {
       return null; // no commits yet
     }
   }
   try {
-    return git(['show', `${ref}:${prefix}package-lock.json`]);
+    return git(cwd, ['show', `${ref}:${prefix}package-lock.json`]);
   } catch (err) {
     const stderr = (err as { stderr?: string }).stderr ?? '';
     if (/does not exist|exists on disk, but not in/.test(stderr)) return null;
@@ -74,29 +93,31 @@ function lockfileAt(ref: string): string | null {
   }
 }
 
-function readLockfile(path: string): string {
+function readLockfile(cwd: string, path: string): string {
   try {
-    return readFileSync(path, 'utf8');
+    return readFileSync(resolve(cwd, path), 'utf8');
   } catch (err) {
-    throw new Error(`cannot read ${path} (in ${process.cwd()})`, { cause: err });
+    throw new Error(`cannot read ${path} (in ${cwd})`, { cause: err });
   }
 }
 
-async function main(): Promise<number> {
-  const args = parseArgs(process.argv.slice(2));
-  const [oldText, newText] =
-    args.files.length === 2
-      ? [readLockfile(args.files[0]!), readLockfile(args.files[1]!)]
-      : [lockfileAt(args.base), readLockfile('package-lock.json')];
-  const results = await vetLockfiles(oldText, newText, registryFetcher(), { now: new Date() });
-  process.stdout.write(args.json ? formatJson(results) : formatText(results));
-  return results.some((r) => r.verdict === 'block') ? 1 : 0;
+/** Runs bumpvet with `argv` (without the node and script paths) and returns the exit code. */
+export async function runCli(argv: string[], env: CliEnv): Promise<number> {
+  try {
+    const args = parseArgs(argv);
+    if (args.help) {
+      env.stdout(USAGE);
+      return 0;
+    }
+    const [oldText, newText] =
+      args.files.length === 2
+        ? [readLockfile(env.cwd, args.files[0]!), readLockfile(env.cwd, args.files[1]!)]
+        : [lockfileAt(env.cwd, args.base), readLockfile(env.cwd, 'package-lock.json')];
+    const results = await vetLockfiles(oldText, newText, env.fetchPackument, { now: env.now });
+    env.stdout(args.json ? formatJson(results) : formatText(results));
+    return results.some((r) => r.verdict === 'block') ? 1 : 0;
+  } catch (err) {
+    env.stderr(`bumpvet: ${err instanceof Error ? err.message : String(err)}\n`);
+    return 2;
+  }
 }
-
-main().then(
-  (code) => process.exit(code),
-  (err: unknown) => {
-    process.stderr.write(`bumpvet: ${err instanceof Error ? err.message : String(err)}\n`);
-    process.exit(2);
-  },
-);

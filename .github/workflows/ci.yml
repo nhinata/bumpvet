@@ -37,3 +37,5 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
+      # The built entry point starts and parses arguments.
+      - run: node dist/bin.js --help

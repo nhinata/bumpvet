@@ -32,16 +32,16 @@ git clone https://github.com/nhinata/bumpvet.git && cd bumpvet
 npm install && npm run build
 
 # In your project: compare package-lock.json with the one at HEAD
-node /path/to/bumpvet/dist/cli.js
+node /path/to/bumpvet/dist/bin.js
 
 # ...or with another ref, e.g. the base branch of a pull request
-node /path/to/bumpvet/dist/cli.js --base origin/main
+node /path/to/bumpvet/dist/bin.js --base origin/main
 
 # Two lockfiles on disk
-node /path/to/bumpvet/dist/cli.js old/package-lock.json new/package-lock.json
+node /path/to/bumpvet/dist/bin.js old/package-lock.json new/package-lock.json
 
 # Machine-readable output
-node /path/to/bumpvet/dist/cli.js --json
+node /path/to/bumpvet/dist/bin.js --json
 ```
 
 Exit codes: `0` nothing to block, `1` at least one `BLOCK`, `2` error.
