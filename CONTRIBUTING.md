@@ -141,7 +141,9 @@ its tests go with it.
   `diffLockfiles`, `computeSignals`, `decide`, `vetChanges`, `runCli`), not
   private helpers, and put a new test in the group of the function it calls.
 - Build fixtures that could really occur: a signal with its real group, a
-  lockfile entry npm could write.
+  lockfile entry npm could write, input an attacker could write under the
+  [threat model](DESIGN.md#threat-model) (adversarial or malformed lockfile
+  fields), or a registry response a broken registry or network could produce.
 - Check that a new or changed test can fail: break the code it covers, see it
   fail, restore the code.
 - Tests never touch the network. Use the fakes in `test/helpers.ts`
