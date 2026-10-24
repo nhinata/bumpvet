@@ -6,6 +6,8 @@ export interface Change {
   to: string;
   /** Integrity the new lockfile expects, if it records one. */
   integrity?: string;
+  /** The registry tarball URL the new lockfile records, if any. */
+  resolved?: string;
   /** Set when the new version does not come from the public registry. */
   source?: string;
   /** Set when the version being replaced did not come from the public registry. */
@@ -20,6 +22,7 @@ export type SignalId =
   | 'fresh-publish'
   | 'install-scripts'
   | 'not-from-registry'
+  | 'tarball-mismatch'
   | 'source-changed'
   | 'integrity-mismatch'
   | 'not-in-registry';
@@ -59,5 +62,5 @@ export interface VersionManifest {
   version: string;
   _npmUser?: { name?: string };
   scripts?: Record<string, string>;
-  dist?: { integrity?: string; attestations?: unknown };
+  dist?: { integrity?: string; tarball?: string; attestations?: unknown };
 }

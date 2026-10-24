@@ -14,8 +14,20 @@ describe('diffLockfiles', () => {
       'node_modules/c': { version: '3.0.0' },
     });
     expect(diffLockfiles(before, after)).toEqual([
-      { name: 'a', from: '1.0.0', to: '1.1.0', integrity: 'sha512-a-1.1.0' },
-      { name: 'c', from: null, to: '3.0.0', integrity: 'sha512-c-3.0.0' },
+      {
+        name: 'a',
+        from: '1.0.0',
+        to: '1.1.0',
+        integrity: 'sha512-a-1.1.0',
+        resolved: 'https://registry.npmjs.org/a/-/x-1.1.0.tgz',
+      },
+      {
+        name: 'c',
+        from: null,
+        to: '3.0.0',
+        integrity: 'sha512-c-3.0.0',
+        resolved: 'https://registry.npmjs.org/c/-/x-3.0.0.tgz',
+      },
     ]);
   });
 
@@ -97,6 +109,7 @@ describe('diffLockfiles', () => {
         from: '1.2.3',
         to: '1.2.3',
         integrity: 'sha512-evil',
+        resolved: 'https://registry.npmjs.org/foo/-/x-1.2.3.tgz',
         fromIntegrity: 'sha512-good',
       },
     ]);
@@ -152,39 +165,38 @@ describe('parseLockfile', () => {
     expect(parseLockfile(text).get('node_modules/a')?.elsewhere).toBe('unknown source');
   });
 
-  it.each([
-    [
-      'a name that claims another package than its URL',
-      { name: 'lodash', resolved: 'https://registry.npmjs.org/evil/-/evil-1.0.0.tgz' },
-      'https://registry.npmjs.org/evil/-/evil-1.0.0.tgz (not lodash)',
-    ],
-    [
-      'a URL that reaches another package through ..',
-      {
-        name: 'lodash',
-        resolved: 'https://registry.npmjs.org/lodash/-/../../evil/-/evil-1.0.0.tgz',
+  it('does not trust a name with a path in it', () => {
+    const text = lockfile({ 'node_modules/a': { version: '1.0.0', name: 'x/y/../lodash' } });
+    expect(parseLockfile(text).get('node_modules/a')?.elsewhere).toBe(
+      'invalid package name "x/y/../lodash"',
+    );
+  });
+
+  it('does not trust an empty `resolved`', () => {
+    const text = lockfile({
+      'node_modules/a': { version: '1.0.0', resolved: '', integrity: undefined },
+    });
+    expect(parseLockfile(text).get('node_modules/a')?.elsewhere).toBe('unknown source');
+  });
+
+  it('reports the same version when only its `resolved` changed', () => {
+    const before = lockfile({ 'node_modules/ms': { version: '2.1.3', integrity: undefined } });
+    const after = lockfile({
+      'node_modules/ms': {
+        version: '2.1.3',
+        integrity: undefined,
+        resolved: 'https://registry.npmjs.org/ms/-/ms-0.7.1.tgz',
       },
-      'https://registry.npmjs.org/lodash/-/../../evil/-/evil-1.0.0.tgz (not lodash)',
-    ],
-    [
-      'a URL that reaches another package through %2e%2e',
+    });
+    expect(diffLockfiles(before, after)).toEqual([
       {
-        name: 'lodash',
-        resolved: 'https://registry.npmjs.org/lodash/-/%2e%2e/%2e%2e/evil/-/e.tgz',
+        name: 'ms',
+        from: '2.1.3',
+        to: '2.1.3',
+        integrity: undefined,
+        resolved: 'https://registry.npmjs.org/ms/-/ms-0.7.1.tgz',
       },
-      'https://registry.npmjs.org/lodash/-/%2e%2e/%2e%2e/evil/-/e.tgz (not lodash)',
-    ],
-    [
-      // URLs treat "\\" as "/", so this has no "/" as text but reaches evil
-      'a URL that reaches another package through backslashes',
-      { name: 'lodash', resolved: 'https://registry.npmjs.org/lodash/-/..\\..\\evil\\-\\e.tgz' },
-      'https://registry.npmjs.org/lodash/-/..\\..\\evil\\-\\e.tgz (not lodash)',
-    ],
-    ['an empty `resolved`', { resolved: '', integrity: undefined }, 'unknown source'],
-    ['a name with a path in it', { name: 'x/y/../lodash' }, 'invalid package name "x/y/../lodash"'],
-  ])('does not trust %s', (_, fields, source) => {
-    const text = lockfile({ 'node_modules/a': { version: '1.0.0', ...fields } });
-    expect(parseLockfile(text).get('node_modules/a')?.elsewhere).toBe(source);
+    ]);
   });
 
   it('trusts a scoped package at its own registry URL', () => {

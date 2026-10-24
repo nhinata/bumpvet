@@ -7,28 +7,24 @@ const REGISTRY = 'https://registry.npmjs.org/';
 const NAME = /^(?:@[^/@\s.][^/@\s]*\/)?[^/@\s.][^/@\s]*$/;
 
 /**
- * Where an entry really comes from, when that is not the public registry
- * package its name says. A registry URL is trusted only if its path, parsed as
- * a URL (where `..`, `%2e%2e` and `\` all count), is a tarball of that very
- * package: otherwise `name` could claim one package while `resolved` fetches
- * another.
+ * Where an entry comes from, when that is not the public registry. A registry
+ * URL is not judged here: whether it is the right tarball is checked against
+ * the registry itself (see `tarball-mismatch` in signals.ts).
  */
 function elsewhere(name: string, resolved?: string, integrity?: string): string | undefined {
   if (!NAME.test(name)) return `invalid package name ${JSON.stringify(name)}`;
   // npm leaves `resolved` out for registry packages with omit-lockfile-registry-resolved.
   if (resolved === undefined) return integrity ? undefined : 'unknown source';
   if (!resolved.startsWith(REGISTRY)) return resolved || 'unknown source';
-  const tarball = new RegExp(`^/${escapeRegExp(name)}/-/[^/]+\\.tgz$`);
-  if (!tarball.test(new URL(resolved).pathname)) return `${resolved} (not ${name})`;
   return undefined;
 }
-
-const escapeRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 export interface LockPackage {
   name: string;
   version: string;
   integrity?: string;
+  /** The registry tarball URL, when the lockfile records one. */
+  resolved?: string;
   /** Where the package comes from when that is not the public registry (git, file:, another registry). */
   elsewhere?: string;
 }
@@ -62,15 +58,23 @@ export function parseLockfile(text: string, label = 'lockfile'): Map<string, Loc
       str(entry.name) || path.slice(path.lastIndexOf('node_modules/') + 'node_modules/'.length);
     const resolved = str(entry.resolved);
     const integrity = str(entry.integrity);
-    out.set(path, { name, version, integrity, elsewhere: elsewhere(name, resolved, integrity) });
+    const source = elsewhere(name, resolved, integrity);
+    out.set(path, {
+      name,
+      version,
+      integrity,
+      resolved: source ? undefined : resolved,
+      elsewhere: source,
+    });
   }
   return out;
 }
 
 /** True when two entries of the same version would install the same thing. */
 function sameArtifact(a: LockPackage, b: LockPackage): boolean {
+  const same = (x?: string, y?: string) => !x || !y || x === y;
   return (
-    a.elsewhere === b.elsewhere && (!a.integrity || !b.integrity || a.integrity === b.integrity)
+    a.elsewhere === b.elsewhere && same(a.resolved, b.resolved) && same(a.integrity, b.integrity)
   );
 }
 
@@ -98,6 +102,7 @@ export function diffLockfiles(oldText: string | null, newText: string): Change[]
       to: pkg.version,
       integrity: pkg.integrity,
     };
+    if (pkg.resolved) change.resolved = pkg.resolved;
     if (pkg.elsewhere) change.source = pkg.elsewhere;
     if (prev?.elsewhere) change.fromSource = prev.elsewhere;
     if (
@@ -111,7 +116,13 @@ export function diffLockfiles(oldText: string | null, newText: string): Change[]
     }
 
     // What gets vetted is the new artifact; it is listed once, against the first version it replaces.
-    const key = JSON.stringify([change.name, change.to, change.source, change.integrity]);
+    const key = JSON.stringify([
+      change.name,
+      change.to,
+      change.source,
+      change.resolved,
+      change.integrity,
+    ]);
     if (seen.has(key)) continue;
     seen.add(key);
     changes.push(change);

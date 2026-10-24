@@ -87,6 +87,7 @@ export function slim(raw: unknown, name: string): Packument {
           ),
         dist: {
           integrity: str(dist.integrity),
+          tarball: str(dist.tarball),
           attestations: dist.attestations ? true : undefined,
         },
       };

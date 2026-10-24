@@ -30,7 +30,7 @@ describe('slim', () => {
           version: '1.0.0',
           _npmUser: { name: 'alice' },
           scripts: { postinstall: 'node x.js' },
-          dist: { integrity: 'sha512-x', attestations: true },
+          dist: { integrity: 'sha512-x', tarball: 'https://…', attestations: true },
         },
       },
     });
@@ -46,7 +46,7 @@ describe('slim', () => {
       version: '1.0.0',
       _npmUser: undefined,
       scripts: undefined,
-      dist: { integrity: undefined, attestations: undefined },
+      dist: { integrity: undefined, tarball: undefined, attestations: undefined },
     });
   });
 
@@ -102,7 +102,7 @@ describe('slim', () => {
           version: '1.1.0',
           _npmUser: undefined,
           scripts: { preinstall: 'node p.js' },
-          dist: { integrity: undefined, attestations: undefined },
+          dist: { integrity: undefined, tarball: undefined, attestations: undefined },
         },
       },
     });

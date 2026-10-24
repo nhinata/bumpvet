@@ -60,12 +60,13 @@ export function computeSignals(
   }
 
   const expected = next.dist?.integrity;
+  const comparable = !!change.integrity && !!expected && sameAlgorithm(change.integrity, expected);
   // One integrity signal is enough; the lockfile-to-lockfile one above is the more direct.
   if (
     !signals.length &&
+    comparable &&
     change.integrity &&
     expected &&
-    sameAlgorithm(change.integrity, expected) &&
     change.integrity !== expected
   ) {
     signals.push({
@@ -73,6 +74,19 @@ export function computeSignals(
       group: 'tamper',
       before: expected,
       after: change.integrity,
+    });
+  }
+  // npm checks what it downloads against the lockfile's integrity, so a matching
+  // integrity pins the content whatever `resolved` says. Without one it checks
+  // nothing: `resolved` must then be exactly the registry's tarball for this
+  // version, or npm installs whatever it points at.
+  const tarball = next.dist?.tarball;
+  if (!comparable && change.resolved !== undefined && tarball && change.resolved !== tarball) {
+    signals.push({
+      id: 'tarball-mismatch',
+      group: 'tamper',
+      before: tarball,
+      after: change.resolved,
     });
   }
 

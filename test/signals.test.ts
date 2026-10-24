@@ -224,6 +224,49 @@ describe('computeSignals', () => {
     },
   );
 
+  describe('tarball-mismatch', () => {
+    const p = packument('lodash', [
+      ...history,
+      { version: '1.2.0', time: '2025-12-01T00:00:00Z', publisher: 'alice', provenance: true },
+    ]);
+    const canonical = 'https://registry.npmjs.org/lodash/-/x-1.2.0.tgz';
+    const vet = (resolved: string, integrity?: string) =>
+      ids(
+        computeSignals({ name: 'lodash', from: '1.1.0', to: '1.2.0', resolved, integrity }, p, {
+          now,
+        }),
+      );
+
+    it.each([
+      ['another version of the package', 'https://registry.npmjs.org/lodash/-/x-0.1.0.tgz'],
+      ['another package', 'https://registry.npmjs.org/evil/-/evil-1.0.0.tgz'],
+      ['another package through ..', 'https://registry.npmjs.org/lodash/-/../../evil/-/e.tgz'],
+      ['another package through %2f', 'https://registry.npmjs.org/lodash/-/..%2f..%2fevil%2fe.tgz'],
+      [
+        'another package through backslashes',
+        'https://registry.npmjs.org/lodash/-/..\\..\\evil.tgz',
+      ],
+    ])('flags %s when there is no integrity to pin the content', (_, resolved) => {
+      expect(vet(resolved)).toEqual(['tarball-mismatch']);
+    });
+
+    it('flags it when the lockfile integrity cannot be compared (sha1 against sha512)', () => {
+      expect(vet('https://registry.npmjs.org/evil/-/evil-1.0.0.tgz', 'sha1-abc')).toEqual([
+        'tarball-mismatch',
+      ]);
+    });
+
+    it("trusts the registry's own tarball URL without an integrity", () => {
+      expect(vet(canonical)).toEqual([]);
+    });
+
+    it('leaves the URL alone when the integrity matches the registry: npm checks the content', () => {
+      expect(
+        vet('https://registry.npmjs.org/evil/-/evil-1.0.0.tgz', 'sha512-lodash-1.2.0'),
+      ).toEqual([]);
+    });
+  });
+
   it('flags a version the registry does not serve', () => {
     const p = packument('pkg', [
       ...history,

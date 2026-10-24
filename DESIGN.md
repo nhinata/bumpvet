@@ -25,16 +25,17 @@ what it deliberately does not do, and why.
 
 ## Signals
 
-| Signal               | Group   | Fires when                                                                                                                    |
-| -------------------- | ------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| `publisher-changed`  | origin  | the account that published the new version published none of the 20 versions before it, and the new version has no provenance |
-| `provenance-lost`    | origin  | the version being replaced had npm provenance and the new one does not                                                        |
-| `fresh-publish`      | timing  | the new version is less than 72 hours old                                                                                     |
-| `install-scripts`    | content | a `preinstall`, `install` or `postinstall` script was added or changed                                                        |
-| `not-from-registry`  | origin  | the package comes from git, a `file:` path, another registry, or an unknown source, so there is nothing to compare it with    |
-| `source-changed`     | tamper  | a package that came from the public registry now comes from somewhere else (how lockfile injection looks)                     |
-| `integrity-mismatch` | tamper  | the lockfile's integrity hash changed for the same version, or differs from the registry's                                    |
-| `not-in-registry`    | tamper  | the registry does not serve the version (npm removes malicious releases)                                                      |
+| Signal               | Group   | Fires when                                                                                                                                       |
+| -------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `publisher-changed`  | origin  | the account that published the new version published none of the 20 versions before it, and the new version has no provenance                    |
+| `provenance-lost`    | origin  | the version being replaced had npm provenance and the new one does not                                                                           |
+| `fresh-publish`      | timing  | the new version is less than 72 hours old                                                                                                        |
+| `install-scripts`    | content | a `preinstall`, `install` or `postinstall` script was added or changed                                                                           |
+| `not-from-registry`  | origin  | the package comes from git, a `file:` path, another registry, an unknown source, or has an invalid name, so there is nothing to compare it with  |
+| `source-changed`     | tamper  | a package that came from the public registry now comes from somewhere else (how lockfile injection looks)                                        |
+| `integrity-mismatch` | tamper  | the lockfile's integrity hash changed for the same version, or differs from the registry's                                                       |
+| `tarball-mismatch`   | tamper  | the lockfile has no integrity the registry's can be compared with, and its `resolved` is not exactly the registry's tarball URL for that version |
+| `not-in-registry`    | tamper  | the registry does not serve the version (npm removes malicious releases)                                                                         |
 
 ## Verdict table
 
@@ -64,6 +65,19 @@ what it deliberately does not do, and why.
   valid provenance; bumpvet does not defend against that case through this
   signal.
 - **Removing an install script is not a signal.** It takes power away.
+- **A registry URL is compared with the registry, not with a pattern.** npm
+  checks every tarball it downloads against the lockfile's integrity
+  (`npm ci` with a wrong integrity, or with `resolved` pointing at another
+  package, fails with "tarball data ... seems to be corrupted"). So when the
+  lockfile's integrity matches the registry's, the content is pinned whatever
+  `resolved` says. Without an integrity npm checks nothing: with `resolved`
+  pointing at another package, or another version of the same one, `npm ci`
+  installed it under the lockfile's name and version. Only then must
+  `resolved` be exactly the registry's `dist.tarball`. An earlier version
+  matched URLs against `/<name>/-/*.tgz` instead; review found a new way past
+  it in each round (`..`, `%2e%2e`, backslashes, `%2f`, another version's
+  file). On 857 entries from npm-generated lockfiles, every `resolved` equals
+  the registry's `dist.tarball` and every integrity equals the registry's.
 - **Packages bumpvet cannot vet are signals too.** An early version listed them
   in a separate "not vetted" section, outside the verdict table; that broke
   principle 2 and let them pass with exit code 0. They now go through the
@@ -77,6 +91,10 @@ what it deliberately does not do, and why.
 - `chalk@5.6.1`: caught as `REVIEW`, not `BLOCK`, for the same reason.
 
 ## Known limitations
+
+- bumpvet relies on npm checking downloads against the lockfile's integrity.
+  A tool that installs from `package-lock.json` without that check is not
+  covered by `integrity-mismatch` alone.
 
 - Only the public npm registry. Behind a mirror or a private registry every
   package is `not-from-registry`, so everything is `REVIEW`.

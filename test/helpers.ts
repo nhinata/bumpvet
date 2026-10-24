@@ -27,6 +27,7 @@ export function packument(name: string, versions: FakeVersion[]): Packument {
       scripts: v.scripts,
       dist: {
         integrity: v.integrity ?? `sha512-${name}-${v.version}`,
+        tarball: `https://registry.npmjs.org/${name}/-/x-${v.version}.tgz`,
         attestations: v.provenance ? { url: 'x' } : undefined,
       },
     };
