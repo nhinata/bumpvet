@@ -128,13 +128,13 @@ export function diffLockfiles(oldText: string | null, newText: string): Change[]
       change.fromIntegrity = prev.integrity;
     }
 
-    // What gets vetted is the new artifact; it is listed once, against the first version it replaces.
+    // What gets vetted is the new artifact; it is listed once, against the first version it
+    // replaces. As in sameArtifact, an integrity identifies it; only without one does the URL.
     const key = JSON.stringify([
       change.name,
       change.to,
       change.source,
-      change.resolved,
-      change.integrity,
+      change.integrity ?? change.resolved,
     ]);
     if (seen.has(key)) continue;
     seen.add(key);

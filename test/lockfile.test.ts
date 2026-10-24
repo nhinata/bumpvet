@@ -159,6 +159,14 @@ describe('diffLockfiles', () => {
     expect(diffLockfiles(before, after)).toHaveLength(1);
   });
 
+  it('lists a new version once when its paths record different URLs for the same integrity', () => {
+    const after = lockfile({
+      'node_modules/a': { version: '1.0.0' },
+      'node_modules/b/node_modules/a': { version: '1.0.0', resolved: undefined },
+    });
+    expect(diffLockfiles(null, after)).toHaveLength(1);
+  });
+
   it('names the file that is not JSON', () => {
     expect(() => diffLockfiles('{', lockfile({}))).toThrow('the old lockfile is not valid JSON');
     expect(() => diffLockfiles(null, 'not json')).toThrow('the new lockfile is not valid JSON');

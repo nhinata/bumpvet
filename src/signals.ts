@@ -59,9 +59,10 @@ export function computeSignals(
     ];
   }
 
-  // The registry's hash in the lockfile's algorithm: sha512 usually, sha1 for old lockfiles.
+  // The registry's hash in the lockfile's algorithm: sha512 usually, sha1 for old lockfiles,
+  // which the registry gives as `shasum` (and, for some old versions, as `integrity`).
   const expected = change.integrity?.startsWith('sha1-')
-    ? sha1Integrity(next.dist?.shasum)
+    ? (sha1Integrity(next.dist?.shasum) ?? next.dist?.integrity)
     : next.dist?.integrity;
   const comparable = !!change.integrity && !!expected && sameAlgorithm(change.integrity, expected);
   // One integrity signal is enough; the lockfile-to-lockfile one above is the more direct.

@@ -287,6 +287,19 @@ describe('computeSignals', () => {
       ]);
     });
 
+    it('falls back to a sha1 `integrity` when the registry has no usable shasum', () => {
+      const old = packument('lodash', [{ version: '1.2.0', time: '2025-12-01T00:00:00Z' }]);
+      old.versions['1.2.0']!.dist!.integrity = 'sha1-good';
+      const change = {
+        name: 'lodash',
+        from: null,
+        to: '1.2.0',
+        integrity: 'sha1-evil',
+        resolved: 'https://registry.npmjs.org/lodash/-/x-1.2.0.tgz',
+      };
+      expect(ids(computeSignals(change, old, { now }))).toEqual(['integrity-mismatch']);
+    });
+
     it("trusts the registry's own tarball URL without an integrity", () => {
       expect(vet(canonical)).toEqual([]);
     });
