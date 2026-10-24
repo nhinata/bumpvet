@@ -67,6 +67,11 @@ public npm registry. Content analysis of the package code and matching
 releases against their source repository are planned; see
 [DESIGN.md](DESIGN.md#planned).
 
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md). To report a vulnerability, see
+[SECURITY.md](SECURITY.md); please do not open a public issue.
+
 ## License
 
 MIT
