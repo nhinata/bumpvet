@@ -25,11 +25,14 @@ You need Node.js 22 or later. The repository pins 24 in `.nvmrc`:
 
 ```sh
 nvm use
-npm ci --ignore-scripts
+npm ci
 ```
 
-`--ignore-scripts` is how CI installs too: no dependency needs its install
-scripts here.
+`.npmrc` turns off dependencies' install scripts, here and in CI: nothing
+needs them. It also skips `pre`/`post` scripts and lifecycle scripts such as
+`prepare` and `prepublishOnly`, so build steps are always run explicitly. If a
+dependency ever needs its install script, allow that one package with npm's
+`allow-scripts` setting instead of turning scripts back on.
 
 | Command                | What it does                                         |
 | ---------------------- | ---------------------------------------------------- |

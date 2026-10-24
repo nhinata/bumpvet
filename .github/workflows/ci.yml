@@ -30,8 +30,8 @@ jobs:
           node-version: ${{ matrix.node }}
           # No dependency cache: installs are fast, and a cache is one more thing to poison.
           package-manager-cache: false
-      # Dependencies' install scripts never run here; nothing needs them.
-      - run: npm ci --ignore-scripts
+      # .npmrc keeps dependencies' install scripts from running.
+      - run: npm ci
       - run: npm run format:check
       - run: npm run lint
       - run: npm run typecheck

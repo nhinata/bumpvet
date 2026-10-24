@@ -1,0 +1,30 @@
+version: 2
+updates:
+  # Development dependencies only: bumpvet has no runtime dependencies.
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    # Wait a week after a release: compromised releases are usually found and
+    # removed within hours or days (chalk@5.6.1 was up for about two hours).
+    cooldown:
+      default-days: 7
+    groups:
+      dev-minor-and-patch:
+        dependency-type: development
+        update-types: [minor, patch]
+    commit-message:
+      prefix: chore
+      include: scope
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    groups:
+      actions:
+        patterns: ['*']
+    commit-message:
+      prefix: ci
