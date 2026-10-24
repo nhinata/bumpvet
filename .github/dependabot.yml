@@ -13,6 +13,11 @@ updates:
       dev-minor-and-patch:
         dependency-type: development
         update-types: [minor, patch]
+    ignore:
+      # Kept at the oldest Node.js in `engines`, so that APIs newer Node.js
+      # versions add do not typecheck.
+      - dependency-name: '@types/node'
+        update-types: ['version-update:semver-major']
     commit-message:
       prefix: chore
       include: scope
@@ -23,8 +28,10 @@ updates:
       interval: weekly
     cooldown:
       default-days: 7
+    # Majors come one by one: they can break the workflow.
     groups:
       actions:
         patterns: ['*']
+        update-types: [minor, patch]
     commit-message:
       prefix: ci

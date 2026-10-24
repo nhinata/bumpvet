@@ -28,11 +28,8 @@ nvm use
 npm ci
 ```
 
-`.npmrc` turns off dependencies' install scripts, here and in CI: nothing
-needs them. It also skips `pre`/`post` scripts and lifecycle scripts such as
-`prepare` and `prepublishOnly`, so build steps are always run explicitly. If a
-dependency ever needs its install script, allow that one package with npm's
-`allow-scripts` setting instead of turning scripts back on.
+`.npmrc` keeps dependencies' install scripts from running, here and in CI.
+Read its comment before changing it.
 
 | Command                | What it does                                         |
 | ---------------------- | ---------------------------------------------------- |
