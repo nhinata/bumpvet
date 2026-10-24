@@ -92,7 +92,9 @@ function lockfileAt(cwd: string, ref: string): string | null {
   } catch (err) {
     const stderr = (err as { stderr?: string }).stderr ?? '';
     if (/does not exist|exists on disk, but not in/.test(stderr)) return null;
-    throw new Error(`git show ${object} failed: ${stderr.trim()}`, { cause: err });
+    // git's own message when it gave one; otherwise why running it failed (a signal, a buffer limit).
+    const reason = stderr.trim() || (err instanceof Error ? err.message : String(err));
+    throw new Error(`git show ${object} failed: ${reason}`, { cause: err });
   }
 }
 
@@ -100,7 +102,8 @@ function readLockfile(cwd: string, path: string): string {
   try {
     return readFileSync(resolve(cwd, path), 'utf8');
   } catch (err) {
-    throw new Error(`cannot read ${path} (in ${cwd})`, { cause: err });
+    const reason = err instanceof Error ? err.message : String(err);
+    throw new Error(`cannot read ${path} (in ${cwd}): ${reason}`, { cause: err });
   }
 }
 

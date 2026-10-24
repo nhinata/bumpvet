@@ -19,7 +19,7 @@ export function registryFetcher(
         });
         if (res.status === 404) return null;
         if (!res.ok) throw new Error(`registry returned ${res.status} for ${name}`);
-        return slim((await res.json()) as RawPackument);
+        return slim(await res.json(), name);
       })();
       cache.set(name, p);
     }
@@ -27,36 +27,49 @@ export function registryFetcher(
   };
 }
 
-/** A packument as the registry sends it: none of its fields are guaranteed. */
-export interface RawPackument {
-  name?: string;
-  time?: Record<string, string>;
-  versions?: Record<
-    string,
-    {
-      _npmUser?: { name?: string };
-      scripts?: Record<string, string | undefined>;
-      dist?: { integrity?: string; attestations?: unknown };
-    }
-  >;
-}
+type Json = Record<string, unknown>;
+
+const isObject = (v: unknown): v is Json =>
+  typeof v === 'object' && v !== null && !Array.isArray(v);
+const str = (v: unknown): string | undefined => (typeof v === 'string' ? v : undefined);
 
 /**
- * Keeps only the fields bumpvet reads. Full packuments of large packages are
- * tens of megabytes, and every one stays cached for the whole run.
+ * Keeps only the fields bumpvet reads, and only when they have the type bumpvet
+ * expects: the response comes from the network and nothing in it is
+ * guaranteed. (An unpublished package, for one, has an object in `time`.) Full
+ * packuments of large packages are tens of megabytes, and every one stays
+ * cached for the whole run.
  */
-export function slim(raw: RawPackument): Packument {
-  const versions: Record<string, VersionManifest> = {};
-  for (const [v, m] of Object.entries(raw.versions ?? {})) {
-    const scripts = m.scripts;
-    versions[v] = {
-      version: v,
-      _npmUser: m._npmUser?.name ? { name: m._npmUser.name } : undefined,
-      scripts:
-        scripts &&
-        Object.fromEntries(INSTALL_HOOKS.flatMap((h) => (scripts[h] ? [[h, scripts[h]]] : []))),
-      dist: { integrity: m.dist?.integrity, attestations: m.dist?.attestations ? true : undefined },
-    };
+export function slim(raw: unknown, name: string): Packument {
+  const json = isObject(raw) ? raw : {};
+  const time: Record<string, string> = {};
+  if (isObject(json.time)) {
+    for (const [k, v] of Object.entries(json.time)) if (typeof v === 'string') time[k] = v;
   }
-  return { name: raw.name ?? '', time: raw.time ?? {}, versions };
+  const versions: Record<string, VersionManifest> = {};
+  if (isObject(json.versions)) {
+    for (const [v, m] of Object.entries(json.versions)) {
+      if (!isObject(m)) continue;
+      const user = isObject(m._npmUser) ? str(m._npmUser.name) : undefined;
+      const scripts = isObject(m.scripts) ? m.scripts : undefined;
+      const dist = isObject(m.dist) ? m.dist : {};
+      versions[v] = {
+        version: v,
+        _npmUser: user ? { name: user } : undefined,
+        scripts:
+          scripts &&
+          Object.fromEntries(
+            INSTALL_HOOKS.flatMap((h) => {
+              const script = str(scripts[h]);
+              return script ? [[h, script]] : [];
+            }),
+          ),
+        dist: {
+          integrity: str(dist.integrity),
+          attestations: dist.attestations ? true : undefined,
+        },
+      };
+    }
+  }
+  return { name: str(json.name) ?? name, time, versions };
 }

@@ -172,12 +172,21 @@ describe('errors exit 2 with a message', () => {
     [['--nope'], /unknown option --nope/],
     [['--base'], /--base needs a git ref/],
     [['only-one.json'], /either no lockfiles or two/],
-    [['missing.json', 'also-missing.json'], /cannot read missing\.json/],
+    [['missing.json', 'also-missing.json'], /cannot read missing\.json \(in .+\): ENOENT/],
   ])('%j', async (argv, message) => {
     const r = await run(argv, tempDir());
     expect(r.code).toBe(2);
     expect(r.stderr).toMatch(message);
     expect(r.stdout).toBe('');
+  });
+
+  it('saying why a lockfile cannot be read', async () => {
+    const dir = tempDir();
+    mkdirSync(join(dir, 'new.json'));
+    writeFileSync(join(dir, 'old.json'), v1);
+    const r = await run(['old.json', 'new.json'], dir);
+    expect(r.code).toBe(2);
+    expect(r.stderr).toMatch(/cannot read new\.json \(in .+\): EISDIR/);
   });
 
   it('outside a git repository', async () => {
