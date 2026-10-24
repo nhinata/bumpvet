@@ -70,11 +70,12 @@ under the package.
 than the registry's release. A lockfile npm or Dependabot generated from the
 registry should never do this, so one of these happened:
 
-| Cause                                                | How to tell                                      | What to do                                                                           |
-| ---------------------------------------------------- | ------------------------------------------------ | ------------------------------------------------------------------------------------ |
-| the registry removed the version (`not-in-registry`) | the package's npm page and security advisories   | treat the version as malicious; close the pull request and wait for the next release |
-| the lockfile was edited by hand or by a pull request | the `resolved` and `integrity` lines in the diff | regenerate the lockfile with `npm install` instead of merging the edit               |
-| a bumpvet bug                                        | neither of the above                             | open an issue with the two lockfiles                                                 |
+| Cause                                                       | How to tell                                                                                       | What to do                                                                           |
+| ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| the registry removed the version (`not-in-registry`)        | the package's npm page and security advisories                                                    | treat the version as malicious; close the pull request and wait for the next release |
+| the lockfile was edited by hand or by a pull request        | the `resolved` and `integrity` lines in the diff                                                  | regenerate the lockfile with `npm install` instead of merging the edit               |
+| a private package on registry.npmjs.org (`not-in-registry`) | the package is yours or your organization's; bumpvet does not log in, so the registry answers 404 | expected: bumpvet cannot vet private packages (see DESIGN.md, Known limitations)     |
+| a bumpvet bug                                               | neither of the above                                                                              | open an issue with the two lockfiles                                                 |
 
 **BLOCK because a content change meets an origin or timing signal** (for
 example `install-scripts` with `publisher-changed` or `fresh-publish`): the
@@ -85,12 +86,20 @@ shape of a worm release.
    repository and release notes.
 3. Merge only once the change is explained, and say why in the pull request.
    Otherwise close it. To keep Dependabot from proposing that release again,
-   comment `@dependabot ignore this patch version` on a single-dependency
-   pull request, or `@dependabot ignore <dependency> patch version` on a
-   grouped one.
+   comment `@dependabot ignore this <level> version` on a single-dependency
+   pull request, or `@dependabot ignore <dependency> <level> version` on a
+   grouped one, where `<level>` is `patch`, `minor` or `major`, as for the
+   release.
 
-**REVIEW**: one unusual thing, such as a new publisher or a new install script.
-Do steps 1 and 2 for that signal before merging.
+**REVIEW**: something unusual, but nothing that blocks on its own. Before
+merging, check each signal listed:
+
+| Signal              | Check                                                                               |
+| ------------------- | ----------------------------------------------------------------------------------- |
+| `install-scripts`   | step 1 above                                                                        |
+| `publisher-changed` | step 2 above                                                                        |
+| `provenance-lost`   | the project's release notes or workflow: did it stop publishing from CI on purpose? |
+| `not-from-registry` | the `resolved` URL is the git repository, file or registry you meant to use         |
 
 When a BLOCK or REVIEW turns out to be wrong, open an issue: false positives
 are what decides whether a check can be made required.
