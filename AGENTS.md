@@ -18,5 +18,12 @@ tend to get wrong.
    something is unknown, say so in a comment.
 5. **No runtime dependencies, and never run package code**, in the tool or in
    tests.
-6. **Commit messages and pull request descriptions state checkable facts:**
+6. **Review code changes before opening the pull request.** Run a code review
+   on any change to code, tests or CI, fix what it finds, and list the
+   findings and fixes in the pull request description. Documentation-only
+   changes need their facts checked against the code instead.
+7. **Check that a new or changed test can fail.** Break the code it covers on
+   purpose, confirm the test fails, then restore the code. A test that passes
+   either way checks nothing.
+8. **Commit messages and pull request descriptions state checkable facts:**
    what changed, why, and the numbers behind it.

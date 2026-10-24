@@ -29,7 +29,7 @@ Requires Node.js 22 or later. Not yet published to npm; run it from a clone:
 
 ```sh
 git clone https://github.com/nhinata/bumpvet.git && cd bumpvet
-npm install && npm run build
+npm ci --ignore-scripts && npm run build
 
 # In your project: compare package-lock.json with the one at HEAD
 node /path/to/bumpvet/dist/cli.js

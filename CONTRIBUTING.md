@@ -42,7 +42,8 @@ scripts here.
 | `npm run eval`         | measure false positives on popular packages (online) |
 
 CI runs `format:check`, `lint`, `typecheck`, `test` and `build` on Node.js 22,
-24 and 26. Run them before pushing.
+24 and 26, then starts the built CLI (`node dist/cli.js --help`). Run them
+before pushing.
 
 ## Pull requests
 
@@ -81,7 +82,8 @@ Development dependencies are fine.
 
 **Decisions are pure; I/O stays at the edges.** `signals.ts`, `verdict.ts` and
 `lockfile.ts` take values and return values. Network access is in
-`registry.ts`, and git, files, arguments and exit codes are in `cli.ts`. A new
+`registry.ts`, and git, files, arguments and exit codes are in `run.ts` (`cli.ts`
+only starts it). A new
 signal should not need a new kind of I/O; if it does, that is a design
 discussion first.
 
@@ -108,7 +110,7 @@ observed (`publisher-changed`), not what to do about it.
 - Tests never touch the network. Use the fakes in `test/helpers.ts`
   (`packument`, `fakeRegistry`, `lockfile`).
 - Test behavior through the public functions (`diffLockfiles`,
-  `computeSignals`, `decide`, `vetChanges`), not private helpers.
+  `computeSignals`, `decide`, `vetChanges`, `runCli`), not private helpers.
 - A bug fix comes with a test that fails without it.
 - `test/incidents.test.ts` replays real incidents. Say where each value comes
   from: the live registry, or a named public report. If a value is a guess,
