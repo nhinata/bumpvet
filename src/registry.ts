@@ -88,7 +88,7 @@ export function slim(raw: unknown, name: string): Packument {
           ),
         dist: {
           integrity: str(dist.integrity),
-          sha1: sha1Integrity(str(dist.shasum)),
+          shasum: str(dist.shasum),
           tarball: str(dist.tarball),
           attestations: dist.attestations ? true : undefined,
         },
@@ -96,11 +96,4 @@ export function slim(raw: unknown, name: string): Packument {
     }
   }
   return { name: str(raw.name) || name, time, versions };
-}
-
-/** The registry's hex `shasum` as an integrity string (`sha1-<base64>`). */
-function sha1Integrity(shasum: string | undefined): string | undefined {
-  return shasum && /^[0-9a-f]{40}$/i.test(shasum)
-    ? `sha1-${Buffer.from(shasum, 'hex').toString('base64')}`
-    : undefined;
 }

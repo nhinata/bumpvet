@@ -3,8 +3,17 @@ import type { Change } from './types.js';
 
 const REGISTRY = 'https://registry.npmjs.org/';
 
-// A package name: an optional scope and one segment, neither starting with "." (no path tricks).
-const NAME = /^(?:@[^/@\s.][^/@\s]*\/)?[^/@\s.][^/@\s]*$/;
+/**
+ * A package name bumpvet can look up: an optional `@scope/` and a name, each
+ * a segment that URL encoding leaves alone (so no `%`, `#`, `?`, `\\` or `/`)
+ * and that does not start with "." (no path tricks). The name goes into the
+ * registry URL as it is.
+ */
+function validName(name: string): boolean {
+  const segments = name.startsWith('@') ? name.slice(1).split('/') : [name];
+  if (segments.length !== (name.startsWith('@') ? 2 : 1)) return false;
+  return segments.every((s) => s !== '' && !s.startsWith('.') && encodeURIComponent(s) === s);
+}
 
 /**
  * Where an entry comes from, when that is not the public registry. A registry
@@ -12,7 +21,7 @@ const NAME = /^(?:@[^/@\s.][^/@\s]*\/)?[^/@\s.][^/@\s]*$/;
  * the registry itself (see `tarball-mismatch` in signals.ts).
  */
 function elsewhere(name: string, resolved?: string, integrity?: string): string | undefined {
-  if (!NAME.test(name)) return `invalid package name ${JSON.stringify(name)}`;
+  if (!validName(name)) return `invalid package name ${JSON.stringify(name)}`;
   // npm leaves `resolved` out for registry packages with omit-lockfile-registry-resolved.
   if (resolved === undefined) return integrity ? undefined : 'unknown source';
   if (!resolved.startsWith(REGISTRY)) return resolved || 'unknown source';
@@ -72,14 +81,14 @@ export function parseLockfile(text: string, label = 'lockfile'): Map<string, Loc
 /**
  * True when two entries of the same version would install the same thing. With
  * an integrity on both sides npm checks the content against it, so equal
- * integrities are enough. Otherwise only the same URL, recorded on both sides,
- * is the same thing: a missing field must not match anything.
+ * integrities are enough. Otherwise the URLs must be equal, and a field one
+ * side has and the other lacks counts as a difference.
  */
 function sameArtifact(a: LockPackage, b: LockPackage): boolean {
   if (a.elsewhere !== b.elsewhere) return false;
   if (a.integrity && b.integrity) return a.integrity === b.integrity;
   if (a.integrity || b.integrity) return false;
-  return !!a.resolved && a.resolved === b.resolved;
+  return a.resolved === b.resolved;
 }
 
 /**

@@ -60,7 +60,9 @@ export function computeSignals(
   }
 
   // The registry's hash in the lockfile's algorithm: sha512 usually, sha1 for old lockfiles.
-  const expected = change.integrity?.startsWith('sha1-') ? next.dist?.sha1 : next.dist?.integrity;
+  const expected = change.integrity?.startsWith('sha1-')
+    ? sha1Integrity(next.dist?.shasum)
+    : next.dist?.integrity;
   const comparable = !!change.integrity && !!expected && sameAlgorithm(change.integrity, expected);
   // One integrity signal is enough; the lockfile-to-lockfile one above is the more direct.
   if (
@@ -182,4 +184,11 @@ function formatAge(hours: number): string {
  */
 function own<T>(map: Record<string, T>, key: string): T | undefined {
   return Object.hasOwn(map, key) ? map[key] : undefined;
+}
+
+/** The registry's hex `shasum` as an integrity string (`sha1-<base64>`). */
+function sha1Integrity(shasum: string | undefined): string | undefined {
+  return shasum && /^[0-9a-f]{40}$/i.test(shasum)
+    ? `sha1-${Buffer.from(shasum, 'hex').toString('base64')}`
+    : undefined;
 }

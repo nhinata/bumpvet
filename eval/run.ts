@@ -7,7 +7,7 @@
  *
  *   npm run eval [-- --per-package 10] [--baseline 5]
  */
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { slim } from '../src/registry.js';
@@ -36,7 +36,9 @@ async function load(name: string): Promise<Packument> {
   const text = await res.text();
   const packument = slim(JSON.parse(text), name); // check it before caching it
   mkdirSync(CACHE, { recursive: true });
-  writeFileSync(file, text);
+  // Write and rename, so an interrupted run never leaves half a file in the cache.
+  writeFileSync(`${file}.tmp`, text);
+  renameSync(`${file}.tmp`, file);
   return packument;
 }
 

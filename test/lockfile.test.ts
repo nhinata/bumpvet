@@ -51,11 +51,21 @@ describe('parseLockfile', () => {
       );
     });
 
-    it('is not trusted for a name with a path in it', () => {
-      expect(from({ name: 'x/y/../lodash', integrity: 'sha512-x' })).toBe(
-        'invalid package name "x/y/../lodash"',
-      );
-    });
+    it.each(['x/y/../lodash', '%2e%2e', 'foo#bar', 'foo?x=1', 'foo\\bar', '.hidden', '@scope/a/b'])(
+      'is not trusted for the name %j, which would not look itself up in the registry',
+      (name) => {
+        expect(from({ name, integrity: 'sha512-x' })).toBe(
+          `invalid package name ${JSON.stringify(name)}`,
+        );
+      },
+    );
+
+    it.each(['lodash', '@ctrl/tinycolor', 'JSONStream', 'a.b_c-d~e'])(
+      'accepts the name %j',
+      (name) => {
+        expect(from({ name, integrity: 'sha512-x' })).toBeUndefined();
+      },
+    );
   });
 
   it('skips entries and fields of the wrong type', () => {
@@ -219,10 +229,11 @@ describe('diffLockfiles', () => {
     });
 
     it.each([
-      ['a git dependency', 'git+ssh://git@github.com/x/ms.git#abc'],
-      ['a file: dependency', 'file:../ms'],
-    ])('for %s that did not change', (_, resolved) => {
-      const text = one({ resolved, integrity: undefined });
+      ['a git dependency', { resolved: 'git+ssh://git@github.com/x/ms.git#abc' }],
+      ['a file: dependency', { resolved: 'file:../ms' }],
+      ['an entry with neither `resolved` nor an integrity', { resolved: undefined }],
+    ])('for %s that did not change', (_, entry) => {
+      const text = one({ ...entry, integrity: undefined });
       expect(diffLockfiles(text, text)).toEqual([]);
     });
   });

@@ -62,6 +62,5 @@ export interface VersionManifest {
   version: string;
   _npmUser?: { name?: string };
   scripts?: Record<string, string>;
-  /** `sha1` is the registry's `shasum` as an integrity string, for lockfiles that record sha1. */
-  dist?: { integrity?: string; sha1?: string; tarball?: string; attestations?: unknown };
+  dist?: { integrity?: string; shasum?: string; tarball?: string; attestations?: unknown };
 }

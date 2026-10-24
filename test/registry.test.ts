@@ -30,7 +30,12 @@ describe('slim', () => {
           version: '1.0.0',
           _npmUser: { name: 'alice' },
           scripts: { postinstall: 'node x.js' },
-          dist: { integrity: 'sha512-x', tarball: 'https://…', attestations: true },
+          dist: {
+            integrity: 'sha512-x',
+            shasum: undefined,
+            tarball: 'https://…',
+            attestations: true,
+          },
         },
       },
     });
@@ -46,7 +51,12 @@ describe('slim', () => {
       version: '1.0.0',
       _npmUser: undefined,
       scripts: undefined,
-      dist: { integrity: undefined, tarball: undefined, attestations: undefined },
+      dist: {
+        integrity: undefined,
+        shasum: undefined,
+        tarball: undefined,
+        attestations: undefined,
+      },
     });
   });
 
@@ -81,15 +91,6 @@ describe('slim', () => {
     });
   });
 
-  it("turns the registry's hex shasum into a sha1 integrity", () => {
-    const p = slim(
-      { versions: { '1.0.0': { dist: { shasum: 'ab8ece0c4062da5f6d2fa1d07fc4cdb5f8b9b25b' } } } },
-      'pkg',
-    );
-    // async@0.1.0's shasum
-    expect(p.versions['1.0.0']?.dist?.sha1).toBe('sha1-q47ODEBi2l9tL6HQf8TNtfi5sls=');
-  });
-
   it('drops fields of the wrong type', () => {
     const odd = {
       name: 42,
@@ -111,7 +112,12 @@ describe('slim', () => {
           version: '1.1.0',
           _npmUser: undefined,
           scripts: { preinstall: 'node p.js' },
-          dist: { integrity: undefined, tarball: undefined, attestations: undefined },
+          dist: {
+            integrity: undefined,
+            shasum: undefined,
+            tarball: undefined,
+            attestations: undefined,
+          },
         },
       },
     });

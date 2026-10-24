@@ -270,7 +270,8 @@ describe('computeSignals', () => {
 
     it('compares a sha1 integrity with the registry shasum', () => {
       const old = packument('lodash', [{ version: '1.2.0', time: '2025-12-01T00:00:00Z' }]);
-      old.versions['1.2.0']!.dist!.sha1 = 'sha1-good';
+      // async@0.1.0's shasum, and the same hash as a lockfile writes it
+      old.versions['1.2.0']!.dist!.shasum = 'ab8ece0c4062da5f6d2fa1d07fc4cdb5f8b9b25b';
       const change = (integrity: string) => ({
         name: 'lodash',
         from: null,
@@ -278,7 +279,9 @@ describe('computeSignals', () => {
         integrity,
         resolved: 'https://registry.npmjs.org/elsewhere.tgz',
       });
-      expect(ids(computeSignals(change('sha1-good'), old, { now }))).toEqual([]);
+      expect(
+        ids(computeSignals(change('sha1-q47ODEBi2l9tL6HQf8TNtfi5sls='), old, { now })),
+      ).toEqual([]);
       expect(ids(computeSignals(change('sha1-evil'), old, { now }))).toEqual([
         'integrity-mismatch',
       ]);
