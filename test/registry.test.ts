@@ -150,6 +150,13 @@ describe('registryFetcher', () => {
     ).rejects.toThrow('terminated');
   });
 
+  it('names the package when the request itself fails', async () => {
+    const down = () => Promise.reject(new TypeError('fetch failed'));
+    await expect(
+      registryFetcher('https://r/', down as unknown as typeof fetch)('pkg'),
+    ).rejects.toThrow('fetching pkg from the registry failed: fetch failed');
+  });
+
   it('fails on other errors', async () => {
     await expect(
       registryFetcher('https://r/', respond(503) as unknown as typeof fetch)('pkg'),

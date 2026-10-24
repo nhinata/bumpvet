@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, statSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { registryFetcher, type FetchPackument } from './registry.js';
 import { formatJson, formatText } from './report.js';
@@ -89,7 +89,9 @@ function whyGitFailed(err: unknown): string {
 /** The lockfile at `ref`, or null when it did not exist there (every package is then new). */
 function lockfileAt(cwd: string, ref: string): string | null {
   // Spawning git in a missing directory fails with ENOENT too; say which it is.
-  if (!existsSync(cwd)) throw new Error(`working directory ${cwd} does not exist`);
+  if (!existsSync(cwd) || !statSync(cwd).isDirectory()) {
+    throw new Error(`working directory ${cwd} is not a directory`);
+  }
   let prefix: string;
   try {
     prefix = git(cwd, ['rev-parse', '--show-prefix']).trim();
@@ -118,18 +120,26 @@ function lockfileAt(cwd: string, ref: string): string | null {
   try {
     commit = git(cwd, ['rev-parse', '--verify', `${ref}^{commit}`]).trim();
   } catch (err) {
+    let shallow = false;
+    try {
+      shallow = git(cwd, ['rev-parse', '--is-shallow-repository']).trim() === 'true';
+    } catch {
+      // only for the hint
+    }
+    const hint = shallow ? ' (this is a shallow clone: fetch the commit first)' : '';
     throw new Error(
-      `${ref} does not name a commit in this repository: ${whyGitFailed(err)} ` +
-        '(in a shallow clone, fetch it first)',
-      { cause: err },
+      `${ref} does not name a commit in this repository: ${whyGitFailed(err)}${hint}`,
+      {
+        cause: err,
+      },
     );
   }
-  const object = `${ref}:${prefix}package-lock.json`;
+  const object = `${commit}:${prefix}package-lock.json`;
   try {
-    return git(cwd, ['show', `${commit}:${prefix}package-lock.json`]);
+    return git(cwd, ['show', object]);
   } catch (err) {
     if (/does not exist|exists on disk, but not in/.test(stderrOf(err))) return null;
-    throw new Error(`git show ${object} failed: ${whyGitFailed(err)}`, { cause: err });
+    throw new Error(`git show ${object} (${ref}) failed: ${whyGitFailed(err)}`, { cause: err });
   }
 }
 

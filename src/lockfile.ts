@@ -8,19 +8,22 @@ const NAME = /^(?:@[^/@\s.][^/@\s]*\/)?[^/@\s.][^/@\s]*$/;
 
 /**
  * Where an entry really comes from, when that is not the public registry
- * package its name says. A registry entry is trusted only if its URL is that
- * package's and it has an integrity: otherwise `name` could claim one package
- * while `resolved` fetches another.
+ * package its name says. A registry URL is trusted only if its path, parsed as
+ * a URL (where `..`, `%2e%2e` and `\` all count), is a tarball of that very
+ * package: otherwise `name` could claim one package while `resolved` fetches
+ * another.
  */
 function elsewhere(name: string, resolved?: string, integrity?: string): string | undefined {
   if (!NAME.test(name)) return `invalid package name ${JSON.stringify(name)}`;
   // npm leaves `resolved` out for registry packages with omit-lockfile-registry-resolved.
   if (resolved === undefined) return integrity ? undefined : 'unknown source';
-  if (!resolved.startsWith(REGISTRY)) return resolved;
-  if (!resolved.startsWith(`${REGISTRY}${name}/-/`)) return `${resolved} (not ${name})`;
-  if (!integrity) return `${resolved} (no integrity)`;
+  if (!resolved.startsWith(REGISTRY)) return resolved || 'unknown source';
+  const tarball = new RegExp(`^/${escapeRegExp(name)}/-/[^/]+\\.tgz$`);
+  if (!tarball.test(new URL(resolved).pathname)) return `${resolved} (not ${name})`;
   return undefined;
 }
+
+const escapeRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 export interface LockPackage {
   name: string;

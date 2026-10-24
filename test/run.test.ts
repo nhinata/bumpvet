@@ -231,7 +231,20 @@ describe('errors exit 2 with a message', () => {
   it('when the working directory does not exist', async () => {
     const r = await run([], join(tempDir(), 'gone'));
     expect(r.code).toBe(2);
-    expect(r.stderr).toMatch(/working directory .+ does not exist/);
+    expect(r.stderr).toMatch(/working directory .+ is not a directory/);
+  });
+
+  it('when the working directory is a file', async () => {
+    const file = join(tempDir(), 'file');
+    writeFileSync(file, '');
+    const r = await run([], file);
+    expect(r.stderr).toMatch(/working directory .+ is not a directory/);
+  });
+
+  it('without a shallow-clone hint when the ref is just wrong', async () => {
+    const r = await run(['--base', 'mian'], repo(v1));
+    expect(r.stderr).toMatch(/mian does not name a commit/);
+    expect(r.stderr).not.toMatch(/shallow/);
   });
 
   it('for a --base ref that does not exist', async () => {

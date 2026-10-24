@@ -14,10 +14,16 @@ export function registryFetcher(
     let p = cache.get(name);
     if (!p) {
       p = (async () => {
-        const res = await fetchImpl(base + name.replace('/', '%2f'), {
-          headers: { accept: 'application/json' },
-          signal: AbortSignal.timeout(60_000),
-        });
+        let res: Response;
+        try {
+          res = await fetchImpl(base + name.replace('/', '%2f'), {
+            headers: { accept: 'application/json' },
+            signal: AbortSignal.timeout(60_000),
+          });
+        } catch (err) {
+          const reason = err instanceof Error ? err.message : String(err);
+          throw new Error(`fetching ${name} from the registry failed: ${reason}`, { cause: err });
+        }
         if (res.status === 404) return null;
         if (!res.ok) throw new Error(`registry returned ${res.status} for ${name}`);
         // Read first, then parse: a timeout or reset mid-body is not "invalid JSON".

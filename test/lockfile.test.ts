@@ -159,10 +159,28 @@ describe('parseLockfile', () => {
       'https://registry.npmjs.org/evil/-/evil-1.0.0.tgz (not lodash)',
     ],
     [
-      'a registry URL with no integrity',
-      { resolved: 'https://registry.npmjs.org/a/-/a-1.0.0.tgz', integrity: undefined },
-      'https://registry.npmjs.org/a/-/a-1.0.0.tgz (no integrity)',
+      'a URL that reaches another package through ..',
+      {
+        name: 'lodash',
+        resolved: 'https://registry.npmjs.org/lodash/-/../../evil/-/evil-1.0.0.tgz',
+      },
+      'https://registry.npmjs.org/lodash/-/../../evil/-/evil-1.0.0.tgz (not lodash)',
     ],
+    [
+      'a URL that reaches another package through %2e%2e',
+      {
+        name: 'lodash',
+        resolved: 'https://registry.npmjs.org/lodash/-/%2e%2e/%2e%2e/evil/-/e.tgz',
+      },
+      'https://registry.npmjs.org/lodash/-/%2e%2e/%2e%2e/evil/-/e.tgz (not lodash)',
+    ],
+    [
+      // URLs treat "\\" as "/", so this has no "/" as text but reaches evil
+      'a URL that reaches another package through backslashes',
+      { name: 'lodash', resolved: 'https://registry.npmjs.org/lodash/-/..\\..\\evil\\-\\e.tgz' },
+      'https://registry.npmjs.org/lodash/-/..\\..\\evil\\-\\e.tgz (not lodash)',
+    ],
+    ['an empty `resolved`', { resolved: '', integrity: undefined }, 'unknown source'],
     ['a name with a path in it', { name: 'x/y/../lodash' }, 'invalid package name "x/y/../lodash"'],
   ])('does not trust %s', (_, fields, source) => {
     const text = lockfile({ 'node_modules/a': { version: '1.0.0', ...fields } });
@@ -177,6 +195,20 @@ describe('parseLockfile', () => {
       },
     });
     expect(parseLockfile(text).get('node_modules/@ctrl/tinycolor')?.elsewhere).toBeUndefined();
+  });
+
+  it('trusts a registry package with no integrity at its own URL', () => {
+    // npm sometimes writes registry entries without an integrity.
+    const text = lockfile({ 'node_modules/a': { version: '1.0.0', integrity: undefined } });
+    expect(parseLockfile(text).get('node_modules/a')?.elsewhere).toBeUndefined();
+  });
+
+  it('trusts an npm alias, which names the aliased package', () => {
+    const text = lockfile({ 'node_modules/my-alias': { version: '5.3.0', name: 'chalk' } });
+    expect(parseLockfile(text).get('node_modules/my-alias')).toMatchObject({
+      name: 'chalk',
+      elsewhere: undefined,
+    });
   });
 
   it('uses the path when the name is empty', () => {
