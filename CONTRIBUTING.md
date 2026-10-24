@@ -73,8 +73,10 @@ rest is here.
 
 **Outside data is untrusted.** Registry JSON and lockfiles come from the
 network or from a pull request. Type them as data where nothing is guaranteed
-(see `RawPackument` in `src/registry.ts`) and narrow them on the way in, so
-the fallbacks for missing fields are visible to the type checker.
+(`slim()` in `src/registry.ts` takes the registry response as `unknown` and
+keeps each field only if it has the expected type). Look entries up with
+`Object.hasOwn`, never a plain index: a key from outside data such as
+`constructor` would otherwise find an inherited member.
 
 **No runtime dependencies.** `dependencies` in `package.json` stays empty. A
 supply-chain tool that pulls in a supply chain of its own defeats the point.

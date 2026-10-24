@@ -69,32 +69,51 @@ function git(cwd: string, args: string[]): string {
   });
 }
 
+interface GitError {
+  stderr?: string;
+  signal?: string | null;
+  code?: string;
+}
+
+const stderrOf = (err: unknown) => (err as GitError).stderr ?? '';
+
+/** Why a git command failed: its own message, and how it ended if not by itself. */
+function whyGitFailed(err: unknown): string {
+  const e = err as GitError;
+  const parts = [stderrOf(err).trim()];
+  if (e.signal) parts.push(`killed by ${e.signal}`);
+  if (e.code === 'ENOBUFS') parts.push('output too large');
+  return parts.filter(Boolean).join('; ') || (err instanceof Error ? err.message : String(err));
+}
+
 /** The lockfile at `ref`, or null when it did not exist there (every package is then new). */
 function lockfileAt(cwd: string, ref: string): string | null {
   let prefix: string;
   try {
     prefix = git(cwd, ['rev-parse', '--show-prefix']).trim();
-  } catch {
-    throw new Error(
-      'not inside a git repository; compare two files instead: bumpvet <old-lock> <new-lock>',
-    );
+  } catch (err) {
+    if (/not a git repository/.test(stderrOf(err))) {
+      throw new Error(
+        'not inside a git repository; compare two files instead: bumpvet <old-lock> <new-lock>',
+        { cause: err },
+      );
+    }
+    throw new Error(`git rev-parse failed: ${whyGitFailed(err)}`, { cause: err });
   }
   if (ref === 'HEAD') {
     try {
       git(cwd, ['rev-parse', '--verify', 'HEAD']);
-    } catch {
-      return null; // no commits yet
+    } catch (err) {
+      if (/Needed a single revision/.test(stderrOf(err))) return null; // no commits yet
+      throw new Error(`git rev-parse --verify HEAD failed: ${whyGitFailed(err)}`, { cause: err });
     }
   }
   const object = `${ref}:${prefix}package-lock.json`;
   try {
     return git(cwd, ['show', object]);
   } catch (err) {
-    const stderr = (err as { stderr?: string }).stderr ?? '';
-    if (/does not exist|exists on disk, but not in/.test(stderr)) return null;
-    // git's own message when it gave one; otherwise why running it failed (a signal, a buffer limit).
-    const reason = stderr.trim() || (err instanceof Error ? err.message : String(err));
-    throw new Error(`git show ${object} failed: ${reason}`, { cause: err });
+    if (/does not exist|exists on disk, but not in/.test(stderrOf(err))) return null;
+    throw new Error(`git show ${object} failed: ${whyGitFailed(err)}`, { cause: err });
   }
 }
 
@@ -102,7 +121,8 @@ function readLockfile(cwd: string, path: string): string {
   try {
     return readFileSync(resolve(cwd, path), 'utf8');
   } catch (err) {
-    const reason = err instanceof Error ? err.message : String(err);
+    // The code (ENOENT, EISDIR, EACCES) says why; the message would repeat the path.
+    const reason = (err as { code?: string }).code ?? String(err);
     throw new Error(`cannot read ${path} (in ${cwd}): ${reason}`, { cause: err });
   }
 }

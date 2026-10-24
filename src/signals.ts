@@ -46,7 +46,7 @@ export function computeSignals(
     });
   }
 
-  const next = packument?.versions[change.to];
+  const next = packument ? own(packument.versions, change.to) : undefined;
   if (!packument || !next) {
     return [
       ...signals,
@@ -78,7 +78,7 @@ export function computeSignals(
 
   const earlier = versionsBefore(packument, change.to);
   const reference =
-    (change.from !== null ? packument.versions[change.from] : undefined) ?? earlier.at(-1);
+    (change.from !== null ? own(packument.versions, change.from) : undefined) ?? earlier.at(-1);
 
   const publisher = next._npmUser?.name;
   const usual = new Set(
@@ -107,7 +107,7 @@ export function computeSignals(
     });
   }
 
-  const published = packument.time[change.to];
+  const published = own(packument.time, change.to);
   if (published) {
     const hours = (now.getTime() - Date.parse(published)) / 3_600_000;
     if (hours >= 0 && hours < freshHours) {
@@ -140,12 +140,14 @@ export function computeSignals(
 
 /** Versions published before `version`, oldest first. */
 function versionsBefore(packument: Packument, version: string): VersionManifest[] {
-  const cutoff = packument.time[version];
+  const cutoff = own(packument.time, version);
   if (!cutoff) return [];
   return Object.entries(packument.time)
-    .filter(([v, t]) => v !== 'created' && v !== 'modified' && t < cutoff && packument.versions[v])
+    .filter(
+      ([v, t]) => v !== 'created' && v !== 'modified' && t < cutoff && own(packument.versions, v),
+    )
     .sort((a, b) => a[1].localeCompare(b[1]))
-    .map(([v]) => packument.versions[v]!);
+    .map(([v]) => own(packument.versions, v)!);
 }
 
 function sameAlgorithm(a: string, b: string): boolean {
@@ -154,4 +156,12 @@ function sameAlgorithm(a: string, b: string): boolean {
 
 function formatAge(hours: number): string {
   return hours < 1 ? `${Math.round(hours * 60)}m` : `${Math.round(hours)}h`;
+}
+
+/**
+ * An entry the map itself holds. Keys come from lockfiles and the registry, so
+ * a plain index would also find inherited members: `versions['constructor']`.
+ */
+function own<T>(map: Record<string, T>, key: string): T | undefined {
+  return Object.hasOwn(map, key) ? map[key] : undefined;
 }

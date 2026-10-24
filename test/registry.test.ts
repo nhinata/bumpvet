@@ -37,14 +37,32 @@ describe('slim', () => {
   });
 
   it('tolerates missing fields, using the requested name', () => {
-    expect(slim({}, 'pkg')).toEqual({ name: 'pkg', time: {}, versions: {} });
-    expect(slim(null, 'pkg')).toEqual({ name: 'pkg', time: {}, versions: {} });
+    expect(slim({ name: '', versions: {} }, 'pkg')).toEqual({
+      name: 'pkg',
+      time: {},
+      versions: {},
+    });
     expect(slim({ versions: { '1.0.0': {} } }, 'pkg').versions['1.0.0']).toEqual({
       version: '1.0.0',
       _npmUser: undefined,
       scripts: undefined,
       dist: { integrity: undefined, attestations: undefined },
     });
+  });
+
+  it.each([[null], [[]], ['text'], [{ error: 'not found' }]])(
+    'rejects a response that is not a packument: %j',
+    (raw) => {
+      expect(() => slim(raw, 'pkg')).toThrow(
+        'registry sent something that is not a packument for pkg',
+      );
+    },
+  );
+
+  it('keeps a `__proto__` key as an ordinary key', () => {
+    const p = slim(JSON.parse('{"versions": {"__proto__": {"_npmUser": {"name": "x"}}}}'), 'pkg');
+    expect(Object.getPrototypeOf(p.versions)).toBeNull();
+    expect(Object.keys(p.versions)).toEqual(['__proto__']);
   });
 
   it('reads an unpublished package, whose `time` holds an object', () => {
@@ -111,6 +129,13 @@ describe('registryFetcher', () => {
     expect(
       await registryFetcher('https://r/', respond(404) as unknown as typeof fetch)('nope'),
     ).toBeNull();
+  });
+
+  it('names the package when the body is not JSON', async () => {
+    const html = () => Promise.resolve(new Response('<!DOCTYPE html>', { status: 200 }));
+    await expect(
+      registryFetcher('https://r/', html as unknown as typeof fetch)('pkg'),
+    ).rejects.toThrow('registry sent invalid JSON for pkg');
   });
 
   it('fails on other errors', async () => {

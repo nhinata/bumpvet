@@ -214,6 +214,16 @@ describe('computeSignals', () => {
     });
   });
 
+  it.each(['constructor', 'toString', '__proto__'])(
+    'flags version %j, which only an inherited member would match, as not in the registry',
+    (version) => {
+      const p = packument('pkg', history);
+      expect(ids(computeSignals({ name: 'pkg', from: '1.1.0', to: version }, p, { now }))).toEqual([
+        'not-in-registry',
+      ]);
+    },
+  );
+
   it('flags a version the registry does not serve', () => {
     const p = packument('pkg', [
       ...history,

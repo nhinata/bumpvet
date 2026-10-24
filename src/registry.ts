@@ -19,7 +19,13 @@ export function registryFetcher(
         });
         if (res.status === 404) return null;
         if (!res.ok) throw new Error(`registry returned ${res.status} for ${name}`);
-        return slim(await res.json(), name);
+        let json: unknown;
+        try {
+          json = await res.json();
+        } catch (err) {
+          throw new Error(`registry sent invalid JSON for ${name}`, { cause: err });
+        }
+        return slim(json, name);
       })();
       cache.set(name, p);
     }
@@ -41,12 +47,17 @@ const str = (v: unknown): string | undefined => (typeof v === 'string' ? v : und
  * cached for the whole run.
  */
 export function slim(raw: unknown, name: string): Packument {
-  const json = isObject(raw) ? raw : {};
-  const time: Record<string, string> = {};
+  // Anything else (null, an array, `{"error": ...}`) is a broken registry, not a package to block.
+  if (!isObject(raw) || (!isObject(raw.versions) && !isObject(raw.time))) {
+    throw new Error(`registry sent something that is not a packument for ${name}`);
+  }
+  const json = raw;
+  // No prototype: a `__proto__` key from the registry stays an ordinary key.
+  const time = Object.create(null) as Record<string, string>;
   if (isObject(json.time)) {
     for (const [k, v] of Object.entries(json.time)) if (typeof v === 'string') time[k] = v;
   }
-  const versions: Record<string, VersionManifest> = {};
+  const versions = Object.create(null) as Record<string, VersionManifest>;
   if (isObject(json.versions)) {
     for (const [v, m] of Object.entries(json.versions)) {
       if (!isObject(m)) continue;
@@ -71,5 +82,5 @@ export function slim(raw: unknown, name: string): Packument {
       };
     }
   }
-  return { name: str(json.name) ?? name, time, versions };
+  return { name: str(json.name) || name, time, versions };
 }
