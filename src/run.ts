@@ -90,7 +90,14 @@ function whyGitFailed(err: unknown): string {
 /** The lockfile at `ref`, or null when it did not exist there (every package is then new). */
 function lockfileAt(cwd: string, ref: string): string | null {
   // Spawning git in a missing directory fails with ENOENT too; say which it is.
-  const stat = statSync(cwd, { throwIfNoEntry: false });
+  let stat;
+  try {
+    stat = statSync(cwd, { throwIfNoEntry: false });
+  } catch (err) {
+    // EACCES and the like: throwIfNoEntry only keeps statSync quiet about a missing entry.
+    const code = (err as { code?: string }).code ?? messageOf(err);
+    throw new Error(`working directory ${cwd} cannot be used: ${code}`, { cause: err });
+  }
   if (!stat) throw new Error(`working directory ${cwd} does not exist`);
   if (!stat.isDirectory()) throw new Error(`working directory ${cwd} is not a directory`);
   let prefix: string;

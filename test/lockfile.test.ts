@@ -193,6 +193,28 @@ describe('parseLockfile', () => {
     expect(diffLockfiles(before, after)).toHaveLength(1);
   });
 
+  it.each([
+    ['a git dependency', 'git+ssh://git@github.com/x/a.git#abc'],
+    ['a file: dependency', 'file:../a'],
+  ])('does not report %s that did not change', (_, resolved) => {
+    const text = lockfile({
+      'node_modules/a': { version: '1.0.0', resolved, integrity: undefined },
+    });
+    expect(diffLockfiles(text, text)).toEqual([]);
+  });
+
+  it('reports a git dependency that moved to another commit at the same version', () => {
+    const at = (sha: string) =>
+      lockfile({
+        'node_modules/a': {
+          version: '1.0.0',
+          resolved: `git+ssh://git@github.com/x/a.git#${sha}`,
+          integrity: undefined,
+        },
+      });
+    expect(diffLockfiles(at('abc'), at('def'))).toHaveLength(1);
+  });
+
   it('does not report a new `resolved` when the integrity is the same', () => {
     const before = lockfile({ 'node_modules/ms': { version: '2.1.3' } });
     const after = lockfile({

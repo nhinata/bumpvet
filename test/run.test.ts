@@ -253,6 +253,15 @@ describe('errors exit 2 with a message', () => {
     expect(r.stderr).toMatch(/HEAD~1 does not name a commit .+this is a shallow clone/);
   });
 
+  it('when a file is on the working directory path', async () => {
+    const file = join(tempDir(), 'file');
+    writeFileSync(file, '');
+    const r = await run([], join(file, 'sub'));
+    expect(r.code).toBe(2);
+    // Node 22 and 24 report no entry here; Node 20 threw ENOTDIR.
+    expect(r.stderr).toMatch(/working directory .+ (cannot be used: ENOTDIR|does not exist)/);
+  });
+
   it('without a shallow-clone hint when the ref is just wrong', async () => {
     const r = await run(['--base', 'mian'], repo(v1));
     expect(r.stderr).toMatch(/mian does not name a commit/);

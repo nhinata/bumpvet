@@ -79,7 +79,11 @@ export function parseLockfile(text: string, label = 'lockfile'): Map<string, Loc
 function sameArtifact(a: LockPackage, b: LockPackage): boolean {
   if (a.elsewhere !== b.elsewhere) return false;
   if (a.integrity && b.integrity) return a.integrity === b.integrity;
-  return !a.integrity && !b.integrity && !!a.resolved && a.resolved === b.resolved;
+  if (a.integrity || b.integrity) return false;
+  // The URL is `resolved` for a registry entry and `elsewhere` for the rest (git, file:, ...).
+  const url = (p: LockPackage) =>
+    p.resolved ?? (p.elsewhere === 'unknown source' ? undefined : p.elsewhere);
+  return !!url(a) && url(a) === url(b);
 }
 
 /**
