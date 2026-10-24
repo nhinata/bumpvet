@@ -28,7 +28,7 @@ the two with a small table. Nothing from a package is ever executed.
 Requires Node.js 20 or later. Not yet published to npm; run it from a clone:
 
 ```sh
-git clone <this repository> && cd bumpvet
+git clone https://github.com/nhinata/bumpvet.git && cd bumpvet
 npm install && npm run build
 
 # In your project: compare package-lock.json with the one at HEAD
@@ -48,12 +48,12 @@ Exit codes: `0` nothing to block, `1` at least one `BLOCK`, `2` error.
 
 ## How it decides
 
-| Signals | Verdict |
-|---|---|
-| the lockfile's source or integrity was changed for a registry package, or the version is gone from the registry | BLOCK |
-| a content change (new or changed install script) together with an unusual origin or a fresh release | BLOCK |
-| an unusual origin (new publisher, lost provenance, not from the registry) or a content change | REVIEW |
-| nothing, or only a fresh release | OK |
+| Signals                                                                                                         | Verdict |
+| --------------------------------------------------------------------------------------------------------------- | ------- |
+| the lockfile's source or integrity was changed for a registry package, or the version is gone from the registry | BLOCK   |
+| a content change (new or changed install script) together with an unusual origin or a fresh release             | BLOCK   |
+| an unusual origin (new publisher, lost provenance, not from the registry) or a content change                   | REVIEW  |
+| nothing, or only a fresh release                                                                                | OK      |
 
 The signals, the thresholds and the measurements behind them are in
 [DESIGN.md](DESIGN.md). How often bumpvet speaks up on ordinary updates is

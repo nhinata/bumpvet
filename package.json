@@ -16,7 +16,9 @@
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "eval": "tsc -p tsconfig.json && node dist-eval/eval/run.js"
+    "eval": "tsc -p tsconfig.json && node dist-eval/eval/run.js",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "keywords": [
     "npm",
@@ -30,6 +32,7 @@
   "license": "MIT",
   "devDependencies": {
     "@types/node": "20.19.43",
+    "prettier": "3.9.10",
     "typescript": "5.9.3",
     "vitest": "3.2.7"
   },

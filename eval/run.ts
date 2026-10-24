@@ -66,13 +66,22 @@ for (const name of PACKAGES) {
   // Pair each release with the highest earlier version below it, as an upgrade
   // would. Plain time order would pair 5.0.1 -> 4.21.2 for a backport.
   for (const to of stable.slice(-perPackage)) {
-    const from = stable.filter((v) => p.time[v]! < p.time[to]! && compare(v, to) < 0).sort(compare).at(-1);
+    const from = stable
+      .filter((v) => p.time[v]! < p.time[to]! && compare(v, to) < 0)
+      .sort(compare)
+      .at(-1);
     if (!from) continue;
     const change = { name, from, to };
     for (const d of DELAYS) {
       const now = new Date(Date.parse(p.time[change.to]!) + d.hours * 3_600_000);
       const signals = computeSignals(change, p, { now, baselineSize });
-      rows.push({ pkg: name, ...change, delay: d.label, verdict: decide(signals), signals: signals.map((s) => s.id) });
+      rows.push({
+        pkg: name,
+        ...change,
+        delay: d.label,
+        verdict: decide(signals),
+        signals: signals.map((s) => s.id),
+      });
     }
   }
 }
@@ -89,9 +98,11 @@ for (const d of DELAYS) {
   const bySignal = new Map<string, number>();
   for (const r of set) for (const s of r.signals) bySignal.set(s, (bySignal.get(s) ?? 0) + 1);
   console.log('  signals fired:');
-  for (const [s, c] of [...bySignal].sort((a, b) => b[1] - a[1])) console.log(`    ${s.padEnd(18)} ${String(c).padStart(4)}  ${pct(c, n)}`);
+  for (const [s, c] of [...bySignal].sort((a, b) => b[1] - a[1]))
+    console.log(`    ${s.padEnd(18)} ${String(c).padStart(4)}  ${pct(c, n)}`);
 }
 
 const flagged = rows.filter((r) => r.delay === DELAYS[1]!.label && r.verdict !== 'ok');
 console.log(`\n== non-OK at ${DELAYS[1]!.label} (${flagged.length})`);
-for (const r of flagged) console.log(`  ${r.verdict.padEnd(6)} ${r.pkg} ${r.from} -> ${r.to}  [${r.signals.join(', ')}]`);
+for (const r of flagged)
+  console.log(`  ${r.verdict.padEnd(6)} ${r.pkg} ${r.from} -> ${r.to}  [${r.signals.join(', ')}]`);

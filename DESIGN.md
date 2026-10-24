@@ -25,25 +25,25 @@ what it deliberately does not do, and why.
 
 ## Signals
 
-| Signal | Group | Fires when |
-|---|---|---|
-| `publisher-changed` | origin | the account that published the new version published none of the 20 versions before it, and the new version has no provenance |
-| `provenance-lost` | origin | the version being replaced had npm provenance and the new one does not |
-| `fresh-publish` | timing | the new version is less than 72 hours old |
-| `install-scripts` | content | a `preinstall`, `install` or `postinstall` script was added or changed |
-| `not-from-registry` | origin | the package comes from git, a `file:` path, another registry, or an unknown source, so there is nothing to compare it with |
-| `source-changed` | tamper | a package that came from the public registry now comes from somewhere else (how lockfile injection looks) |
-| `integrity-mismatch` | tamper | the lockfile's integrity hash changed for the same version, or differs from the registry's |
-| `not-in-registry` | tamper | the registry does not serve the version (npm removes malicious releases) |
+| Signal               | Group   | Fires when                                                                                                                    |
+| -------------------- | ------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `publisher-changed`  | origin  | the account that published the new version published none of the 20 versions before it, and the new version has no provenance |
+| `provenance-lost`    | origin  | the version being replaced had npm provenance and the new one does not                                                        |
+| `fresh-publish`      | timing  | the new version is less than 72 hours old                                                                                     |
+| `install-scripts`    | content | a `preinstall`, `install` or `postinstall` script was added or changed                                                        |
+| `not-from-registry`  | origin  | the package comes from git, a `file:` path, another registry, or an unknown source, so there is nothing to compare it with    |
+| `source-changed`     | tamper  | a package that came from the public registry now comes from somewhere else (how lockfile injection looks)                     |
+| `integrity-mismatch` | tamper  | the lockfile's integrity hash changed for the same version, or differs from the registry's                                    |
+| `not-in-registry`    | tamper  | the registry does not serve the version (npm removes malicious releases)                                                      |
 
 ## Verdict table
 
-| Signals | Verdict |
-|---|---|
-| any tamper signal | BLOCK |
-| content, together with origin or timing | BLOCK |
-| origin or content | REVIEW |
-| nothing, or timing only | OK |
+| Signals                                 | Verdict |
+| --------------------------------------- | ------- |
+| any tamper signal                       | BLOCK   |
+| content, together with origin or timing | BLOCK   |
+| origin or content                       | REVIEW  |
+| nothing, or timing only                 | OK      |
 
 ## Decisions and the numbers behind them
 
@@ -60,7 +60,7 @@ what it deliberately does not do, and why.
   cases were projects moving to trusted publishing (`GitHub Actions`). A
   provenance release is built by the repository's CI, which a stolen token
   alone cannot do. This halved publisher false positives.
-  *Trade-off:* someone with write access to the repository can publish with
+  _Trade-off:_ someone with write access to the repository can publish with
   valid provenance; bumpvet does not defend against that case through this
   signal.
 - **Removing an install script is not a signal.** It takes power away.

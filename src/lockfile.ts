@@ -25,24 +25,35 @@ export interface LockPackage {
  * downloaded on their own.
  */
 export function parseLockfile(text: string): Map<string, LockPackage> {
-  const lock = JSON.parse(text) as { lockfileVersion?: number; packages?: Record<string, LockEntry> };
+  const lock = JSON.parse(text) as {
+    lockfileVersion?: number;
+    packages?: Record<string, LockEntry>;
+  };
   if (!lock.packages || (lock.lockfileVersion ?? 0) < 2) {
     throw new Error('only package-lock.json with lockfileVersion 2 or 3 is supported');
   }
   const out = new Map<string, LockPackage>();
   for (const [path, entry] of Object.entries(lock.packages)) {
     if (!path.includes('node_modules/') || entry.link || entry.inBundle || !entry.version) continue;
-    const name = entry.name ?? path.slice(path.lastIndexOf('node_modules/') + 'node_modules/'.length);
+    const name =
+      entry.name ?? path.slice(path.lastIndexOf('node_modules/') + 'node_modules/'.length);
     // npm leaves `resolved` out for registry packages with omit-lockfile-registry-resolved.
     const fromRegistry = entry.resolved ? entry.resolved.startsWith(REGISTRY) : !!entry.integrity;
-    out.set(path, { name, version: entry.version, integrity: entry.integrity, elsewhere: fromRegistry ? undefined : (entry.resolved ?? 'unknown source') });
+    out.set(path, {
+      name,
+      version: entry.version,
+      integrity: entry.integrity,
+      elsewhere: fromRegistry ? undefined : (entry.resolved ?? 'unknown source'),
+    });
   }
   return out;
 }
 
 /** True when two entries of the same version would install the same thing. */
 function sameArtifact(a: LockPackage, b: LockPackage): boolean {
-  return a.elsewhere === b.elsewhere && (!a.integrity || !b.integrity || a.integrity === b.integrity);
+  return (
+    a.elsewhere === b.elsewhere && (!a.integrity || !b.integrity || a.integrity === b.integrity)
+  );
 }
 
 /**
@@ -60,11 +71,23 @@ export function diffLockfiles(oldText: string | null, newText: string): Change[]
     if (sameVersion.some((p) => sameArtifact(p, pkg))) continue;
 
     const atPath = before.get(path);
-    const prev = sameVersion[0] ?? (atPath?.name === pkg.name ? atPath : old.find((p) => p.name === pkg.name));
-    const change: Change = { name: pkg.name, from: prev?.version ?? null, to: pkg.version, integrity: pkg.integrity };
+    const prev =
+      sameVersion[0] ?? (atPath?.name === pkg.name ? atPath : old.find((p) => p.name === pkg.name));
+    const change: Change = {
+      name: pkg.name,
+      from: prev?.version ?? null,
+      to: pkg.version,
+      integrity: pkg.integrity,
+    };
     if (pkg.elsewhere) change.source = pkg.elsewhere;
     if (prev?.elsewhere) change.fromSource = prev.elsewhere;
-    if (prev && prev.version === pkg.version && prev.integrity && pkg.integrity && prev.integrity !== pkg.integrity) {
+    if (
+      prev &&
+      prev.version === pkg.version &&
+      prev.integrity &&
+      pkg.integrity &&
+      prev.integrity !== pkg.integrity
+    ) {
       change.fromIntegrity = prev.integrity;
     }
 

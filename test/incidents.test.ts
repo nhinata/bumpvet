@@ -24,7 +24,11 @@ describe('incidents', () => {
       { version: '5.6.0', time: '2025-08-17T07:27:00Z', publisher: 'sindresorhus' },
       { version: '5.6.1', time: '2025-09-08T13:13:00Z', publisher: 'qix' },
     ]);
-    const [r] = await vetChanges([{ name: 'chalk', from: '5.6.0', to: '5.6.1' }], fakeRegistry(p), hourAfter('2025-09-08T13:13:00Z'));
+    const [r] = await vetChanges(
+      [{ name: 'chalk', from: '5.6.0', to: '5.6.1' }],
+      fakeRegistry(p),
+      hourAfter('2025-09-08T13:13:00Z'),
+    );
     expect(r?.signals.map((s) => s.id)).toEqual(['publisher-changed', 'fresh-publish']);
     // Content analysis (v0.2) is what would raise this to BLOCK.
     expect(r?.verdict).toBe('review');
@@ -38,7 +42,11 @@ describe('incidents', () => {
       { version: '4.4.1', time: '2025-05-13T20:56:00Z', publisher: 'qix' },
       { version: '4.4.2', time: '2025-09-08T13:12:00Z', publisher: 'qix' },
     ]);
-    const [r] = await vetChanges([{ name: 'debug', from: '4.4.1', to: '4.4.2' }], fakeRegistry(p), hourAfter('2025-09-08T13:12:00Z'));
+    const [r] = await vetChanges(
+      [{ name: 'debug', from: '4.4.1', to: '4.4.2' }],
+      fakeRegistry(p),
+      hourAfter('2025-09-08T13:12:00Z'),
+    );
     expect(r?.signals.map((s) => s.id)).toEqual(['fresh-publish']);
     expect(r?.verdict).toBe('ok');
   });
@@ -49,9 +57,18 @@ describe('incidents', () => {
     const p = packument('@ctrl/tinycolor', [
       { version: '4.0.4', time: '2024-04-08T17:42:00Z', publisher: 'scttcper' },
       { version: '4.1.0', time: '2024-04-13T19:04:00Z', publisher: 'scttcper' },
-      { version: '4.1.1', time: '2025-09-15T19:52:00Z', publisher: 'scttcper', scripts: { postinstall: 'node bundle.js' } },
+      {
+        version: '4.1.1',
+        time: '2025-09-15T19:52:00Z',
+        publisher: 'scttcper',
+        scripts: { postinstall: 'node bundle.js' },
+      },
     ]);
-    const [r] = await vetChanges([{ name: '@ctrl/tinycolor', from: '4.1.0', to: '4.1.1' }], fakeRegistry(p), hourAfter('2025-09-15T19:52:00Z'));
+    const [r] = await vetChanges(
+      [{ name: '@ctrl/tinycolor', from: '4.1.0', to: '4.1.1' }],
+      fakeRegistry(p),
+      hourAfter('2025-09-15T19:52:00Z'),
+    );
     expect(r?.signals.map((s) => s.id)).toEqual(['fresh-publish', 'install-scripts']);
     expect(r?.verdict).toBe('block');
   });
@@ -62,7 +79,11 @@ describe('incidents', () => {
       { version: '4.1.0', time: '2024-04-13T19:04:00Z', publisher: 'scttcper' },
       { version: '4.1.1', time: '2025-09-15T19:52:00Z', removed: true },
     ]);
-    const [r] = await vetChanges([{ name: '@ctrl/tinycolor', from: '4.1.0', to: '4.1.1' }], fakeRegistry(p), { now: new Date('2026-10-24T00:00:00Z') });
+    const [r] = await vetChanges(
+      [{ name: '@ctrl/tinycolor', from: '4.1.0', to: '4.1.1' }],
+      fakeRegistry(p),
+      { now: new Date('2026-10-24T00:00:00Z') },
+    );
     expect(r?.verdict).toBe('block');
   });
 });

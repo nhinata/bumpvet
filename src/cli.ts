@@ -33,13 +33,19 @@ function parseArgs(argv: string[]): Args {
     } else if (a.startsWith('-')) throw new Error(`unknown option ${a}`);
     else args.files.push(a);
   }
-  if (args.files.length !== 0 && args.files.length !== 2) throw new Error('give either no lockfiles or two');
+  if (args.files.length !== 0 && args.files.length !== 2)
+    throw new Error('give either no lockfiles or two');
   return args;
 }
 
 function git(args: string[]): string {
   // LC_ALL=C keeps git's messages in English so the checks below can read them.
-  return execFileSync('git', args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], maxBuffer: 1 << 30, env: { ...process.env, LC_ALL: 'C' } });
+  return execFileSync('git', args, {
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'pipe'],
+    maxBuffer: 1 << 30,
+    env: { ...process.env, LC_ALL: 'C' },
+  });
 }
 
 /** The lockfile at `ref`, or null when it did not exist there (every package is then new). */
@@ -48,7 +54,9 @@ function lockfileAt(ref: string): string | null {
   try {
     prefix = git(['rev-parse', '--show-prefix']).trim();
   } catch {
-    throw new Error('not inside a git repository; compare two files instead: bumpvet <old-lock> <new-lock>');
+    throw new Error(
+      'not inside a git repository; compare two files instead: bumpvet <old-lock> <new-lock>',
+    );
   }
   if (ref === 'HEAD') {
     try {
