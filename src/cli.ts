@@ -68,17 +68,17 @@ function lockfileAt(ref: string): string | null {
   try {
     return git(['show', `${ref}:${prefix}package-lock.json`]);
   } catch (err) {
-    const stderr = String((err as { stderr?: unknown }).stderr ?? '');
+    const stderr = (err as { stderr?: string }).stderr ?? '';
     if (/does not exist|exists on disk, but not in/.test(stderr)) return null;
-    throw new Error(`git show ${ref}:package-lock.json failed: ${stderr.trim()}`);
+    throw new Error(`git show ${ref}:package-lock.json failed: ${stderr.trim()}`, { cause: err });
   }
 }
 
 function readLockfile(path: string): string {
   try {
     return readFileSync(path, 'utf8');
-  } catch {
-    throw new Error(`cannot read ${path} (in ${process.cwd()})`);
+  } catch (err) {
+    throw new Error(`cannot read ${path} (in ${process.cwd()})`, { cause: err });
   }
 }
 

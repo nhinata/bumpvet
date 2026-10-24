@@ -10,7 +10,7 @@
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { slim } from '../src/registry.js';
+import { slim, type RawPackument } from '../src/registry.js';
 import { computeSignals } from '../src/signals.js';
 import { decide } from '../src/verdict.js';
 import type { Packument, SignalId, Verdict } from '../src/types.js';
@@ -31,14 +31,14 @@ const DELAYS = [
 async function load(name: string): Promise<Packument> {
   const file = join(CACHE, name.replace('/', '__') + '.json');
   try {
-    return slim(JSON.parse(readFileSync(file, 'utf8')) as Packument);
+    return slim(JSON.parse(readFileSync(file, 'utf8')) as RawPackument);
   } catch {
     const res = await fetch('https://registry.npmjs.org/' + name.replace('/', '%2f'));
     if (!res.ok) throw new Error(`${name}: ${res.status}`);
     const text = await res.text();
     mkdirSync(CACHE, { recursive: true });
     writeFileSync(file, text);
-    return slim(JSON.parse(text) as Packument);
+    return slim(JSON.parse(text) as RawPackument);
   }
 }
 

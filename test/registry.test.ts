@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { registryFetcher, slim } from '../src/registry.js';
-import type { Packument } from '../src/types.js';
+import { registryFetcher, slim, type RawPackument } from '../src/registry.js';
 
 const raw = {
   name: 'pkg',
@@ -19,7 +18,7 @@ const raw = {
       },
     },
   },
-} as unknown as Packument;
+} as RawPackument;
 
 describe('slim', () => {
   it('keeps what the signals read and drops the rest', () => {
@@ -39,8 +38,8 @@ describe('slim', () => {
 });
 
 describe('registryFetcher', () => {
-  const respond = (status: number, body?: unknown) => async () =>
-    new Response(body === undefined ? null : JSON.stringify(body), { status });
+  const respond = (status: number, body?: unknown) => () =>
+    Promise.resolve(new Response(body === undefined ? null : JSON.stringify(body), { status }));
 
   it('encodes scoped names and caches by name', async () => {
     const urls: string[] = [];

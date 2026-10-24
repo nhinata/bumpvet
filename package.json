@@ -10,7 +10,7 @@
     "dist"
   ],
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
@@ -18,7 +18,8 @@
     "test": "vitest run",
     "eval": "tsc -p tsconfig.json && node dist-eval/eval/run.js",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "lint": "eslint ."
   },
   "keywords": [
     "npm",
@@ -31,9 +32,12 @@
   ],
   "license": "MIT",
   "devDependencies": {
-    "@types/node": "20.19.43",
+    "@eslint/js": "10.0.1",
+    "@types/node": "22.20.5",
+    "eslint": "10.13.0",
     "prettier": "3.9.10",
     "typescript": "5.9.3",
+    "typescript-eslint": "8.72.0",
     "vitest": "3.2.7"
   },
   "main": "dist/index.js",

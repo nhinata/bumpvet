@@ -10,7 +10,7 @@ export async function vetChanges(
   opts: SignalOptions,
   concurrency = 8,
 ): Promise<PackageResult[]> {
-  const results: PackageResult[] = new Array(changes.length);
+  const results = new Array<PackageResult>(changes.length);
   let next = 0;
   const worker = async () => {
     while (next < changes.length) {

@@ -37,7 +37,7 @@ export function packument(name: string, versions: FakeVersion[]): Packument {
 
 export function fakeRegistry(...packuments: Packument[]): FetchPackument {
   const byName = new Map(packuments.map((p) => [p.name, p]));
-  return async (name) => byName.get(name) ?? null;
+  return (name) => Promise.resolve(byName.get(name) ?? null);
 }
 
 export function lockfile(

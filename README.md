@@ -25,7 +25,7 @@ the two with a small table. Nothing from a package is ever executed.
 
 ## Usage
 
-Requires Node.js 20 or later. Not yet published to npm; run it from a clone:
+Requires Node.js 22 or later. Not yet published to npm; run it from a clone:
 
 ```sh
 git clone https://github.com/nhinata/bumpvet.git && cd bumpvet
