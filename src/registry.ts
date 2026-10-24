@@ -1,3 +1,4 @@
+import { isObject, str } from './json.js';
 import { INSTALL_HOOKS } from './signals.js';
 import type { Packument, VersionManifest } from './types.js';
 
@@ -19,9 +20,11 @@ export function registryFetcher(
         });
         if (res.status === 404) return null;
         if (!res.ok) throw new Error(`registry returned ${res.status} for ${name}`);
+        // Read first, then parse: a timeout or reset mid-body is not "invalid JSON".
+        const text = await res.text();
         let json: unknown;
         try {
-          json = await res.json();
+          json = JSON.parse(text);
         } catch (err) {
           throw new Error(`registry sent invalid JSON for ${name}`, { cause: err });
         }
@@ -32,12 +35,6 @@ export function registryFetcher(
     return p;
   };
 }
-
-type Json = Record<string, unknown>;
-
-const isObject = (v: unknown): v is Json =>
-  typeof v === 'object' && v !== null && !Array.isArray(v);
-const str = (v: unknown): string | undefined => (typeof v === 'string' ? v : undefined);
 
 /**
  * Keeps only the fields bumpvet reads, and only when they have the type bumpvet
@@ -51,15 +48,14 @@ export function slim(raw: unknown, name: string): Packument {
   if (!isObject(raw) || (!isObject(raw.versions) && !isObject(raw.time))) {
     throw new Error(`registry sent something that is not a packument for ${name}`);
   }
-  const json = raw;
   // No prototype: a `__proto__` key from the registry stays an ordinary key.
   const time = Object.create(null) as Record<string, string>;
-  if (isObject(json.time)) {
-    for (const [k, v] of Object.entries(json.time)) if (typeof v === 'string') time[k] = v;
+  if (isObject(raw.time)) {
+    for (const [k, v] of Object.entries(raw.time)) if (typeof v === 'string') time[k] = v;
   }
   const versions = Object.create(null) as Record<string, VersionManifest>;
-  if (isObject(json.versions)) {
-    for (const [v, m] of Object.entries(json.versions)) {
+  if (isObject(raw.versions)) {
+    for (const [v, m] of Object.entries(raw.versions)) {
       if (!isObject(m)) continue;
       const user = isObject(m._npmUser) ? str(m._npmUser.name) : undefined;
       const scripts = isObject(m.scripts) ? m.scripts : undefined;
@@ -82,5 +78,5 @@ export function slim(raw: unknown, name: string): Packument {
       };
     }
   }
-  return { name: str(json.name) || name, time, versions };
+  return { name: str(raw.name) || name, time, versions };
 }

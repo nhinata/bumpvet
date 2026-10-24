@@ -138,6 +138,18 @@ describe('registryFetcher', () => {
     ).rejects.toThrow('registry sent invalid JSON for pkg');
   });
 
+  it('does not call a failure while reading the body invalid JSON', async () => {
+    const body = new ReadableStream({
+      pull(controller) {
+        controller.error(new Error('terminated'));
+      },
+    });
+    const reset = () => Promise.resolve(new Response(body, { status: 200 }));
+    await expect(
+      registryFetcher('https://r/', reset as unknown as typeof fetch)('pkg'),
+    ).rejects.toThrow('terminated');
+  });
+
   it('fails on other errors', async () => {
     await expect(
       registryFetcher('https://r/', respond(503) as unknown as typeof fetch)('pkg'),

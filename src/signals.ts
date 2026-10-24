@@ -143,11 +143,13 @@ function versionsBefore(packument: Packument, version: string): VersionManifest[
   const cutoff = own(packument.time, version);
   if (!cutoff) return [];
   return Object.entries(packument.time)
-    .filter(
-      ([v, t]) => v !== 'created' && v !== 'modified' && t < cutoff && own(packument.versions, v),
-    )
+    .filter(([, t]) => t < cutoff)
     .sort((a, b) => a[1].localeCompare(b[1]))
-    .map(([v]) => own(packument.versions, v)!);
+    .flatMap(([v]) => {
+      // `created`, `modified` and removed versions have a time but no manifest.
+      const m = own(packument.versions, v);
+      return m ? [m] : [];
+    });
 }
 
 function sameAlgorithm(a: string, b: string): boolean {

@@ -151,6 +151,28 @@ describe('parseLockfile', () => {
     expect(parseLockfile(text).get('node_modules/a')?.elsewhere).toBe('unknown source');
   });
 
+  it('names the file when it is not JSON', () => {
+    expect(() => diffLockfiles('{', lockfile({}))).toThrow('the old lockfile is not valid JSON');
+    expect(() => diffLockfiles(null, 'not json')).toThrow('the new lockfile is not valid JSON');
+  });
+
+  it('skips entries and fields of the wrong type', () => {
+    const text = JSON.stringify({
+      lockfileVersion: 3,
+      packages: {
+        'node_modules/null-entry': null,
+        'node_modules/number-version': { version: 1, integrity: 'sha512-x' },
+        'node_modules/ok': { version: '1.0.0', name: 7, resolved: 5, integrity: 'sha512-x' },
+      },
+    });
+    expect([...parseLockfile(text)]).toEqual([
+      [
+        'node_modules/ok',
+        { name: 'ok', version: '1.0.0', integrity: 'sha512-x', elsewhere: undefined },
+      ],
+    ]);
+  });
+
   it('rejects lockfileVersion 1', () => {
     expect(() => parseLockfile(JSON.stringify({ lockfileVersion: 1, dependencies: {} }))).toThrow(
       /lockfileVersion 2 or 3/,

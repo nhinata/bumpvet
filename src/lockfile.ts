@@ -1,15 +1,7 @@
+import { isObject, str } from './json.js';
 import type { Change } from './types.js';
 
 const REGISTRY = 'https://registry.npmjs.org/';
-
-interface LockEntry {
-  name?: string;
-  version?: string;
-  resolved?: string;
-  integrity?: string;
-  link?: boolean;
-  inBundle?: boolean;
-}
 
 export interface LockPackage {
   name: string;
@@ -22,28 +14,40 @@ export interface LockPackage {
 /**
  * Reads the installed packages of a package-lock.json (lockfileVersion 2 or 3).
  * Workspace links and bundled dependencies are left out: they are not
- * downloaded on their own.
+ * downloaded on their own. The text may come from a pull request, so every
+ * field is checked for its type; `label` names the file in errors.
  */
-export function parseLockfile(text: string): Map<string, LockPackage> {
-  const lock = JSON.parse(text) as {
-    lockfileVersion?: number;
-    packages?: Record<string, LockEntry>;
-  };
-  if (!lock.packages || (lock.lockfileVersion ?? 0) < 2) {
-    throw new Error('only package-lock.json with lockfileVersion 2 or 3 is supported');
+export function parseLockfile(text: string, label = 'lockfile'): Map<string, LockPackage> {
+  let lock: unknown;
+  try {
+    lock = JSON.parse(text);
+  } catch (err) {
+    throw new Error(`${label} is not valid JSON`, { cause: err });
+  }
+  if (
+    !isObject(lock) ||
+    !isObject(lock.packages) ||
+    typeof lock.lockfileVersion !== 'number' ||
+    lock.lockfileVersion < 2
+  ) {
+    throw new Error(`${label}: only package-lock.json with lockfileVersion 2 or 3 is supported`);
   }
   const out = new Map<string, LockPackage>();
   for (const [path, entry] of Object.entries(lock.packages)) {
-    if (!path.includes('node_modules/') || entry.link || entry.inBundle || !entry.version) continue;
+    if (!path.includes('node_modules/') || !isObject(entry)) continue;
+    const version = str(entry.version);
+    if (entry.link === true || entry.inBundle === true || !version) continue;
     const name =
-      entry.name ?? path.slice(path.lastIndexOf('node_modules/') + 'node_modules/'.length);
+      str(entry.name) ?? path.slice(path.lastIndexOf('node_modules/') + 'node_modules/'.length);
+    const resolved = str(entry.resolved);
+    const integrity = str(entry.integrity);
     // npm leaves `resolved` out for registry packages with omit-lockfile-registry-resolved.
-    const fromRegistry = entry.resolved ? entry.resolved.startsWith(REGISTRY) : !!entry.integrity;
+    const fromRegistry = resolved ? resolved.startsWith(REGISTRY) : !!integrity;
     out.set(path, {
       name,
-      version: entry.version,
-      integrity: entry.integrity,
-      elsewhere: fromRegistry ? undefined : (entry.resolved ?? 'unknown source'),
+      version,
+      integrity,
+      elsewhere: fromRegistry ? undefined : (resolved ?? 'unknown source'),
     });
   }
   return out;
@@ -62,11 +66,12 @@ function sameArtifact(a: LockPackage, b: LockPackage): boolean {
  * source or with another integrity was not.
  */
 export function diffLockfiles(oldText: string | null, newText: string): Change[] {
-  const before = oldText === null ? new Map<string, LockPackage>() : parseLockfile(oldText);
+  const before =
+    oldText === null ? new Map<string, LockPackage>() : parseLockfile(oldText, 'the old lockfile');
   const old = [...before.values()];
   const seen = new Set<string>();
   const changes: Change[] = [];
-  for (const [path, pkg] of parseLockfile(newText)) {
+  for (const [path, pkg] of parseLockfile(newText, 'the new lockfile')) {
     const sameVersion = old.filter((p) => p.name === pkg.name && p.version === pkg.version);
     if (sameVersion.some((p) => sameArtifact(p, pkg))) continue;
 

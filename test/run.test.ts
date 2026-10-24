@@ -203,19 +203,36 @@ describe('errors exit 2 with a message', () => {
     }
   });
 
+  it('when git is not installed, pointing to the two-file form', async () => {
+    const dir = tempDir();
+    writeFileSync(join(dir, 'package-lock.json'), v1);
+    const path = process.env.PATH;
+    process.env.PATH = dir; // a directory with no git in it
+    try {
+      const r = await run([], dir);
+      expect(r.code).toBe(2);
+      expect(r.stderr).toMatch(/git not found; compare two files instead/);
+    } finally {
+      process.env.PATH = path;
+    }
+  });
+
+  it('when HEAD points at a commit that does not exist', async () => {
+    const dir = repo(v1);
+    const branch = execFileSync('git', ['symbolic-ref', '--short', 'HEAD'], {
+      cwd: dir,
+      encoding: 'utf8',
+    }).trim();
+    writeFileSync(join(dir, '.git', 'refs', 'heads', branch), 'deadbeef'.repeat(5) + '\n');
+    const r = await run([], dir);
+    expect(r.code).toBe(2);
+    expect(r.stderr).toMatch(/HEAD does not name a commit in this repository/);
+  });
+
   it('for a --base ref that does not exist', async () => {
     const r = await run(['--base', 'nope'], repo(v1));
     expect(r.code).toBe(2);
-    expect(r.stderr).toMatch(/git show nope:package-lock.json failed/);
-  });
-
-  it('naming the path git was asked for in a subdirectory', async () => {
-    const dir = repo(v1);
-    const sub = join(dir, 'app');
-    mkdirSync(sub);
-    writeFileSync(join(sub, 'package-lock.json'), v1);
-    const r = await run(['--base', 'nope'], sub);
-    expect(r.stderr).toMatch(/git show nope:app\/package-lock.json failed/);
+    expect(r.stderr).toMatch(/nope does not name a commit in this repository/);
   });
 
   it('when the registry fails', async () => {

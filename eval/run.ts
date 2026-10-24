@@ -7,7 +7,7 @@
  *
  *   npm run eval [-- --per-package 10] [--baseline 5]
  */
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { slim } from '../src/registry.js';
@@ -30,16 +30,13 @@ const DELAYS = [
 
 async function load(name: string): Promise<Packument> {
   const file = join(CACHE, name.replace('/', '__') + '.json');
-  try {
-    return slim(JSON.parse(readFileSync(file, 'utf8')), name);
-  } catch {
-    const res = await fetch('https://registry.npmjs.org/' + name.replace('/', '%2f'));
-    if (!res.ok) throw new Error(`${name}: ${res.status}`);
-    const text = await res.text();
-    mkdirSync(CACHE, { recursive: true });
-    writeFileSync(file, text);
-    return slim(JSON.parse(text), name);
-  }
+  if (existsSync(file)) return slim(JSON.parse(readFileSync(file, 'utf8')), name);
+  const res = await fetch('https://registry.npmjs.org/' + name.replace('/', '%2f'));
+  if (!res.ok) throw new Error(`${name}: ${res.status}`);
+  const text = await res.text();
+  mkdirSync(CACHE, { recursive: true });
+  writeFileSync(file, text);
+  return slim(JSON.parse(text), name);
 }
 
 const isStable = (v: string) => /^\d+\.\d+\.\d+$/.test(v);

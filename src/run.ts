@@ -92,11 +92,12 @@ function lockfileAt(cwd: string, ref: string): string | null {
   try {
     prefix = git(cwd, ['rev-parse', '--show-prefix']).trim();
   } catch (err) {
+    const hint = 'compare two files instead: bumpvet <old-lock> <new-lock>';
     if (/not a git repository/.test(stderrOf(err))) {
-      throw new Error(
-        'not inside a git repository; compare two files instead: bumpvet <old-lock> <new-lock>',
-        { cause: err },
-      );
+      throw new Error(`not inside a git repository; ${hint}`, { cause: err });
+    }
+    if ((err as GitError).code === 'ENOENT') {
+      throw new Error(`git not found; ${hint}`, { cause: err });
     }
     throw new Error(`git rev-parse failed: ${whyGitFailed(err)}`, { cause: err });
   }
@@ -107,6 +108,15 @@ function lockfileAt(cwd: string, ref: string): string | null {
       if (/Needed a single revision/.test(stderrOf(err))) return null; // no commits yet
       throw new Error(`git rev-parse --verify HEAD failed: ${whyGitFailed(err)}`, { cause: err });
     }
+  }
+  // git show reads a missing commit as a missing file ("exists on disk, but not in 'HEAD'"),
+  // which would look like "no lockfile at that ref". Check the commit first.
+  try {
+    git(cwd, ['cat-file', '-e', `${ref}^{commit}`]);
+  } catch (err) {
+    throw new Error(`${ref} does not name a commit in this repository: ${whyGitFailed(err)}`, {
+      cause: err,
+    });
   }
   const object = `${ref}:${prefix}package-lock.json`;
   try {
