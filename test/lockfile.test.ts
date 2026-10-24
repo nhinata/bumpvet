@@ -14,8 +14,8 @@ describe('diffLockfiles', () => {
       'node_modules/c': { version: '3.0.0' },
     });
     expect(diffLockfiles(before, after)).toEqual([
-      { name: 'a', from: '1.0.0', to: '1.1.0', integrity: undefined },
-      { name: 'c', from: null, to: '3.0.0', integrity: undefined },
+      { name: 'a', from: '1.0.0', to: '1.1.0', integrity: 'sha512-a-1.1.0' },
+      { name: 'c', from: null, to: '3.0.0', integrity: 'sha512-c-3.0.0' },
     ]);
   });
 
@@ -53,6 +53,7 @@ describe('diffLockfiles', () => {
       'node_modules/from-git': {
         version: '1.0.0',
         resolved: 'git+ssh://git@github.com/x/y.git#abc',
+        integrity: undefined,
       },
     });
     expect(diffLockfiles(null, after)).toEqual([
@@ -151,6 +152,38 @@ describe('parseLockfile', () => {
     expect(parseLockfile(text).get('node_modules/a')?.elsewhere).toBe('unknown source');
   });
 
+  it.each([
+    [
+      'a name that claims another package than its URL',
+      { name: 'lodash', resolved: 'https://registry.npmjs.org/evil/-/evil-1.0.0.tgz' },
+      'https://registry.npmjs.org/evil/-/evil-1.0.0.tgz (not lodash)',
+    ],
+    [
+      'a registry URL with no integrity',
+      { resolved: 'https://registry.npmjs.org/a/-/a-1.0.0.tgz', integrity: undefined },
+      'https://registry.npmjs.org/a/-/a-1.0.0.tgz (no integrity)',
+    ],
+    ['a name with a path in it', { name: 'x/y/../lodash' }, 'invalid package name "x/y/../lodash"'],
+  ])('does not trust %s', (_, fields, source) => {
+    const text = lockfile({ 'node_modules/a': { version: '1.0.0', ...fields } });
+    expect(parseLockfile(text).get('node_modules/a')?.elsewhere).toBe(source);
+  });
+
+  it('trusts a scoped package at its own registry URL', () => {
+    const text = lockfile({
+      'node_modules/@ctrl/tinycolor': {
+        version: '4.1.0',
+        resolved: 'https://registry.npmjs.org/@ctrl/tinycolor/-/tinycolor-4.1.0.tgz',
+      },
+    });
+    expect(parseLockfile(text).get('node_modules/@ctrl/tinycolor')?.elsewhere).toBeUndefined();
+  });
+
+  it('uses the path when the name is empty', () => {
+    const text = lockfile({ 'node_modules/a': { version: '1.0.0', name: '' } });
+    expect(parseLockfile(text).get('node_modules/a')?.name).toBe('a');
+  });
+
   it('names the file when it is not JSON', () => {
     expect(() => diffLockfiles('{', lockfile({}))).toThrow('the old lockfile is not valid JSON');
     expect(() => diffLockfiles(null, 'not json')).toThrow('the new lockfile is not valid JSON');
@@ -173,8 +206,8 @@ describe('parseLockfile', () => {
     ]);
   });
 
-  it('rejects lockfileVersion 1', () => {
-    expect(() => parseLockfile(JSON.stringify({ lockfileVersion: 1, dependencies: {} }))).toThrow(
+  it.each([1, 4])('rejects lockfileVersion %i', (lockfileVersion) => {
+    expect(() => parseLockfile(JSON.stringify({ lockfileVersion, packages: {} }))).toThrow(
       /lockfileVersion 2 or 3/,
     );
   });

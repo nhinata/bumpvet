@@ -3,6 +3,25 @@ import type { Change } from './types.js';
 
 const REGISTRY = 'https://registry.npmjs.org/';
 
+// A package name: an optional scope and one segment, neither starting with "." (no path tricks).
+const NAME = /^(?:@[^/@\s.][^/@\s]*\/)?[^/@\s.][^/@\s]*$/;
+
+/**
+ * Where an entry really comes from, when that is not the public registry
+ * package its name says. A registry entry is trusted only if its URL is that
+ * package's and it has an integrity: otherwise `name` could claim one package
+ * while `resolved` fetches another.
+ */
+function elsewhere(name: string, resolved?: string, integrity?: string): string | undefined {
+  if (!NAME.test(name)) return `invalid package name ${JSON.stringify(name)}`;
+  // npm leaves `resolved` out for registry packages with omit-lockfile-registry-resolved.
+  if (resolved === undefined) return integrity ? undefined : 'unknown source';
+  if (!resolved.startsWith(REGISTRY)) return resolved;
+  if (!resolved.startsWith(`${REGISTRY}${name}/-/`)) return `${resolved} (not ${name})`;
+  if (!integrity) return `${resolved} (no integrity)`;
+  return undefined;
+}
+
 export interface LockPackage {
   name: string;
   version: string;
@@ -27,8 +46,7 @@ export function parseLockfile(text: string, label = 'lockfile'): Map<string, Loc
   if (
     !isObject(lock) ||
     !isObject(lock.packages) ||
-    typeof lock.lockfileVersion !== 'number' ||
-    lock.lockfileVersion < 2
+    (lock.lockfileVersion !== 2 && lock.lockfileVersion !== 3)
   ) {
     throw new Error(`${label}: only package-lock.json with lockfileVersion 2 or 3 is supported`);
   }
@@ -38,17 +56,10 @@ export function parseLockfile(text: string, label = 'lockfile'): Map<string, Loc
     const version = str(entry.version);
     if (entry.link === true || entry.inBundle === true || !version) continue;
     const name =
-      str(entry.name) ?? path.slice(path.lastIndexOf('node_modules/') + 'node_modules/'.length);
+      str(entry.name) || path.slice(path.lastIndexOf('node_modules/') + 'node_modules/'.length);
     const resolved = str(entry.resolved);
     const integrity = str(entry.integrity);
-    // npm leaves `resolved` out for registry packages with omit-lockfile-registry-resolved.
-    const fromRegistry = resolved ? resolved.startsWith(REGISTRY) : !!integrity;
-    out.set(path, {
-      name,
-      version,
-      integrity,
-      elsewhere: fromRegistry ? undefined : (resolved ?? 'unknown source'),
-    });
+    out.set(path, { name, version, integrity, elsewhere: elsewhere(name, resolved, integrity) });
   }
   return out;
 }

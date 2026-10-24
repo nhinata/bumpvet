@@ -21,7 +21,15 @@ export function registryFetcher(
         if (res.status === 404) return null;
         if (!res.ok) throw new Error(`registry returned ${res.status} for ${name}`);
         // Read first, then parse: a timeout or reset mid-body is not "invalid JSON".
-        const text = await res.text();
+        let text: string;
+        try {
+          text = await res.text();
+        } catch (err) {
+          const reason = err instanceof Error ? err.message : String(err);
+          throw new Error(`reading the registry response for ${name} failed: ${reason}`, {
+            cause: err,
+          });
+        }
         let json: unknown;
         try {
           json = JSON.parse(text);

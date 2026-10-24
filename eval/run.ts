@@ -34,9 +34,10 @@ async function load(name: string): Promise<Packument> {
   const res = await fetch('https://registry.npmjs.org/' + name.replace('/', '%2f'));
   if (!res.ok) throw new Error(`${name}: ${res.status}`);
   const text = await res.text();
+  const packument = slim(JSON.parse(text), name); // check it before caching it
   mkdirSync(CACHE, { recursive: true });
   writeFileSync(file, text);
-  return slim(JSON.parse(text), name);
+  return packument;
 }
 
 const isStable = (v: string) => /^\d+\.\d+\.\d+$/.test(v);

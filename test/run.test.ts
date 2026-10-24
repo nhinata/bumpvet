@@ -213,20 +213,25 @@ describe('errors exit 2 with a message', () => {
       expect(r.code).toBe(2);
       expect(r.stderr).toMatch(/git not found; compare two files instead/);
     } finally {
-      process.env.PATH = path;
+      if (path === undefined) delete process.env.PATH;
+      else process.env.PATH = path;
     }
   });
 
   it('when HEAD points at a commit that does not exist', async () => {
     const dir = repo(v1);
-    const branch = execFileSync('git', ['symbolic-ref', '--short', 'HEAD'], {
-      cwd: dir,
-      encoding: 'utf8',
-    }).trim();
-    writeFileSync(join(dir, '.git', 'refs', 'heads', branch), 'deadbeef'.repeat(5) + '\n');
+    // Delete the commit object itself; this works whatever ref storage git uses.
+    const sha = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: dir, encoding: 'utf8' }).trim();
+    rmSync(join(dir, '.git', 'objects', sha.slice(0, 2), sha.slice(2)));
     const r = await run([], dir);
     expect(r.code).toBe(2);
     expect(r.stderr).toMatch(/HEAD does not name a commit in this repository/);
+  });
+
+  it('when the working directory does not exist', async () => {
+    const r = await run([], join(tempDir(), 'gone'));
+    expect(r.code).toBe(2);
+    expect(r.stderr).toMatch(/working directory .+ does not exist/);
   });
 
   it('for a --base ref that does not exist', async () => {
