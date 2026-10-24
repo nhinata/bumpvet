@@ -1,9 +1,10 @@
 import { execFileSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
-import { afterEach, describe, expect, it } from 'vitest';
-import { runCli, type CliEnv } from '../src/cli.js';
+import { dirname, join } from 'node:path';
+import { afterEach, beforeAll, describe, expect, it } from 'vitest';
+import type { FetchPackument } from '../src/registry.js';
+import { runCli, type CliEnv } from '../src/run.js';
 import type { PackageResult } from '../src/types.js';
 import { fakeRegistry, lockfile, packument } from './helpers.js';
 
@@ -18,6 +19,17 @@ const registry = fakeRegistry(
 const v1 = lockfile({ 'node_modules/a': { version: '1.0.0' } });
 const v11 = lockfile({ 'node_modules/a': { version: '1.1.0' } });
 const v12 = lockfile({ 'node_modules/a': { version: '1.2.0' } });
+
+// Keep git in the temporary repositories away from the surrounding environment:
+// a git hook running the tests exports GIT_DIR and friends, and a developer's
+// global config may sign commits or set hooks.
+beforeAll(() => {
+  for (const name of ['GIT_DIR', 'GIT_INDEX_FILE', 'GIT_WORK_TREE', 'GIT_OBJECT_DIRECTORY']) {
+    delete process.env[name];
+  }
+  process.env.GIT_CONFIG_GLOBAL = '/dev/null';
+  process.env.GIT_CONFIG_NOSYSTEM = '1';
+});
 
 const dirs: string[] = [];
 afterEach(() => {
@@ -53,14 +65,14 @@ function firstPackage(stdout: string): PackageResult | undefined {
   return (JSON.parse(stdout) as { packages: PackageResult[] }).packages[0];
 }
 
-async function run(argv: string[], cwd: string) {
+async function run(argv: string[], cwd: string, fetchPackument: FetchPackument = registry) {
   let stdout = '';
   let stderr = '';
   const env: CliEnv = {
     cwd,
     stdout: (t) => (stdout += t),
     stderr: (t) => (stderr += t),
-    fetchPackument: registry,
+    fetchPackument,
     now,
   };
   const code = await runCli(argv, env);
@@ -171,9 +183,15 @@ describe('errors exit 2 with a message', () => {
   it('outside a git repository', async () => {
     const dir = tempDir();
     writeFileSync(join(dir, 'package-lock.json'), v1);
-    const r = await run([], dir);
-    expect(r.code).toBe(2);
-    expect(r.stderr).toMatch(/not inside a git repository/);
+    // Stop git from finding a repository above the temporary directory.
+    process.env.GIT_CEILING_DIRECTORIES = dirname(dir);
+    try {
+      const r = await run([], dir);
+      expect(r.code).toBe(2);
+      expect(r.stderr).toMatch(/not inside a git repository/);
+    } finally {
+      delete process.env.GIT_CEILING_DIRECTORIES;
+    }
   });
 
   it('for a --base ref that does not exist', async () => {
@@ -182,25 +200,37 @@ describe('errors exit 2 with a message', () => {
     expect(r.stderr).toMatch(/git show nope:package-lock.json failed/);
   });
 
+  it('naming the path git was asked for in a subdirectory', async () => {
+    const dir = repo(v1);
+    const sub = join(dir, 'app');
+    mkdirSync(sub);
+    writeFileSync(join(sub, 'package-lock.json'), v1);
+    const r = await run(['--base', 'nope'], sub);
+    expect(r.stderr).toMatch(/git show nope:app\/package-lock.json failed/);
+  });
+
   it('when the registry fails', async () => {
     const dir = tempDir();
     writeFileSync(join(dir, 'old.json'), v1);
     writeFileSync(join(dir, 'new.json'), v12);
-    const env: CliEnv = {
-      cwd: dir,
-      stdout: () => {},
-      stderr: (t) => (stderr += t),
-      fetchPackument: () => Promise.reject(new Error('registry returned 503 for a')),
-      now,
-    };
-    let stderr = '';
-    expect(await runCli(['old.json', 'new.json'], env)).toBe(2);
-    expect(stderr).toBe('bumpvet: registry returned 503 for a\n');
+    const r = await run(['old.json', 'new.json'], dir, () =>
+      Promise.reject(new Error('registry returned 503 for a')),
+    );
+    expect(r).toMatchObject({ code: 2, stderr: 'bumpvet: registry returned 503 for a\n' });
+  });
+
+  it('for a --base value that would reach git as an option', async () => {
+    const r = await run(['--base', '--output=/tmp/x'], repo(v1));
+    expect(r.code).toBe(2);
+    expect(r.stderr).toMatch(/--base: not a git ref: --output=\/tmp\/x/);
   });
 });
 
-it('prints usage with --help', async () => {
-  const r = await run(['--help'], tempDir());
-  expect(r.code).toBe(0);
-  expect(r.stdout).toMatch(/^Usage:/);
-});
+it.each([[['--help']], [['-h']], [['old.json', '--help']], [['--help', '--nope']]])(
+  'prints usage for %j',
+  async (argv) => {
+    const r = await run(argv, tempDir());
+    expect(r.code).toBe(0);
+    expect(r.stdout).toMatch(/^Usage:/);
+  },
+);

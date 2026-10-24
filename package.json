@@ -4,7 +4,7 @@
   "description": "Should a human look at this dependency update before it is merged?",
   "type": "module",
   "bin": {
-    "bumpvet": "dist/bin.js"
+    "bumpvet": "dist/cli.js"
   },
   "files": [
     "dist"

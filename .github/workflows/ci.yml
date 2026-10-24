@@ -38,4 +38,4 @@ jobs:
       - run: npm test
       - run: npm run build
       # The built entry point starts and parses arguments.
-      - run: node dist/bin.js --help
+      - run: node dist/cli.js --help
