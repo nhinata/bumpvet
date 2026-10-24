@@ -309,24 +309,26 @@ describe('computeSignals', () => {
   });
 });
 
+// The verdict table in DESIGN.md, row by row.
 describe('decide', () => {
-  const s = (group: Signal['group']): Signal => ({
-    id: 'fresh-publish',
-    group,
-    before: '',
-    after: '',
-  });
+  // A real signal of each group, so the rows read like what bumpvet reports.
+  const of: Record<Signal['group'], Signal> = {
+    origin: { id: 'publisher-changed', group: 'origin', before: 'alice', after: 'mallory' },
+    timing: { id: 'fresh-publish', group: 'timing', before: '>= 72h old', after: '1h old' },
+    content: { id: 'install-scripts', group: 'content', before: 'none', after: 'node x.js' },
+    tamper: { id: 'integrity-mismatch', group: 'tamper', before: 'sha512-a', after: 'sha512-b' },
+  };
   it.each([
     [[], 'ok'],
-    [[s('timing')], 'ok'],
-    [[s('origin'), s('timing')], 'review'],
-    [[s('content'), s('timing')], 'block'],
-    [[s('origin')], 'review'],
-    [[s('content')], 'review'],
-    [[s('origin'), s('origin')], 'review'],
-    [[s('origin'), s('content')], 'block'],
-    [[s('tamper')], 'block'],
-  ] as const)('%j -> %s', (signals, verdict) => {
-    expect(decide([...signals])).toBe(verdict);
+    [['timing'], 'ok'],
+    [['origin'], 'review'],
+    [['origin', 'origin'], 'review'],
+    [['origin', 'timing'], 'review'],
+    [['content'], 'review'],
+    [['content', 'timing'], 'block'],
+    [['origin', 'content'], 'block'],
+    [['tamper'], 'block'],
+  ] as const)('%j -> %s', (groups, verdict) => {
+    expect(decide(groups.map((g) => of[g]))).toBe(verdict);
   });
 });

@@ -23,6 +23,41 @@ what it deliberately does not do, and why.
 6. **A rule is added only when the evaluation says it helps:** detection goes
    up and false positives do not get worse. See [eval/README.md](eval/README.md).
 
+## Threat model
+
+What bumpvet assumes about who controls what. A check that relies on something
+here says so; anything here that changes needs the checks that rely on it
+looked at again.
+
+**An attacker can control:**
+
+- **every field of the lockfile change**, since it arrives in a pull request:
+  `version`, `name`, `resolved`, `integrity`, and which entries exist;
+- **what a maintainer account publishes**, if the account or its token is
+  stolen: the code, the install scripts, the publish time.
+
+**bumpvet trusts:**
+
+- **the public npm registry's metadata** (`dist.tarball`, `dist.integrity`,
+  `dist.shasum`, `_npmUser`, `time`, attestations) as a record of what was
+  published. A registry that lies is out of scope.
+
+**What the installer does, checked by experiment:**
+
+- npm verifies every tarball it downloads against the lockfile's integrity.
+  With a wrong integrity, or with `resolved` pointing at another package and
+  the right integrity, `npm ci` fails ("tarball data ... seems to be
+  corrupted").
+- Without an integrity it verifies nothing: with `resolved` pointing at
+  another package, or at another version of the same one, `npm ci` installed
+  that under the lockfile's name and version.
+
+So for npm, a lockfile integrity equal to the registry's pins the content
+whatever `resolved` says, and only an entry without one must have exactly the
+registry's tarball URL (see `tarball-mismatch`). These facts are about npm:
+each lockfile format added later needs the same experiment for its installer
+before the same checks are trusted for it.
+
 ## Signals
 
 | Signal               | Group   | Fires when                                                                                                                                       |
@@ -65,19 +100,15 @@ what it deliberately does not do, and why.
   valid provenance; bumpvet does not defend against that case through this
   signal.
 - **Removing an install script is not a signal.** It takes power away.
-- **A registry URL is compared with the registry, not with a pattern.** npm
-  checks every tarball it downloads against the lockfile's integrity
-  (`npm ci` with a wrong integrity, or with `resolved` pointing at another
-  package, fails with "tarball data ... seems to be corrupted"). So when the
-  lockfile's integrity matches the registry's, the content is pinned whatever
-  `resolved` says. Without an integrity npm checks nothing: with `resolved`
-  pointing at another package, or another version of the same one, `npm ci`
-  installed it under the lockfile's name and version. Only then must
-  `resolved` be exactly the registry's `dist.tarball`. An earlier version
-  matched URLs against `/<name>/-/*.tgz` instead; review found a new way past
-  it in each round (`..`, `%2e%2e`, backslashes, `%2f`, another version's
-  file). On 857 entries from npm-generated lockfiles, every `resolved` equals
-  the registry's `dist.tarball` and every integrity equals the registry's.
+- **A registry URL is compared with the registry, not with a pattern.** Given
+  what npm verifies (see [Threat model](#threat-model)), only an entry
+  without a comparable integrity has to be checked by URL, and then against
+  the registry's own `dist.tarball`, exactly. An earlier version matched URLs
+  against `/<name>/-/*.tgz` instead; review found a new way past it in each
+  round (`..`, `%2e%2e`, backslashes, `%2f`, another version's file). On 857
+  entries from npm-generated lockfiles, every `resolved` equals the
+  registry's `dist.tarball` and every integrity equals the registry's, so the
+  exact comparison raises no false positives there.
 - **Packages bumpvet cannot vet are signals too.** An early version listed them
   in a separate "not vetted" section, outside the verdict table; that broke
   principle 2 and let them pass with exit code 0. They now go through the
@@ -91,10 +122,6 @@ what it deliberately does not do, and why.
 - `chalk@5.6.1`: caught as `REVIEW`, not `BLOCK`, for the same reason.
 
 ## Known limitations
-
-- bumpvet relies on npm checking downloads against the lockfile's integrity.
-  A tool that installs from `package-lock.json` without that check is not
-  covered by `integrity-mismatch` alone.
 
 - Only the public npm registry. Behind a mirror or a private registry every
   package is `not-from-registry`, so everything is `REVIEW`.

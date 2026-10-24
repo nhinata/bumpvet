@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { chmodSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { afterEach, beforeAll, describe, expect, it } from 'vitest';
@@ -253,13 +253,17 @@ describe('errors exit 2 with a message', () => {
     expect(r.stderr).toMatch(/HEAD~1 does not name a commit .+this is a shallow clone/);
   });
 
-  it('when a file is on the working directory path', async () => {
-    const file = join(tempDir(), 'file');
-    writeFileSync(file, '');
-    const r = await run([], join(file, 'sub'));
-    expect(r.code).toBe(2);
-    // Node 22 and 24 report no entry here; Node 20 threw ENOTDIR.
-    expect(r.stderr).toMatch(/working directory .+ (cannot be used: ENOTDIR|does not exist)/);
+  it('when the working directory cannot be reached (EACCES)', async () => {
+    const locked = join(tempDir(), 'locked');
+    mkdirSync(join(locked, 'app'), { recursive: true });
+    chmodSync(locked, 0o000);
+    try {
+      const r = await run([], join(locked, 'app'));
+      expect(r.code).toBe(2);
+      expect(r.stderr).toMatch(/working directory .+ cannot be used: EACCES/);
+    } finally {
+      chmodSync(locked, 0o755); // so the cleanup can remove it
+    }
   });
 
   it('without a shallow-clone hint when the ref is just wrong', async () => {

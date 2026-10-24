@@ -6,7 +6,7 @@ export interface Change {
   to: string;
   /** Integrity the new lockfile expects, if it records one. */
   integrity?: string;
-  /** The registry tarball URL the new lockfile records, if any. */
+  /** The URL the new lockfile records (`resolved`), if any. */
   resolved?: string;
   /** Set when the new version does not come from the public registry. */
   source?: string;

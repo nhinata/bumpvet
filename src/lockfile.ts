@@ -23,9 +23,9 @@ export interface LockPackage {
   name: string;
   version: string;
   integrity?: string;
-  /** The registry tarball URL, when the lockfile records one. */
+  /** The URL the lockfile records, whatever the source. */
   resolved?: string;
-  /** Where the package comes from when that is not the public registry (git, file:, another registry). */
+  /** Set when the package does not come from the public registry: what it comes from instead. */
   elsewhere?: string;
 }
 
@@ -58,13 +58,12 @@ export function parseLockfile(text: string, label = 'lockfile'): Map<string, Loc
       str(entry.name) || path.slice(path.lastIndexOf('node_modules/') + 'node_modules/'.length);
     const resolved = str(entry.resolved);
     const integrity = str(entry.integrity);
-    const source = elsewhere(name, resolved, integrity);
     out.set(path, {
       name,
       version,
       integrity,
-      resolved: source ? undefined : resolved,
-      elsewhere: source,
+      resolved: resolved || undefined,
+      elsewhere: elsewhere(name, resolved, integrity),
     });
   }
   return out;
@@ -80,10 +79,7 @@ function sameArtifact(a: LockPackage, b: LockPackage): boolean {
   if (a.elsewhere !== b.elsewhere) return false;
   if (a.integrity && b.integrity) return a.integrity === b.integrity;
   if (a.integrity || b.integrity) return false;
-  // The URL is `resolved` for a registry entry and `elsewhere` for the rest (git, file:, ...).
-  const url = (p: LockPackage) =>
-    p.resolved ?? (p.elsewhere === 'unknown source' ? undefined : p.elsewhere);
-  return !!url(a) && url(a) === url(b);
+  return !!a.resolved && a.resolved === b.resolved;
 }
 
 /**

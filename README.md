@@ -48,12 +48,12 @@ Exit codes: `0` nothing to block, `1` at least one `BLOCK`, `2` error.
 
 ## How it decides
 
-| Signals                                                                                                         | Verdict |
-| --------------------------------------------------------------------------------------------------------------- | ------- |
-| the lockfile's source or integrity was changed for a registry package, or the version is gone from the registry | BLOCK   |
-| a content change (new or changed install script) together with an unusual origin or a fresh release             | BLOCK   |
-| an unusual origin (new publisher, lost provenance, not from the registry) or a content change                   | REVIEW  |
-| nothing, or only a fresh release                                                                                | OK      |
+| Signals                                                                                                                                                                                                                                                  | Verdict |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
+| the lockfile installs something other than the registry's release: its integrity differs from the registry's, or it has none and `resolved` is not the registry's tarball, or the entry moved off the registry, or the version is gone from the registry | BLOCK   |
+| a content change (new or changed install script) together with an unusual origin or a fresh release                                                                                                                                                      | BLOCK   |
+| an unusual origin (new publisher, lost provenance, not from the registry) or a content change                                                                                                                                                            | REVIEW  |
+| nothing, or only a fresh release                                                                                                                                                                                                                         | OK      |
 
 The signals, the thresholds and the measurements behind them are in
 [DESIGN.md](DESIGN.md). How often bumpvet speaks up on ordinary updates is
