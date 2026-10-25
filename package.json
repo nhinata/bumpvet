@@ -13,7 +13,7 @@
     "node": ">=22"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.build.json",
+    "build": "node -e \"fs.rmSync('dist', { recursive: true, force: true })\" && tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "eval": "tsc -p tsconfig.json && node dist-eval/eval/run.js",
@@ -31,6 +31,12 @@
     "provenance"
   ],
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nhinata/bumpvet.git"
+  },
+  "homepage": "https://github.com/nhinata/bumpvet#readme",
+  "bugs": "https://github.com/nhinata/bumpvet/issues",
   "devDependencies": {
     "@eslint/js": "10.0.1",
     "@types/node": "22.20.5",
@@ -40,6 +46,7 @@
     "typescript-eslint": "8.72.0",
     "vitest": "5.0.5"
   },
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts"
+  "exports": {
+    "./package.json": "./package.json"
+  }
 }
