@@ -68,14 +68,16 @@ under the package.
 **BLOCK because of a tamper signal** (`integrity-mismatch`, `tarball-mismatch`,
 `source-changed`, `not-in-registry`): the lockfile installs something other
 than the registry's release. A lockfile npm or Dependabot generated from the
-registry should never do this, so one of these happened:
+registry does this only for a private package or a version a package bundles,
+so one of these happened:
 
-| Cause                                                       | How to tell                                                                                       | What to do                                                                           |
-| ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
-| the registry removed the version (`not-in-registry`)        | the package's npm page and security advisories                                                    | treat the version as malicious; close the pull request and wait for the next release |
-| the lockfile was edited by hand or by a pull request        | the `resolved` and `integrity` lines in the diff                                                  | regenerate the lockfile with `npm install` instead of merging the edit               |
-| a private package on registry.npmjs.org (`not-in-registry`) | the package is yours or your organization's; bumpvet does not log in, so the registry answers 404 | expected: bumpvet cannot vet private packages (see DESIGN.md, Known limitations)     |
-| a bumpvet bug                                               | neither of the above                                                                              | open an issue with the two lockfiles                                                 |
+| Cause                                                                       | How to tell                                                                                                 | What to do                                                                              |
+| --------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| the registry removed the version (`not-in-registry`)                        | the package's npm page and security advisories                                                              | treat the version as malicious; close the pull request and wait for the next release    |
+| the lockfile was edited by hand or by a pull request                        | the `version`, `resolved` and `integrity` lines in the diff                                                 | regenerate the lockfile with `npm install` instead of merging the edit                  |
+| a private package on registry.npmjs.org (`not-in-registry`)                 | the package is yours or your organization's; bumpvet does not log in, so the registry answers 404           | expected: bumpvet cannot vet private packages (see DESIGN.md, Known limitations)        |
+| a package bundles a version that is not on the registry (`not-in-registry`) | the entry sits under that package and has no `resolved`; the version is missing from the package's npm page | expected: the bundled files come from that package's tarball (see DESIGN.md, Decisions) |
+| a bumpvet bug                                                               | neither of the above                                                                                        | open an issue with the two lockfiles                                                    |
 
 **BLOCK because a content change meets an origin or timing signal** (for
 example `install-scripts` with `publisher-changed` or `fresh-publish`): the
@@ -94,12 +96,12 @@ shape of a worm release.
 **REVIEW**: something unusual, but nothing that blocks on its own. Before
 merging, check each signal listed:
 
-| Signal              | Check                                                                               |
-| ------------------- | ----------------------------------------------------------------------------------- |
-| `install-scripts`   | step 1 above                                                                        |
-| `publisher-changed` | step 2 above                                                                        |
-| `provenance-lost`   | the project's release notes or workflow: did it stop publishing from CI on purpose? |
-| `not-from-registry` | the `resolved` URL is the git repository, file or registry you meant to use         |
+| Signal              | Check                                                                                                                                                                          |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `install-scripts`   | step 1 above                                                                                                                                                                   |
+| `publisher-changed` | step 2 above                                                                                                                                                                   |
+| `provenance-lost`   | the project's release notes or workflow: did it stop publishing from CI on purpose?                                                                                            |
+| `not-from-registry` | the `resolved` URL is the git repository, file or registry you meant to use; "no version in the lockfile" or "invalid ..." means the entry was edited: regenerate the lockfile |
 
 When a BLOCK or REVIEW turns out to be wrong, open an issue: false positives
 are what decides whether a check can be made required.

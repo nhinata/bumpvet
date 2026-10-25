@@ -3,6 +3,9 @@ import type { PackageResult, Verdict } from './types.js';
 const ORDER: Verdict[] = ['block', 'review', 'ok'];
 const LABEL: Record<Verdict, string> = { block: 'BLOCK ', review: 'REVIEW', ok: 'OK    ' };
 
+/** A lockfile entry without a version has '' (see LockPackage). */
+const shown = (version: string | null) => (version === '' ? '(no version)' : version);
+
 export function formatText(results: PackageResult[]): string {
   if (results.length === 0) return 'No dependency versions changed.\n';
   const lines: string[] = [];
@@ -16,7 +19,7 @@ export function formatText(results: PackageResult[]): string {
       continue;
     }
     for (const r of group) {
-      lines.push(`${LABEL[verdict]}  ${r.name} ${r.from ?? '(new)'} -> ${r.to}`);
+      lines.push(`${LABEL[verdict]}  ${r.name} ${shown(r.from) ?? '(new)'} -> ${shown(r.to)}`);
       const width = Math.max(...r.signals.map((s) => s.id.length));
       for (const s of r.signals)
         lines.push(`        ${s.id.padEnd(width)}  ${s.before} -> ${s.after}`);

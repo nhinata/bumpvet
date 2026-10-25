@@ -102,6 +102,18 @@ describe('two lockfiles', () => {
     expect(r.stdout).toContain('BLOCK   a 1.1.0 -> 1.1.0');
   });
 
+  it('shows an entry without a version as such', async () => {
+    const dir = tempDir();
+    const noVersion = JSON.parse(v11) as { packages: Record<string, Record<string, unknown>> };
+    delete noVersion.packages['node_modules/a']!.version;
+    writeFileSync(join(dir, 'old.json'), v11);
+    writeFileSync(join(dir, 'new.json'), JSON.stringify(noVersion));
+    const r = await run(['old.json', 'new.json'], dir);
+    expect(r.code).toBe(1);
+    expect(r.stdout).toContain('BLOCK   a 1.1.0 -> (no version)');
+    expect(r.stdout).toContain('source-changed  npm registry -> no version in the lockfile');
+  });
+
   it('prints JSON with --json', async () => {
     const dir = tempDir();
     writeFileSync(join(dir, 'old.json'), v1);

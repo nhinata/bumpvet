@@ -34,15 +34,14 @@ describe('parseLockfile', () => {
       parseLockfile(raw({ 'node_modules/a': { version: '1.0.0', ...entry } })).get('node_modules/a')
         ?.elsewhere;
 
-    it('is the registry without `resolved` when there is an integrity (omit-lockfile-registry-resolved)', () => {
-      expect(from({ integrity: 'sha512-x' })).toBeUndefined();
-    });
-
+    // npm fetches such an entry's version from the registry (DESIGN.md, threat model);
+    // omit-lockfile-registry-resolved writes them with an integrity.
     it.each([
+      ['no `resolved`', { integrity: 'sha512-x' }],
       ['neither `resolved` nor an integrity', {}],
       ['an empty `resolved`', { resolved: '' }],
-    ])('is unknown with %s', (_, entry) => {
-      expect(from(entry)).toBe('unknown source');
+    ])('is the registry with %s', (_, entry) => {
+      expect(from(entry)).toBeUndefined();
     });
 
     it('is the URL for git and other non-registry sources', () => {
@@ -68,24 +67,88 @@ describe('parseLockfile', () => {
     );
   });
 
-  it('skips entries and fields of the wrong type', () => {
+  it('skips entries that are not objects', () => {
+    const text = raw({ 'node_modules/null-entry': null, 'node_modules/ok': { version: '1.0.0' } });
+    expect([...parseLockfile(text).keys()]).toEqual(['node_modules/ok']);
+  });
+
+  // npm uses such a field as it is, so it is not read as missing.
+  it.each([
+    ['name', 7],
+    ['version', 1],
+    ['resolved', 5],
+    ['integrity', {}],
+  ])('cannot vet an entry whose %s is not a string', (field, value) => {
     const text = raw({
-      'node_modules/null-entry': null,
-      'node_modules/number-version': { version: 1, integrity: 'sha512-x' },
-      'node_modules/ok': { version: '1.0.0', name: 7, resolved: 5, integrity: 'sha512-x' },
+      'node_modules/ms': { version: '2.1.3', integrity: 'sha512-x', [field]: value },
     });
-    expect([...parseLockfile(text)]).toEqual([
-      [
-        'node_modules/ok',
-        {
-          name: 'ok',
-          version: '1.0.0',
-          integrity: 'sha512-x',
-          resolved: undefined,
-          elsewhere: undefined,
-        },
-      ],
+    expect(parseLockfile(text).get('node_modules/ms')?.elsewhere).toBe(
+      `invalid ${field} ${JSON.stringify(value)}`,
+    );
+  });
+
+  it('reads a null field as missing, as npm does', () => {
+    const text = raw({
+      'node_modules/ms': { version: '2.1.3', name: null, resolved: null, integrity: null },
+    });
+    expect(parseLockfile(text).get('node_modules/ms')).toEqual({
+      name: 'ms',
+      version: '2.1.3',
+      integrity: undefined,
+      resolved: undefined,
+      elsewhere: undefined,
+    });
+  });
+
+  // npm installs an entry without a version when the rest of it is what npm would
+  // install anyway, and writes one for a local tarball whose package.json has none
+  // (DESIGN.md, threat model).
+  it.each([
+    ['no version', {}],
+    ['an empty version', { version: '' }],
+  ])('cannot vet a registry entry with %s', (_, entry) => {
+    const text = raw({ 'node_modules/ms': { ...entry, integrity: 'sha512-x' } });
+    expect(parseLockfile(text).get('node_modules/ms')).toMatchObject({
+      version: '',
+      elsewhere: 'no version in the lockfile',
+    });
+  });
+
+  it('names the tarball of a local entry without a version', () => {
+    const text = raw({ 'node_modules/t': { resolved: 'file:../t.tgz', integrity: 'sha512-x' } });
+    expect(parseLockfile(text).get('node_modules/t')?.elsewhere).toBe('file:../t.tgz');
+  });
+
+  // npm decides what is bundled without the lockfile's `inBundle` flag, and
+  // downloads what it does not take from a bundle (DESIGN.md, threat model).
+  it('keeps entries flagged inBundle, wherever they are', () => {
+    const evil = { version: '2.1.3', resolved: 'https://evil.example/ms.tgz', inBundle: true };
+    const text = raw({
+      'node_modules/ms': evil,
+      'node_modules/bundler': { version: '1.0.0', bundleDependencies: ['ms'] },
+      'node_modules/bundler/node_modules/ms': evil,
+      'packages/lib': { version: '1.0.0', bundleDependencies: ['ms'] },
+      'packages/lib/node_modules/ms': evil,
+    });
+    expect([...parseLockfile(text).keys()]).toEqual([
+      'node_modules/ms',
+      'node_modules/bundler',
+      'node_modules/bundler/node_modules/ms',
+      'packages/lib/node_modules/ms',
     ]);
+  });
+
+  it('vets a bundled entry, which has no `resolved`, as the registry version it names', () => {
+    const text = raw({
+      'node_modules/bundler/node_modules/ms': { version: '2.1.3', inBundle: true },
+    });
+    expect(parseLockfile(text).get('node_modules/bundler/node_modules/ms')).toEqual({
+      name: 'ms',
+      version: '2.1.3',
+      integrity: undefined,
+      resolved: undefined,
+      elsewhere: undefined,
+    });
   });
 
   it('names the file when it is not JSON', () => {
@@ -144,6 +207,76 @@ describe('diffLockfiles', () => {
       from: '1.0.0',
       to: '1.1.0',
     });
+  });
+
+  it('compares a git dependency that moved with the git entry at its path', () => {
+    const git = (sha: string) => ({
+      version: '2.1.3',
+      resolved: `git+ssh://git@github.com/x/ms.git#${sha}`,
+      integrity: undefined,
+    });
+    const before = lockfile({
+      'node_modules/ms': { version: '2.1.3' },
+      'node_modules/x/node_modules/ms': git('aaa'),
+    });
+    const after = lockfile({
+      'node_modules/ms': { version: '2.1.3' },
+      'node_modules/x/node_modules/ms': git('bbb'),
+    });
+    expect(diffLockfiles(before, after)).toMatchObject([
+      { fromSource: 'git+ssh://git@github.com/x/ms.git#aaa' },
+    ]);
+  });
+
+  it('lists one artifact once per comparison, so a tamper case is not dropped', () => {
+    const git = {
+      version: '2.0.0',
+      resolved: 'git+ssh://git@github.com/x/ms.git#a',
+      integrity: undefined,
+    };
+    const evil = {
+      version: '2.0.0',
+      resolved: 'https://evil.example/ms.tgz',
+      integrity: undefined,
+    };
+    const before = lockfile({
+      'node_modules/ms': { version: '2.0.0' },
+      'node_modules/a/node_modules/ms': git,
+    });
+    const after = lockfile({
+      'node_modules/ms': { version: '2.0.0' },
+      'node_modules/a/node_modules/ms': evil,
+      'node_modules/b/node_modules/ms': evil,
+    });
+    // a/ replaces the git copy at its path; b/ is compared with the registry copy.
+    expect(diffLockfiles(before, after).map((c) => c.fromSource ?? 'npm registry')).toEqual([
+      'git+ssh://git@github.com/x/ms.git#a',
+      'npm registry',
+    ]);
+  });
+
+  it('compares a package that moved path with its least nested earlier copy', () => {
+    const before = lockfile({
+      'node_modules/npm/node_modules/semver': { version: '7.6.0' },
+      'node_modules/semver': { version: '6.3.1' },
+    });
+    const after = lockfile({
+      'node_modules/npm/node_modules/semver': { version: '7.6.0' },
+      'node_modules/foo/node_modules/semver': { version: '6.3.2' },
+    });
+    expect(diffLockfiles(before, after)).toMatchObject([{ name: 'semver', from: '6.3.1' }]);
+  });
+
+  it('lists a new version at several paths against the version at the least nested one', () => {
+    const before = lockfile({
+      'node_modules/b/node_modules/a': { version: '0.9.0' },
+      'node_modules/a': { version: '1.0.0' },
+    });
+    const after = lockfile({
+      'node_modules/b/node_modules/a': { version: '2.0.0' },
+      'node_modules/a': { version: '2.0.0' },
+    });
+    expect(diffLockfiles(before, after)).toMatchObject([{ name: 'a', from: '1.0.0' }]);
   });
 
   it('lists a new version once, whatever paths and earlier versions it has', () => {
@@ -217,6 +350,15 @@ describe('diffLockfiles', () => {
         resolved: 'https://registry.npmjs.org/evil/-/e.tgz',
       });
       expect(diffLockfiles(before, after)).toHaveLength(1);
+    });
+
+    it('when it lost its version', () => {
+      const before = one({});
+      const after = JSON.parse(before) as { packages: Record<string, Record<string, unknown>> };
+      delete after.packages['node_modules/ms']!.version;
+      expect(diffLockfiles(before, JSON.stringify(after))).toMatchObject([
+        { name: 'ms', from: '2.1.3', to: '' },
+      ]);
     });
 
     it('when a git dependency moved to another commit', () => {
