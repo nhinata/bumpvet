@@ -143,7 +143,9 @@ before the same checks are trusted for it.
 ## Known limitations
 
 - Only the public npm registry. Behind a mirror or a private registry every
-  package is `not-from-registry`, so everything is `REVIEW`.
+  package is `not-from-registry`, so everything is `REVIEW`. bumpvet does not
+  log in, so a private package on registry.npmjs.org gets a 404 and is
+  `not-in-registry` (`BLOCK`).
 
 ## Not doing (and why)
 
