@@ -267,19 +267,28 @@ describe('diffLockfiles', () => {
     expect(diffLockfiles(before, after)).toMatchObject([{ name: 'semver', from: '6.3.1' }]);
   });
 
-  it('lists a new version at several paths against the version at the least nested one', () => {
+  it('keeps the integrity comparison of one path when another path had no integrity', () => {
     const before = lockfile({
-      'node_modules/b/node_modules/a': { version: '0.9.0' },
-      'node_modules/a': { version: '1.0.0' },
+      'node_modules/a/node_modules/ms': {
+        version: '2.0.0',
+        integrity: undefined,
+        resolved: undefined,
+      },
+      'node_modules/b/node_modules/ms': { version: '2.0.0', integrity: 'sha512-old' },
     });
     const after = lockfile({
-      'node_modules/b/node_modules/a': { version: '2.0.0' },
-      'node_modules/a': { version: '2.0.0' },
+      'node_modules/a/node_modules/ms': { version: '2.0.0' },
+      'node_modules/b/node_modules/ms': { version: '2.0.0' },
     });
-    expect(diffLockfiles(before, after)).toMatchObject([{ name: 'a', from: '1.0.0' }]);
+    expect(diffLockfiles(before, after).map((c) => c.fromIntegrity)).toEqual([
+      undefined,
+      'sha512-old',
+    ]);
   });
 
-  it('lists a new version once, whatever paths and earlier versions it has', () => {
+  // Each earlier version is what install-scripts and provenance-lost compare with,
+  // so none of them is dropped.
+  it('lists a new version once per earlier version it replaces', () => {
     const before = lockfile({
       'node_modules/a': { version: '1.0.0' },
       'node_modules/b/node_modules/a': { version: '0.9.0' },
@@ -289,7 +298,7 @@ describe('diffLockfiles', () => {
       'node_modules/b/node_modules/a': { version: '2.0.0' },
       'node_modules/c/node_modules/a': { version: '2.0.0' },
     });
-    expect(diffLockfiles(before, after)).toHaveLength(1);
+    expect(diffLockfiles(before, after).map((c) => c.from)).toEqual(['1.0.0', '0.9.0']);
   });
 
   it('lists a new version once when its paths record different URLs for the same integrity', () => {

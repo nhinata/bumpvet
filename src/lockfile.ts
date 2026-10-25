@@ -129,7 +129,9 @@ function shallowFirst(entries: Map<string, LockPackage>): [string, LockPackage][
  *   compare with), the old entry at the same path, else that copy of the same
  *   version, else the least nested old entry of the name.
  *
- * Without an old copy of the same version, the second is used for both.
+ * Without an old copy of the same version, the second is used for both. A new
+ * artifact is listed once per distinct comparison: two paths that replaced
+ * different versions give two changes, so that neither comparison is lost.
  */
 export function diffLockfiles(oldText: string | null, newText: string): Change[] {
   const before =
@@ -142,7 +144,7 @@ export function diffLockfiles(oldText: string | null, newText: string): Change[]
   }
   const seen = new Set<string>();
   const changes: Change[] = [];
-  for (const [path, pkg] of shallowFirst(parseLockfile(newText, 'the new lockfile'))) {
+  for (const [path, pkg] of parseLockfile(newText, 'the new lockfile')) {
     const named = byName.get(pkg.name) ?? [];
     const sameVersion = named.filter((p) => p.version === pkg.version);
     const artifact = artifactKey(pkg);
@@ -166,12 +168,11 @@ export function diffLockfiles(oldText: string | null, newText: string): Change[]
       change.fromIntegrity = copy.integrity;
     }
 
-    // What gets vetted is the new artifact. It is listed once per comparison, so
-    // that the copy compared with the registry's is not dropped for another one.
     const key = JSON.stringify([
       change.name,
       change.to,
       artifact,
+      change.from,
       change.fromSource,
       change.fromIntegrity,
     ]);
