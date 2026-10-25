@@ -64,6 +64,8 @@ export function computeSignals(
   const expected = change.integrity?.startsWith('sha1-')
     ? (sha1Integrity(next.dist?.shasum) ?? next.dist?.integrity)
     : next.dist?.integrity;
+  // Compared as a whole string: npm accepts content that matches any one of several
+  // hashes, so the registry's hash beside another must not count as a match (DESIGN.md).
   const comparable = !!change.integrity && !!expected && sameAlgorithm(change.integrity, expected);
   // One integrity signal is enough; the lockfile-to-lockfile one above is the more direct.
   if (

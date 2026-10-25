@@ -68,6 +68,11 @@ looked at again.
   With a wrong integrity, or with `resolved` pointing at another package and
   the right integrity, `npm ci` fails ("tarball data ... seems to be
   corrupted").
+- With several hashes in the integrity, npm checks only those of the
+  strongest algorithm and accepts content that matches any one of them: with
+  the registry's sha512 beside another sha512 and `resolved` at another
+  server, `npm ci` installed that server's tarball. A sha1, sha384, sha3 or
+  md5 hash beside the sha512 is not checked.
 - Without an integrity it verifies nothing: with `resolved` pointing at
   another package, or at another version of the same one, `npm ci` installed
   that under the lockfile's name and version.
@@ -151,6 +156,13 @@ before the same checks are trusted for it.
   entries from npm-generated lockfiles, every `resolved` equals the
   registry's `dist.tarball` and every integrity equals the registry's, so the
   exact comparison raises no false positives there.
+- **An integrity with several hashes is not the registry's.** The comparison
+  above takes the integrity as a whole, so one with several hashes never
+  equals the registry's single hash. This stops a lockfile that lists the
+  registry's hash beside its own, which npm accepts (see
+  [Threat model](#threat-model)). It also flags a second hash npm would not
+  check, such as a sha1 beside the sha512; npm writes the registry's
+  `dist.integrity`, which had a single hash in every version checked.
 - **Bundled dependencies are vetted like any other entry.** Which entries npm
   takes from a tarball depends on more than the lockfile (see
   [Threat model](#threat-model)), so a rule that reads only the lockfile can

@@ -138,6 +138,64 @@ describe('computeSignals', () => {
     expect(ids(signals)).toEqual(['integrity-mismatch']);
   });
 
+  // npm checks only the strongest algorithm's hashes and accepts content that
+  // matches any one of them (DESIGN.md, threat model). With `resolved` at another
+  // server, each of these installs that server's tarball.
+  describe('the registry hash listed beside another one', () => {
+    const p = packument('pkg', [
+      ...history,
+      { version: '1.2.0', time: '2025-12-01T00:00:00Z', publisher: 'alice', provenance: true },
+    ]);
+    const registry = 'sha512-pkg-1.2.0';
+    const shasum = 'ab8ece0c4062da5f6d2fa1d07fc4cdb5f8b9b25b';
+    p.versions['1.2.0']!.dist!.shasum = shasum;
+    const vet = (integrity: string) =>
+      ids(
+        computeSignals(
+          {
+            name: 'pkg',
+            from: '1.1.0',
+            to: '1.2.0',
+            integrity,
+            resolved: 'https://evil.example/p.tgz',
+          },
+          p,
+          { now },
+        ),
+      );
+
+    it('flags a second sha512 hash', () => {
+      expect(vet(`${registry} sha512-evil`)).toEqual(['integrity-mismatch']);
+    });
+
+    it('flags a sha512 hash after the registry sha1', () => {
+      const sha1 = `sha1-${Buffer.from(shasum, 'hex').toString('base64')}`;
+      expect(vet(`${sha1} sha512-evil`)).toEqual(['integrity-mismatch']);
+    });
+
+    it('checks `resolved` when the first hash uses an algorithm the registry does not give', () => {
+      expect(vet('sha384-x sha512-evil')).toEqual(['tarball-mismatch']);
+    });
+  });
+
+  // npm writes a single hash, so a second one counts against the registry even
+  // where npm would not check it (DESIGN.md, decisions).
+  it('flags a sha1 hash beside the registry sha512', () => {
+    const p = packument('pkg', [
+      ...history,
+      { version: '1.2.0', time: '2025-12-01T00:00:00Z', publisher: 'alice', provenance: true },
+    ]);
+    expect(
+      ids(
+        computeSignals(
+          { name: 'pkg', from: '1.1.0', to: '1.2.0', integrity: 'sha512-pkg-1.2.0 sha1-x' },
+          p,
+          { now },
+        ),
+      ),
+    ).toEqual(['integrity-mismatch']);
+  });
+
   it('does not compare integrities that use different algorithms', () => {
     const p = packument('pkg', [
       ...history,
