@@ -5,10 +5,11 @@ updates:
     directory: /
     schedule:
       interval: weekly
-    # Wait a week after a release: compromised releases are usually found and
-    # removed within hours or days (chalk@5.6.1 was up for about two hours).
+    # Wait three days after a release: compromised releases are usually found
+    # and removed within hours or days (chalk@5.6.1 was up for about two hours).
+    # Three days is also Dependabot's default.
     cooldown:
-      default-days: 7
+      default-days: 3
     groups:
       dev-minor-and-patch:
         dependency-type: development
@@ -27,7 +28,7 @@ updates:
     schedule:
       interval: weekly
     cooldown:
-      default-days: 7
+      default-days: 3
     # Majors come one by one: they can break the workflow.
     groups:
       actions:
