@@ -2,4 +2,6 @@ dist/
 dist-eval/
 eval/.cache/
 package-lock.json
+# written by release-please in its own style
+CHANGELOG.md
 coverage/

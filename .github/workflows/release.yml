@@ -1,0 +1,56 @@
+name: Release
+
+# release-please keeps a release pull request open with the next version and
+# CHANGELOG. Merging it tags the release, and the publish job puts it on npm
+# through trusted publishing, which adds provenance. See CONTRIBUTING.md,
+# Releases.
+on:
+  push:
+    branches: [main]
+
+permissions: {}
+
+# One release at a time, and never cancel one halfway.
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
+    steps:
+      # GITHUB_TOKEN: CI on the release pull request waits for approval.
+      - id: release
+        uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
+
+  publish:
+    needs: release-please
+    if: needs.release-please.outputs.release_created == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      id-token: write # npm trusted publishing
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.release-please.outputs.tag_name }}
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          registry-url: https://registry.npmjs.org
+          package-manager-cache: false
+      # .npmrc keeps install scripts from running, so the build is a step of its own.
+      - run: npm ci
+      - run: npm run build
+      - run: npm test
+      - run: npm publish

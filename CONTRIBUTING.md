@@ -42,8 +42,8 @@ Read its comment before changing it.
 | `npm run eval`         | measure false positives on popular packages (online) |
 
 CI runs `format:check`, `lint`, `typecheck`, `test` and `build` on Node.js 22,
-24 and 26, then starts the built CLI (`node dist/cli.js --help`). Run them
-before pushing.
+24 and 26, then starts the built CLI (`node dist/cli.js --help`) and the CLI
+of the packed tarball. Run them before pushing.
 
 ## Pull requests
 
@@ -65,6 +65,33 @@ before pushing.
 - `main` is protected: every change goes through a pull request, CI must pass,
   and the branch must be up to date with `main` ("Update branch" is fine; the
   merge commit disappears in the squash).
+
+## Releases
+
+Releases are made by [release-please](https://github.com/googleapis/release-please)
+in `.github/workflows/release.yml`; nothing is published from a laptop.
+
+1. When a pull request that bumps the version is merged (`feat:`, `fix:` and
+   the other types in release-please's changelog such as `perf:`, or any
+   breaking change), release-please opens or updates a release pull request.
+   It changes only the version in `package.json`, `package-lock.json` and
+   `.release-please-manifest.json`, and `CHANGELOG.md`.
+2. That pull request is opened with `GITHUB_TOKEN`, so its CI waits until a
+   maintainer approves the workflow runs on it.
+3. Merging it tags `v<version>`, creates the GitHub release, and publishes to
+   npm through trusted publishing, which adds provenance. The publish job
+   builds and tests the tagged commit first.
+
+Set up once, by the repository owner:
+
+- GitHub, Settings → Actions → General: "Allow GitHub Actions to create and
+  approve pull requests", so release-please can open its pull request.
+- npmjs.com, the package's Settings → Trusted publisher: GitHub Actions,
+  repository `nhinata/bumpvet`, workflow `release.yml`, no environment. npm
+  does not check these when they are saved, only at publish time, and a new
+  entry must be used for a publish within two days. Once a release has gone
+  through, Publishing access: "Require two-factor authentication and disallow
+  tokens".
 
 ## Writing code
 

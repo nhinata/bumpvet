@@ -39,3 +39,5 @@ jobs:
       - run: npm run build
       # The built entry point starts and parses arguments.
       - run: node dist/cli.js --help
+      # The package as npm would publish it installs, and its command starts.
+      - run: npx --yes --package "./$(npm pack --silent)" bumpvet --help
