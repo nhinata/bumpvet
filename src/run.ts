@@ -132,7 +132,7 @@ function lockfileAt(cwd: string, ref: string): string | null {
     try {
       shallow = git(cwd, ['rev-parse', '--is-shallow-repository']).trim() === 'true';
     } catch {
-      // only for the hint
+      // Not knowing whether the clone is shallow only loses the hint below.
     }
     const hint = shallow ? ' (this is a shallow clone: fetch the commit first)' : '';
     throw new Error(

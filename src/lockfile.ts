@@ -57,10 +57,9 @@ export interface LockPackage {
  * Reads the installed packages of a package-lock.json (lockfileVersion 2 or 3).
  * Only links are left out (workspaces and `file:` folders, whose targets are
  * outside `node_modules/`): npm downloads nothing for them. Bundled
- * dependencies are kept: npm decides what is bundled from more than the
- * lockfile, and downloads what it does not take from a bundle (DESIGN.md,
- * threat model). The text may come from a pull request, so every field is
- * checked for its type; `label` names the file in errors.
+ * dependencies are kept (DESIGN.md, decisions). The text may come from a pull
+ * request, so every field is checked for its type; `label` names the file in
+ * errors.
  */
 export function parseLockfile(text: string, label = 'lockfile'): Map<string, LockPackage> {
   let lock: unknown;
@@ -98,9 +97,7 @@ export function parseLockfile(text: string, label = 'lockfile'): Map<string, Loc
  * What an entry installs, as a key: two entries of the same package and
  * version install the same thing exactly when their keys are equal. With an
  * integrity, npm checks the content against it, so the integrity identifies
- * the artifact whatever `resolved` says; without one, only the URL does. A
- * field one side has and the other lacks therefore makes the keys differ.
- * This is the one place that decides it.
+ * the artifact whatever `resolved` says; without one, only the URL does.
  */
 function artifactKey(p: LockPackage): string {
   return JSON.stringify([

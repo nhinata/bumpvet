@@ -82,11 +82,9 @@ export function computeSignals(
       after: change.integrity,
     });
   }
-  // npm checks what it downloads against the lockfile's integrity, so a matching
-  // integrity pins the content whatever `resolved` says. Without one it checks
-  // nothing: `resolved` must then be exactly the registry's tarball for this
-  // version, or npm installs whatever it points at.
-  // A registry that gives no tarball URL leaves nothing to vouch for `resolved`: that fails too.
+  // Without an integrity to compare with the registry's, nothing ties the content
+  // to the registry, so `resolved` must be the registry's tarball exactly
+  // (DESIGN.md, threat model). With no tarball URL from the registry, that fails too.
   const tarball = next.dist?.tarball;
   if (!comparable && change.resolved !== undefined && change.resolved !== tarball) {
     signals.push({
