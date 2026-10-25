@@ -25,24 +25,27 @@ the two with a small table. Nothing from a package is ever executed.
 
 ## Usage
 
-Requires Node.js 22 or later. Not yet published to npm; run it from a clone:
+Requires Node.js 22 or later.
 
 ```sh
-git clone https://github.com/nhinata/bumpvet.git && cd bumpvet
-npm ci && npm run build
-
-# In your project: compare package-lock.json with the one at HEAD
-node /path/to/bumpvet/dist/cli.js
+# In the directory of package-lock.json, in a git repository:
+# compare it with the one at HEAD
+npx bumpvet
 
 # ...or with another ref, e.g. the base branch of a pull request
-node /path/to/bumpvet/dist/cli.js --base origin/main
+npx bumpvet --base origin/main
 
 # Two lockfiles on disk
-node /path/to/bumpvet/dist/cli.js old/package-lock.json new/package-lock.json
+npx bumpvet old/package-lock.json new/package-lock.json
 
 # Machine-readable output
-node /path/to/bumpvet/dist/cli.js --json
+npx bumpvet --json
 ```
+
+In CI, name an exact version and skip npx's install prompt
+(`npx --yes bumpvet@<version>`), so that a new release of bumpvet does not
+change verdicts without a change in your repository. To run it from source,
+see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 Exit codes: `0` nothing to block, `1` at least one `BLOCK`, `2` error.
 
