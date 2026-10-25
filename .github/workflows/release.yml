@@ -158,3 +158,14 @@ jobs:
         env:
           FILE: ${{ needs.build.outputs.file }}
           SHA256: ${{ needs.build.outputs.sha256 }}
+
+  # The action at the released commit, now that the version it names is on npm.
+  test-action:
+    name: test action
+    needs: [build, publish]
+    if: ${{ !cancelled() && needs.publish.result == 'success' }}
+    permissions:
+      contents: read
+    uses: ./.github/workflows/test-action.yml
+    with:
+      ref: ${{ needs.build.outputs.sha }}

@@ -83,7 +83,9 @@ in `.github/workflows/release.yml`; nothing is published from a laptop.
    commit is then built and packed in one job and tested in another; only
    when both pass does a third job publish the packed tarball to npm through
    trusted publishing, which adds provenance. That job has the publishing
-   permission and runs no dependency code.
+   permission and runs no dependency code. Then the action at the tagged
+   commit is tested with the version just published (`Test action`), which
+   the release pull request skips because that version is not on npm yet.
 4. If publishing fails after the tag exists for a reason outside the tagged
    code (the npm settings, the workflow), fix that and run the Release
    workflow by hand on `main` (Actions → Release → Run workflow) with the tag,
