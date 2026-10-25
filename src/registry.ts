@@ -1,4 +1,4 @@
-import { messageOf, messageWithCause } from './errors.js';
+import { messageWithCause } from './errors.js';
 import { isObject, str } from './json.js';
 import { INSTALL_HOOKS } from './signals.js';
 import type { Packument, VersionManifest } from './types.js';
@@ -32,7 +32,7 @@ export function registryFetcher(
         try {
           text = await res.text();
         } catch (err) {
-          const reason = messageOf(err);
+          const reason = messageWithCause(err);
           throw new Error(`reading the registry response for ${name} failed: ${reason}`, {
             cause: err,
           });

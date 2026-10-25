@@ -153,18 +153,6 @@ describe('registryFetcher', () => {
     ).rejects.toThrow('registry sent invalid JSON for pkg');
   });
 
-  it('does not call a failure while reading the body invalid JSON', async () => {
-    const body = new ReadableStream({
-      pull(controller) {
-        controller.error(new Error('terminated'));
-      },
-    });
-    const reset = () => Promise.resolve(new Response(body, { status: 200 }));
-    await expect(
-      registryFetcher('https://r/', reset as unknown as typeof fetch)('pkg'),
-    ).rejects.toThrow('terminated');
-  });
-
   it('names the package and the reason when the request itself fails', async () => {
     const down = () =>
       Promise.reject(
@@ -174,6 +162,41 @@ describe('registryFetcher', () => {
       registryFetcher('https://r/', down as unknown as typeof fetch)('pkg'),
     ).rejects.toThrow(
       'fetching pkg from the registry failed: fetch failed (getaddrinfo ENOTFOUND r)',
+    );
+  });
+
+  // The shapes Node.js 22 and 24 give (issue #8).
+  it('gives the reason when every address of the host refused', async () => {
+    const refused = Object.assign(
+      new AggregateError(
+        [
+          new Error('connect ECONNREFUSED ::1:443'),
+          new Error('connect ECONNREFUSED 127.0.0.1:443'),
+        ],
+        '',
+      ),
+      { code: 'ECONNREFUSED' },
+    );
+    const down = () => Promise.reject(new TypeError('fetch failed', { cause: refused }));
+    await expect(
+      registryFetcher('https://r/', down as unknown as typeof fetch)('pkg'),
+    ).rejects.toThrow(
+      'fetching pkg from the registry failed: fetch failed (connect ECONNREFUSED ::1:443; connect ECONNREFUSED 127.0.0.1:443)',
+    );
+  });
+
+  // Not "invalid JSON": the body never arrived.
+  it('gives the reason when the connection closes while the body is read', async () => {
+    const body = new ReadableStream({
+      pull(controller) {
+        controller.error(new TypeError('terminated', { cause: new Error('other side closed') }));
+      },
+    });
+    const reset = () => Promise.resolve(new Response(body, { status: 200 }));
+    await expect(
+      registryFetcher('https://r/', reset as unknown as typeof fetch)('pkg'),
+    ).rejects.toThrow(
+      'reading the registry response for pkg failed: terminated (other side closed)',
     );
   });
 
