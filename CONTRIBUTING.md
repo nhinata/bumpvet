@@ -202,7 +202,12 @@ Run it for any change that can change a verdict. If the numbers move, update
 
 ## Review findings
 
-Review findings, from people or tools, are sorted before anything is changed:
+Review findings, from people or tools, are sorted before anything is changed.
+
+First check that the finding really happens, with real lockfiles and registry
+data or by running the tool it is about (npm, the registry), not by reading the
+code alone. Also check what the current behavior protects. A finding that does
+not happen is speculative in the table below.
 
 | Finding                                                                                   | What to do                                          |
 | ----------------------------------------------------------------------------------------- | --------------------------------------------------- |
