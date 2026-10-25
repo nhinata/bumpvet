@@ -75,7 +75,7 @@ in `.github/workflows/release.yml`; nothing is published from a laptop.
    the other types in release-please's changelog such as `perf:`, or any
    breaking change), release-please opens or updates a release pull request.
    It changes only the version in `package.json`, `package-lock.json` and
-   `.release-please-manifest.json`, and `CHANGELOG.md`.
+   `.github/release-please-manifest.json`, and `CHANGELOG.md`.
 2. That pull request is opened with `GITHUB_TOKEN`, so its CI waits until a
    maintainer approves the workflow runs on it.
 3. Merging it tags `v<version>`, creates the GitHub release, and publishes to
