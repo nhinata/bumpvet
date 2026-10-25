@@ -1,0 +1,82 @@
+name: Action
+
+# Runs the action in this checkout against lockfile changes whose verdict is
+# known, and checks its exit code and that it passes or fails the job as README
+# says. bumpvet comes from npm, at the version action.yml names, and reads the
+# live registry; the fixtures are old releases whose registry data no longer
+# changes.
+on:
+  pull_request:
+    paths:
+      - action.yml
+      - test/action/**
+      - .github/workflows/action.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: ${{ matrix.case }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # ms 2.1.2 -> 2.1.3
+          - case: ok
+            exit-code: 0
+            outcome: success
+          # pino 9.13.1 -> 9.14.0: provenance-lost
+          - case: review
+            exit-code: 0
+            outcome: success
+          # ms 2.1.2 -> 2.1.3 with 2.1.2's integrity: integrity-mismatch
+          - case: block
+            exit-code: 1
+            outcome: failure
+          # HEAD^1 missing: bumpvet cannot vet, an error
+          - case: no-parent
+            exit-code: 2
+            outcome: failure
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Make a repository with the lockfile change
+        env:
+          CASE: ${{ matrix.case }}
+          REPO: ${{ runner.temp }}/repo
+        run: |
+          git init -q "$REPO"
+          commit() { git -C "$REPO" -c user.name=test -c user.email=test@example.com commit -q --allow-empty -m "$1"; }
+          if [[ "$CASE" != no-parent ]]; then
+            cp "test/action/$CASE/base.json" "$REPO/package-lock.json"
+            git -C "$REPO" add package-lock.json
+            commit base
+            cp "test/action/$CASE/head.json" "$REPO/package-lock.json"
+          else
+            cp test/action/ok/head.json "$REPO/package-lock.json"
+          fi
+          git -C "$REPO" add package-lock.json
+          commit head
+      - id: vet
+        uses: ./
+        continue-on-error: true
+        with:
+          working-directory: ${{ runner.temp }}/repo
+      - name: Check the outcome
+        env:
+          WANT_CODE: ${{ matrix.exit-code }}
+          GOT_CODE: ${{ steps.vet.outputs.exit-code }}
+          WANT: ${{ matrix.outcome }}
+          GOT: ${{ steps.vet.outcome }}
+        run: |
+          echo "exit code: $GOT_CODE, expected: $WANT_CODE"
+          echo "outcome: $GOT, expected: $WANT"
+          [[ "$GOT_CODE" == "$WANT_CODE" && "$GOT" == "$WANT" ]]

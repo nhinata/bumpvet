@@ -74,8 +74,9 @@ in `.github/workflows/release.yml`; nothing is published from a laptop.
 1. When a pull request that bumps the version is merged (`feat:`, `fix:` and
    the other types in release-please's changelog such as `perf:`, or any
    breaking change), release-please opens or updates a release pull request.
-   It changes only the version in `package.json`, `package-lock.json` and
-   `.github/release-please-manifest.json`, and `CHANGELOG.md`.
+   It changes only the version in `package.json`, `package-lock.json`,
+   `.github/release-please-manifest.json` and `action.yml` (the bumpvet
+   release the action installs), and `CHANGELOG.md`.
 2. That pull request is opened with `GITHUB_TOKEN`, so its CI waits until a
    maintainer approves the workflow runs on it.
 3. Merging it tags `v<version>` and creates the GitHub release. The tagged

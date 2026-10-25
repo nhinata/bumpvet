@@ -1,0 +1,97 @@
+name: bumpvet
+description: Flags dependency updates in package-lock.json that a human should look at before merging.
+author: nhinata
+branding:
+  icon: shield
+  color: gray-dark
+
+inputs:
+  base:
+    description: >-
+      Git ref to compare package-lock.json with. Defaults to HEAD^1 on
+      pull_request, which needs actions/checkout with fetch-depth: 2.
+    required: false
+    default: ''
+  working-directory:
+    description: Directory of package-lock.json.
+    required: false
+    default: .
+
+outputs:
+  exit-code:
+    description: >-
+      bumpvet's exit code: 0 nothing to block, 1 at least one BLOCK, 2 error.
+      Empty if bumpvet did not run.
+    value: ${{ steps.vet.outputs.exit-code }}
+
+runs:
+  using: composite
+  steps:
+    # The bumpvet release that matches this action's version, so that verdicts
+    # change only when the workflow pins another version of the action.
+    # Installed outside the checkout with the registry named: an .npmrc in a
+    # pull request would otherwise choose where it comes from.
+    - name: Install bumpvet
+      id: install
+      shell: bash
+      env:
+        BUMPVET_VERSION: 0.1.1 # x-release-please-version
+      run: |
+        dir="$RUNNER_TEMP/bumpvet-$BUMPVET_VERSION"
+        mkdir -p "$dir"
+        cd "$dir"
+        echo '{"private": true}' > package.json
+        npm install --ignore-scripts --no-audit --no-fund \
+          --registry=https://registry.npmjs.org/ "bumpvet@$BUMPVET_VERSION"
+        echo "cli=$dir/node_modules/bumpvet/dist/cli.js" >> "$GITHUB_OUTPUT"
+
+    - name: Vet the lockfile change
+      id: vet
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      env:
+        BUMPVET_CLI: ${{ steps.install.outputs.cli }}
+        BASE: ${{ inputs.base }}
+        EVENT: ${{ github.event_name }}
+        REPORT: ${{ runner.temp }}/bumpvet-report.txt
+        GUIDE: https://github.com/nhinata/bumpvet#when-bumpvet-says-block-or-review
+      run: |
+        if [[ -z "$BASE" ]]; then
+          if [[ "$EVENT" != pull_request ]]; then
+            echo "::error title=bumpvet::Set the base input to the git ref to compare package-lock.json with; it defaults to HEAD^1 only on pull_request."
+            exit 2
+          fi
+          # On pull_request the checkout is the merge commit GitHub builds. Its
+          # first parent is the base the pull request was compared with, even
+          # if the base branch has moved since.
+          BASE='HEAD^1'
+        fi
+
+        set +e
+        node "$BUMPVET_CLI" --base "$BASE" > "$REPORT" 2>&1
+        code=$?
+        set -e
+        echo "exit-code=$code" >> "$GITHUB_OUTPUT"
+        # The report quotes the lockfile and the registry, which can hold a
+        # line that the runner would take as a workflow command.
+        token=$(node -e "console.log(require('crypto').randomUUID())")
+        echo "::stop-commands::$token"
+        cat "$REPORT"
+        echo "::$token::"
+        # A fence longer than any run of backticks in the report, which
+        # quotes text from the registry (install scripts) that anyone can publish.
+        fence=$(node -e "const r = require('fs').readFileSync(process.argv[1], 'utf8'); console.log('\`'.repeat(Math.max(3, ...(r.match(/\`+/g) ?? []).map((m) => m.length + 1))))" "$REPORT")
+        {
+          echo "### bumpvet"
+          echo
+          echo "$fence"
+          cat "$REPORT"
+          echo "$fence"
+          echo
+          echo "Exit code $code: 0 nothing to block, 1 at least one BLOCK, 2 error. What to check: $GUIDE"
+        } >> "$GITHUB_STEP_SUMMARY"
+        # REVIEW exits 0; surface it in the pull request's checks anyway.
+        if grep -q '^REVIEW ' "$REPORT"; then
+          echo "::warning title=bumpvet::REVIEW: see the job summary and $GUIDE"
+        fi
+        exit "$code"

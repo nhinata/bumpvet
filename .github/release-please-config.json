@@ -5,7 +5,13 @@
     ".": {
       "release-type": "node",
       "include-component-in-tag": false,
-      "bump-minor-pre-major": true
+      "bump-minor-pre-major": true,
+      "extra-files": [
+        {
+          "type": "generic",
+          "path": "action.yml"
+        }
+      ]
     }
   }
 }

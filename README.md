@@ -49,6 +49,43 @@ see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 Exit codes: `0` nothing to block, `1` at least one `BLOCK`, `2` error.
 
+### GitHub Actions
+
+```yaml
+name: bumpvet
+on:
+  pull_request:
+    paths: [package-lock.json]
+permissions:
+  contents: read
+jobs:
+  bumpvet:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 2
+          persist-credentials: false
+      - uses: nhinata/bumpvet@<commit SHA of a release> # v0.x.y
+```
+
+- On `pull_request` it compares `package-lock.json` in the merge commit GitHub
+  builds with the one in its first parent, the base. Keep the checkout's `ref`
+  at its default, and `fetch-depth: 2` so that the parent is there. On other
+  events, set the `base` input to a git ref.
+- For a lockfile outside the repository root, set `working-directory`, and
+  name that lockfile in `paths`.
+- It runs the bumpvet release with the action's version, installed from
+  registry.npmjs.org outside the checkout. It needs Node.js 22 or later; if the
+  runner's default is older, run `actions/setup-node` first.
+- `BLOCK` and errors fail the job. `REVIEW` passes it with a warning. The
+  report is in the job summary.
+- The `exit-code` output is bumpvet's exit code, or empty if bumpvet did not
+  run. After a failure, later steps run only if this step has
+  `continue-on-error: true` or they have an `if:` such as `always()`.
+- There is no way yet to accept a `BLOCK` you have checked: the job stays
+  failed, and the pull request is merged without it.
+
 ## How it decides
 
 | Signals                                                                                                                                                                                                                                                  | Verdict |
