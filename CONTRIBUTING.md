@@ -78,16 +78,27 @@ in `.github/workflows/release.yml`; nothing is published from a laptop.
    `.github/release-please-manifest.json`, and `CHANGELOG.md`.
 2. That pull request is opened with `GITHUB_TOKEN`, so its CI waits until a
    maintainer approves the workflow runs on it.
-3. Merging it tags `v<version>`, creates the GitHub release, and publishes to
-   npm through trusted publishing, which adds provenance. The publish job
-   builds and tests the tagged commit first.
+3. Merging it tags `v<version>` and creates the GitHub release. The tagged
+   commit is then built and packed in one job and tested in another; only
+   when both pass does a third job publish the packed tarball to npm through
+   trusted publishing, which adds provenance. That job has the publishing
+   permission and runs no dependency code.
+4. If publishing fails after the tag exists for a reason outside the tagged
+   code (the npm settings, the workflow), fix that and run the Release
+   workflow by hand on `main` (Actions → Release → Run workflow) with the tag,
+   e.g. `v1.2.3`. It builds, tests and publishes that tag again, and refuses
+   a tag that is not on `main` or is older than the latest version on npm.
+   If the tagged code is at fault, release a new version instead.
 
 Set up once, by the repository owner:
 
 - GitHub, Settings → Actions → General: "Allow GitHub Actions to create and
   approve pull requests", so release-please can open its pull request.
+- GitHub, Settings → Environments: `npm`, deployment branches limited to
+  `main`, so that only main's workflow can publish.
 - npmjs.com, the package's Settings → Trusted publisher: GitHub Actions,
-  repository `nhinata/bumpvet`, workflow `release.yml`, no environment. npm
+  repository `nhinata/bumpvet`, workflow `release.yml`, environment `npm`, and
+  "allow npm publish" (release.yml uses `npm publish`, not `npm stage publish`). npm
   does not check these when they are saved, only at publish time, and a new
   entry must be used for a publish within two days. Once a release has gone
   through, Publishing access: "Require two-factor authentication and disallow
