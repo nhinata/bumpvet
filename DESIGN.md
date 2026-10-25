@@ -190,6 +190,9 @@ before the same checks are trusted for it.
   is not caught.
 - What a package bundles is not vetted on its own: it is part of that
   package's tarball, which is.
+- A registry package replaced by a link to a folder in the repository is not
+  reported, since links are left out (see [Threat model](#threat-model));
+  the folder's code is in the pull request's diff (issue #18).
 
 ## Not doing (and why)
 
