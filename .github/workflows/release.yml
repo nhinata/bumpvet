@@ -1,6 +1,17 @@
 name: Release
 
-# See CONTRIBUTING.md, Releases.
+# Merging a pull request that bumps the version (feat:, fix:, a breaking change;
+# see CONTRIBUTING.md, Pull requests) makes release-please open or update a
+# release pull request. It changes only the version in package.json,
+# package-lock.json, .github/release-please-manifest.json and action.yml, and
+# CHANGELOG.md. Merging that tags v<version> and creates the GitHub release;
+# the jobs below then build, test and publish it to npm with provenance, and
+# test the action with the version just published. Nothing is published from a
+# laptop.
+#
+# Run by hand (Run workflow on main, with the tag) to publish a tag again after
+# a failure outside the tagged code, such as the npm settings. If the tagged
+# code is at fault, release a new version instead.
 on:
   push:
     branches: [main]

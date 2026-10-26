@@ -66,37 +66,6 @@ of the packed tarball. Run them before pushing.
   and the branch must be up to date with `main` ("Update branch" is fine; the
   merge commit disappears in the squash).
 
-## Releases
-
-Releases are made by [release-please](https://github.com/googleapis/release-please)
-in `.github/workflows/release.yml`; nothing is published from a laptop.
-
-1. When a pull request that bumps the version is merged (`feat:`, `fix:` and
-   the other types in release-please's changelog such as `perf:`, or any
-   breaking change), release-please opens or updates a release pull request.
-   It changes only the version in `package.json`, `package-lock.json`,
-   `.github/release-please-manifest.json` and `action.yml` (the bumpvet
-   release the action installs), and `CHANGELOG.md`.
-2. That pull request is opened with `GITHUB_TOKEN`, so its CI waits until a
-   maintainer approves the workflow runs on it.
-3. Merging it tags `v<version>` and creates the GitHub release. The tagged
-   commit is then built and packed in one job and tested in another; only
-   when both pass does a third job publish the packed tarball to npm through
-   trusted publishing, which adds provenance. That job has the publishing
-   permission and runs no dependency code. Then the action at the tagged
-   commit is tested with the version just published (`Test action`), which
-   the release pull request skips because that version is not on npm yet.
-   It first waits, up to five minutes, until npm can install that version:
-   npm makes a version installable a few minutes after accepting it (v0.2.0,
-   2026-10-26: about two minutes, during which installing it failed with
-   `ETARGET`).
-4. If publishing fails after the tag exists for a reason outside the tagged
-   code (the npm settings, the workflow), fix that and run the Release
-   workflow by hand on `main` (Actions → Release → Run workflow) with the tag,
-   e.g. `v1.2.3`. It builds, tests and publishes that tag again, and refuses
-   a tag that is not on `main` or is older than the latest version on npm.
-   If the tagged code is at fault, release a new version instead.
-
 ## Writing code
 
 Formatting and the mechanical rules are enforced by Prettier and ESLint. The

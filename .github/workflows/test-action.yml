@@ -81,7 +81,7 @@ jobs:
           commit head
       # From release.yml, right after publishing: npm makes a version
       # installable a few minutes after accepting it, and answers ETARGET until
-      # then. --prefer-online: npm would otherwise reuse the metadata it cached
+      # then (v0.2.0, 2026-10-26: about two minutes). --prefer-online: npm would otherwise reuse the metadata it cached
       # on the first try, without the version.
       - name: Wait until npm can install the version action.yml names
         if: github.event_name != 'pull_request'
