@@ -6,6 +6,19 @@ const LABEL: Record<Verdict, string> = { block: 'BLOCK ', review: 'REVIEW', ok: 
 /** A lockfile entry without a version has '' (see LockPackage). */
 const shown = (version: string | null) => (version === '' ? '(no version)' : version);
 
+const ESCAPES: Record<string, string> = { '\n': '\\n', '\r': '\\r', '\t': '\\t' };
+
+/**
+ * `text` with control characters escaped, so that text from the lockfile or the
+ * registry (install scripts, which anyone can publish) cannot start a line of
+ * its own or move the cursor over the report.
+ */
+export const printable = (text: string): string =>
+  text.replace(
+    /\p{Cc}/gu,
+    (c) => ESCAPES[c] ?? `\\u${c.charCodeAt(0).toString(16).padStart(4, '0')}`,
+  );
+
 export function formatText(results: PackageResult[]): string {
   if (results.length === 0) return 'No dependency versions changed.\n';
   const lines: string[] = [];
@@ -19,10 +32,12 @@ export function formatText(results: PackageResult[]): string {
       continue;
     }
     for (const r of group) {
-      lines.push(`${LABEL[verdict]}  ${r.name} ${shown(r.from) ?? '(new)'} -> ${shown(r.to)}`);
+      lines.push(
+        printable(`${LABEL[verdict]}  ${r.name} ${shown(r.from) ?? '(new)'} -> ${shown(r.to)}`),
+      );
       const width = Math.max(...r.signals.map((s) => s.id.length));
       for (const s of r.signals)
-        lines.push(`        ${s.id.padEnd(width)}  ${s.before} -> ${s.after}`);
+        lines.push(printable(`        ${s.id.padEnd(width)}  ${s.before} -> ${s.after}`));
     }
   }
   return lines.join('\n') + '\n';

@@ -3,7 +3,7 @@ import { readFileSync, statSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { messageOf } from './errors.js';
 import { registryFetcher, type FetchPackument } from './registry.js';
-import { formatJson, formatText } from './report.js';
+import { formatJson, formatText, printable } from './report.js';
 import { vetLockfiles } from './vet.js';
 
 const USAGE = `Usage:
@@ -177,7 +177,7 @@ export async function runCli(argv: string[], env: CliEnv): Promise<number> {
     env.stdout(args.json ? formatJson(results) : formatText(results));
     return results.some((r) => r.verdict === 'block') ? 1 : 0;
   } catch (err) {
-    env.stderr(`bumpvet: ${messageOf(err)}\n`);
+    env.stderr(`bumpvet: ${printable(messageOf(err))}\n`);
     return 2;
   }
 }
