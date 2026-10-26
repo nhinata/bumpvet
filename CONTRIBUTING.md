@@ -97,20 +97,6 @@ in `.github/workflows/release.yml`; nothing is published from a laptop.
    a tag that is not on `main` or is older than the latest version on npm.
    If the tagged code is at fault, release a new version instead.
 
-Set up once, by the repository owner:
-
-- GitHub, Settings → Actions → General: "Allow GitHub Actions to create and
-  approve pull requests", so release-please can open its pull request.
-- GitHub, Settings → Environments: `npm`, deployment branches limited to
-  `main`, so that only main's workflow can publish.
-- npmjs.com, the package's Settings → Trusted publisher: GitHub Actions,
-  repository `nhinata/bumpvet`, workflow `release.yml`, environment `npm`, and
-  "allow npm publish" (release.yml uses `npm publish`, not `npm stage publish`). npm
-  does not check these when they are saved, only at publish time, and a new
-  entry must be used for a publish within two days. Once a release has gone
-  through, Publishing access: "Require two-factor authentication and disallow
-  tokens".
-
 ## Writing code
 
 Formatting and the mechanical rules are enforced by Prettier and ESLint. The
