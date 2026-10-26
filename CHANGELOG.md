@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.1](https://github.com/nhinata/bumpvet/compare/v0.2.0...v0.2.1) (2026-10-26)
+
+
+### Bug Fixes
+
+* escape control and format characters in the text report and error messages ([#39](https://github.com/nhinata/bumpvet/issues/39)) ([ab431ae](https://github.com/nhinata/bumpvet/commit/ab431ae0db7d24b5b5e2e390ed0a240230cdd67c))
+
 ## [0.2.0](https://github.com/nhinata/bumpvet/compare/v0.1.1...v0.2.0) (2026-10-25)
 
 

@@ -1,6 +1,6 @@
 {
   "name": "bumpvet",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Should a human look at this dependency update before it is merged?",
   "type": "module",
   "bin": {
