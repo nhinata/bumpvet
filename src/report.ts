@@ -9,15 +9,16 @@ const shown = (version: string | null) => (version === '' ? '(no version)' : ver
 const ESCAPES: Record<string, string> = { '\n': '\\n', '\r': '\\r', '\t': '\\t' };
 
 /**
- * `text` with control characters escaped, so that text from the lockfile or the
- * registry (install scripts, which anyone can publish) cannot start a line of
- * its own or move the cursor over the report.
+ * `text` with control and format characters escaped, so that text from the
+ * lockfile or the registry (install scripts, which anyone can publish) cannot
+ * start a line of its own, move the cursor over the report, or reorder how a
+ * line looks (bidi controls such as U+202E).
  */
 export const printable = (text: string): string =>
-  text.replace(
-    /\p{Cc}/gu,
-    (c) => ESCAPES[c] ?? `\\u${c.charCodeAt(0).toString(16).padStart(4, '0')}`,
-  );
+  text.replace(/[\p{Cc}\p{Cf}]/gu, (c) => {
+    const hex = c.codePointAt(0)!.toString(16);
+    return ESCAPES[c] ?? (hex.length > 4 ? `\\u{${hex}}` : `\\u${hex.padStart(4, '0')}`);
+  });
 
 export function formatText(results: PackageResult[]): string {
   if (results.length === 0) return 'No dependency versions changed.\n';

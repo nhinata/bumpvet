@@ -114,7 +114,7 @@ describe('two lockfiles', () => {
     expect(r.stdout).toContain('source-changed  npm registry -> no version in the lockfile');
   });
 
-  it('escapes control characters, so that quoted text cannot add lines', async () => {
+  it('escapes control and format characters, so that quoted text cannot add lines or reorder one', async () => {
     const dir = tempDir();
     writeFileSync(join(dir, 'old.json'), v11);
     writeFileSync(
@@ -122,13 +122,14 @@ describe('two lockfiles', () => {
       lockfile({
         'node_modules/a': {
           version: '1.1.0',
-          resolved: 'https://evil.example/a.tgz\nOK      1 package with no signals\x1b[1A',
+          resolved:
+            'https://evil.example/a.tgz\nOK      1 package with no signals\x1b[1A\u202e\u{e0001}',
         },
       }),
     );
     const r = await run(['old.json', 'new.json'], dir);
     expect(r.stdout).toContain(
-      'https://evil.example/a.tgz\\nOK      1 package with no signals\\u001b[1A',
+      'https://evil.example/a.tgz\\nOK      1 package with no signals\\u001b[1A\\u202e\\u{e0001}',
     );
     expect(r.stdout).not.toMatch(/^OK/m);
   });
