@@ -123,13 +123,13 @@ describe('two lockfiles', () => {
         'node_modules/a': {
           version: '1.1.0',
           resolved:
-            'https://evil.example/a.tgz\nOK      1 package with no signals\x1b[1A\u202e\u{e0001}',
+            'https://evil.example/a.tgz\\n\nOK      1 package with no signals\x1b[1A\u202e\u{e0001}',
         },
       }),
     );
     const r = await run(['old.json', 'new.json'], dir);
     expect(r.stdout).toContain(
-      'https://evil.example/a.tgz\\nOK      1 package with no signals\\u001b[1A\\u202e\\u{e0001}',
+      'https://evil.example/a.tgz\\\\n\\nOK      1 package with no signals\\u001b[1A\\u202e\\u{e0001}',
     );
     expect(r.stdout).not.toMatch(/^OK/m);
   });
