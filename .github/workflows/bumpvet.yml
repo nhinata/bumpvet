@@ -1,8 +1,9 @@
 name: bumpvet
 
-# Vets the dependency changes of a pull request with bumpvet itself.
-# BLOCK fails the job and REVIEW adds a warning; what to do about either is in
-# README, "When bumpvet says BLOCK or REVIEW". Not a required check yet.
+# Vets the dependency changes of a pull request with the action in this
+# repository, as other repositories use it. BLOCK fails the job and REVIEW adds
+# a warning; what to do about either is in README, "When bumpvet says BLOCK or
+# REVIEW". Not a required check yet.
 on:
   pull_request:
     paths:
@@ -22,51 +23,22 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      # The merge commit GitHub builds for the pull request. Its first parent is
-      # the base the pull request was compared with, so HEAD^1 is what to vet
-      # against, even if the base branch has moved since.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           path: pr
           fetch-depth: 2
           persist-credentials: false
-      # bumpvet is built from the base branch, so changes a pull request makes
-      # to bumpvet's code do not change its verdict. (Changes to this workflow
-      # do, as for every workflow here; they show in the pull request's diff.)
+      # The action is taken from the base branch, so changes a pull request
+      # makes to action.yml or to the version it installs do not change its
+      # verdict. (Changes to this workflow do, as for every workflow here; they
+      # show in the pull request's diff.) For a few minutes after a release
+      # pull request is merged, the version it names may not be on npm yet;
+      # rerun the job if installing it fails.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           path: base
           ref: ${{ github.base_ref }}
           persist-credentials: false
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+      - uses: ./base
         with:
-          node-version-file: base/.nvmrc
-          package-manager-cache: false
-      - name: Build bumpvet from the base branch
-        working-directory: base
-        run: npm ci && npm run build
-      - name: Vet the lockfile change
-        working-directory: pr
-        run: |
-          set +e
-          node ../base/dist/cli.js --base HEAD^1 > ../report.txt 2>&1
-          code=$?
-          set -e
-          cat ../report.txt
-          # A fence longer than any run of backticks in the report, which
-          # quotes text from the registry (install scripts) that anyone can publish.
-          fence=$(node -e "const r = require('fs').readFileSync('../report.txt', 'utf8'); console.log('\`'.repeat(Math.max(3, ...(r.match(/\`+/g) ?? []).map((m) => m.length + 1))))")
-          {
-            echo "### bumpvet"
-            echo
-            echo "$fence"
-            cat ../report.txt
-            echo "$fence"
-            echo
-            echo "Exit code $code (see README, Usage)."
-          } >> "$GITHUB_STEP_SUMMARY"
-          # REVIEW exits 0; surface it in the pull request's checks anyway.
-          if grep -q '^REVIEW ' ../report.txt; then
-            echo "::warning title=bumpvet::REVIEW: see the job summary and README, \"When bumpvet says BLOCK or REVIEW\"."
-          fi
-          exit "$code"
+          working-directory: pr
