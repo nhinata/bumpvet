@@ -96,9 +96,13 @@ in `.github/workflows/release.yml`; nothing is published from a laptop.
    e.g. `v1.2.3`. It builds, tests and publishes that tag again, and refuses
    a tag that is not on `main` or is older than the latest version on npm.
    If the tagged code is at fault, release a new version instead.
-5. The action example in README.md names a release's commit, which
-   release-please does not update. After a release, point it at the new tag's
-   commit (`git ls-remote --tags origin v1.2.3`) in a `docs:` pull request.
+5. Until a release is immutable, the action example in README.md names a
+   release's commit, not its tag: the tag of a release made before immutable
+   releases were turned on can still be moved to another commit. After a
+   release, point the example at the new tag's commit
+   (`git ls-remote --tags origin v1.2.3`) in a `docs:` pull request. With the
+   first immutable release, the example switches to the tag, which
+   release-please then keeps current, and this step goes away.
 
 Set up once, by the repository owner:
 
@@ -113,6 +117,9 @@ Set up once, by the repository owner:
   entry must be used for a publish within two days. Once a release has gone
   through, Publishing access: "Require two-factor authentication and disallow
   tokens".
+- GitHub, Settings → General → Releases: "Enable release immutability", so
+  that a release's tag cannot be moved to another commit. It applies to
+  releases made after it is turned on.
 
 ## Writing code
 
