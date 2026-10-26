@@ -66,7 +66,7 @@ jobs:
         with:
           fetch-depth: 2
           persist-credentials: false
-      - uses: nhinata/bumpvet@<commit SHA of a release> # v0.x.y
+      - uses: nhinata/bumpvet@6dc76a4f2be25853ad04481b316266282d8453dc # v0.2.0
 ```
 
 - On `pull_request` it compares `package-lock.json` in the merge commit GitHub
@@ -148,7 +148,7 @@ are what decides whether a check can be made required.
 
 ## Status
 
-v0.1. Supports npm `package-lock.json` (lockfileVersion 2 and 3) and the
+Supports npm `package-lock.json` (lockfileVersion 2 and 3) and the
 public npm registry. Content analysis of the package code and matching
 releases against their source repository are planned; see
 [DESIGN.md](DESIGN.md#planned).
