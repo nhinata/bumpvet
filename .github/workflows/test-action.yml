@@ -79,6 +79,31 @@ jobs:
           fi
           git -C "$REPO" add package-lock.json
           commit head
+      # From release.yml, right after publishing: npm makes a version
+      # installable a few minutes after accepting it, and answers ETARGET until
+      # then. --prefer-online: npm would otherwise reuse the metadata it cached
+      # on the first try, without the version.
+      - name: Wait until npm can install the version action.yml names
+        if: github.event_name != 'pull_request'
+        run: |
+          version=$(sed -n 's/^ *BUMPVET_VERSION: \([^ ]*\) .*/\1/p' action.yml)
+          [[ -n "$version" ]] || { echo "no BUMPVET_VERSION in action.yml"; exit 1; }
+          cd "$(mktemp -d -p "$RUNNER_TEMP")"
+          echo '{"private": true}' > package.json
+          tries=16
+          for try in $(seq "$tries"); do
+            if npm install --ignore-scripts --no-audit --no-fund --prefer-online \
+              --registry=https://registry.npmjs.org/ "bumpvet@$version" > /dev/null 2> npm-error.log; then
+              exit 0
+            fi
+            grep -q 'code ETARGET' npm-error.log || break
+            if (( try < tries )); then
+              echo "bumpvet@$version is not installable from npm yet; trying again in 20 seconds"
+              sleep 20
+            fi
+          done
+          cat npm-error.log >&2
+          exit 1
       - id: vet
         uses: ./
         continue-on-error: true

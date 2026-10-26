@@ -41,25 +41,9 @@ runs:
         mkdir -p "$dir"
         cd "$dir"
         echo '{"private": true}' > package.json
-        # npm makes a release installable a few minutes after accepting it,
-        # and answers ETARGET until then. Wait up to five minutes for that, and
-        # fail at once on any other error. --prefer-online: npm would otherwise
-        # reuse the metadata it cached on the first try, without the version.
-        tries=16
-        for try in $(seq "$tries"); do
-          if npm install --ignore-scripts --no-audit --no-fund --prefer-online \
-            --registry=https://registry.npmjs.org/ "bumpvet@$BUMPVET_VERSION" 2> npm-error.log; then
-            echo "cli=$dir/node_modules/bumpvet/dist/cli.js" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          cat npm-error.log >&2
-          grep -q 'code ETARGET' npm-error.log || exit 1
-          if (( try < tries )); then
-            echo "bumpvet@$BUMPVET_VERSION is not installable from npm yet; trying again in 20 seconds"
-            sleep 20
-          fi
-        done
-        exit 1
+        npm install --ignore-scripts --no-audit --no-fund \
+          --registry=https://registry.npmjs.org/ "bumpvet@$BUMPVET_VERSION"
+        echo "cli=$dir/node_modules/bumpvet/dist/cli.js" >> "$GITHUB_OUTPUT"
 
     - name: Vet the lockfile change
       id: vet
