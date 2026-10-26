@@ -86,6 +86,9 @@ in `.github/workflows/release.yml`; nothing is published from a laptop.
    permission and runs no dependency code. Then the action at the tagged
    commit is tested with the version just published (`Test action`), which
    the release pull request skips because that version is not on npm yet.
+   npm makes a version installable a few minutes after accepting it (v0.2.0,
+   2026-10-26: about two minutes, during which installing it failed with
+   `ETARGET`), so the action retries that error for up to five minutes.
 4. If publishing fails after the tag exists for a reason outside the tagged
    code (the npm settings, the workflow), fix that and run the Release
    workflow by hand on `main` (Actions → Release → Run workflow) with the tag,
