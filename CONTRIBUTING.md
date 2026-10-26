@@ -96,6 +96,9 @@ in `.github/workflows/release.yml`; nothing is published from a laptop.
    e.g. `v1.2.3`. It builds, tests and publishes that tag again, and refuses
    a tag that is not on `main` or is older than the latest version on npm.
    If the tagged code is at fault, release a new version instead.
+5. The action example in README.md names a release's commit, which
+   release-please does not update. After a release, point it at the new tag's
+   commit (`git ls-remote --tags origin v1.2.3`) in a `docs:` pull request.
 
 Set up once, by the repository owner:
 
