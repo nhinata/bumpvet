@@ -195,3 +195,4 @@ jobs:
     uses: ./.github/workflows/update-readme.yml
     with:
       tag: ${{ needs.build.outputs.tag }}
+      sha: ${{ needs.build.outputs.sha }}
