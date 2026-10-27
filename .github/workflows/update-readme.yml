@@ -1,0 +1,77 @@
+name: Update README
+
+# Opens a pull request that points the action example in README
+# (nhinata/bumpvet@<commit> # <tag>) at a release. release.yml calls this once
+# the action has been tested with the release; run it by hand to do it for the
+# latest release. It changes README only to a newer release than it names.
+#
+# The branch docs/readme-action is reset to main on every run and its pull
+# request reused, so there is one such pull request at a time; do not commit to
+# that branch. Everything goes through the GitHub API, so no credentials are
+# written to disk and no third-party action holds the token.
+on:
+  workflow_call:
+    inputs:
+      tag:
+        description: Release tag, e.g. v1.2.3
+        required: true
+        type: string
+  workflow_dispatch:
+
+permissions: {}
+
+# Not the same group as release.yml, which calls this while holding its own.
+concurrency:
+  group: update-readme
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+      pull-requests: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      TAG: ${{ inputs.tag }}
+      BRANCH: docs/readme-action
+    steps:
+      - run: |
+          repo="$GITHUB_REPOSITORY"
+          tag="${TAG:-$(gh api "repos/$repo/releases/latest" -q .tag_name)}"
+          sha=$(gh api "repos/$repo/commits/$tag" -q .sha)
+          main=$(gh api "repos/$repo/git/ref/heads/main" -q .object.sha)
+          gh api "repos/$repo/contents/README.md?ref=$main" > "$RUNNER_TEMP/readme.json"
+          jq -r .content "$RUNNER_TEMP/readme.json" | base64 -d > "$RUNNER_TEMP/README.old"
+
+          named=$( (grep -oE "$repo@[0-9a-f]{40} # v[^ ]+" "$RUNNER_TEMP/README.old" || true) | sed 's/.* # //' | sort -uV | tail -1)
+          if [ -z "$named" ]; then
+            echo "::error::README has no action example to update"
+            exit 1
+          fi
+          if [ "$(printf '%s\n' "$named" "$tag" | sort -V | tail -1)" = "$named" ]; then
+            echo "README already names $named, not older than $tag"
+            exit 0
+          fi
+          sed -E "s|($repo@)[0-9a-f]{40} # v[^ ]+|\1$sha # $tag|g" "$RUNNER_TEMP/README.old" > "$RUNNER_TEMP/README.md"
+          if grep -F "$repo@" "$RUNNER_TEMP/README.md" | grep -vF "$repo@$sha # $tag"; then
+            echo "::error::README has action examples above that were not updated"
+            exit 1
+          fi
+
+          if gh api "repos/$repo/git/ref/heads/$BRANCH" > /dev/null 2>&1; then
+            gh api -X PATCH "repos/$repo/git/refs/heads/$BRANCH" -f sha="$main" -F force=true > /dev/null
+          else
+            gh api "repos/$repo/git/refs" -f ref="refs/heads/$BRANCH" -f sha="$main" > /dev/null
+          fi
+          title="docs: point the README action example at $tag"
+          gh api -X PUT "repos/$repo/contents/README.md" -f branch="$BRANCH" -f message="$title" \
+            -f sha="$(jq -r .sha "$RUNNER_TEMP/readme.json")" -f content="$(base64 -w0 "$RUNNER_TEMP/README.md")" > /dev/null
+          body="Points the action example in README at $tag ($sha)."
+          pr=$(gh api "repos/$repo/pulls?head=${repo%%/*}:$BRANCH&state=open" -q '.[0].number // empty')
+          if [ -n "$pr" ]; then
+            gh api -X PATCH "repos/$repo/pulls/$pr" -f title="$title" -f body="$body" -q .html_url
+          else
+            gh api "repos/$repo/pulls" -f base=main -f head="$BRANCH" -f title="$title" -f body="$body" -q .html_url
+          fi

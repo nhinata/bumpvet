@@ -6,8 +6,8 @@ name: Release
 # package-lock.json, .github/release-please-manifest.json and action.yml, and
 # CHANGELOG.md. Merging that tags v<version> and creates the GitHub release;
 # the jobs below then build, test and publish it to npm with provenance, and
-# test the action with the version just published. A last job then opens a
-# pull request that points the action example in README at the release.
+# test the action with the version just published. update-readme.yml then
+# opens a pull request that points the action example in README at it.
 # Nothing is published from a laptop.
 #
 # Run by hand (Run workflow on main, with the tag) to publish a tag again after
@@ -65,11 +65,15 @@ jobs:
     env:
       TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || needs.release-please.outputs.tag_name }}
     outputs:
+      tag: ${{ env.TAG }}
       node: ${{ steps.node.outputs.node-version }}
       sha: ${{ steps.commit.outputs.sha }}
       file: ${{ steps.pack.outputs.file }}
       sha256: ${{ steps.pack.outputs.sha256 }}
     steps:
+      # update-readme.yml compares versions with sort -V, which puts a
+      # prerelease such as v1.0.0-rc.1 after v1.0.0; revisit it before
+      # allowing prerelease tags here.
       - name: Check the tag
         run: '[[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "not a release tag: $TAG"; exit 1; }'
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -182,41 +186,12 @@ jobs:
     with:
       ref: ${{ needs.build.outputs.sha }}
 
-  # Opens a pull request that points the action example in README at the
-  # released commit, once the action has been tested with it. Not on a manual
-  # run: that publishes a tag README already names. Uses the API only, so no
-  # credentials are written to disk and no third-party action holds the token.
   readme:
-    needs: [release-please, build, test-action]
-    if: ${{ !cancelled() && github.event_name == 'push' && needs.test-action.result == 'success' }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
+    needs: [build, test-action]
+    if: ${{ !cancelled() && needs.test-action.result == 'success' }}
     permissions:
       contents: write
       pull-requests: write
-    env:
-      GH_TOKEN: ${{ github.token }}
-      TAG: ${{ needs.release-please.outputs.tag_name }}
-      SHA: ${{ needs.build.outputs.sha }}
-    steps:
-      - run: |
-          branch="docs/readme-action-$TAG"
-          title="docs: point the README action example at $TAG"
-          main=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" -q .object.sha)
-          gh api "repos/$GITHUB_REPOSITORY/contents/README.md?ref=$main" > "$RUNNER_TEMP/readme.json"
-          jq -r .content "$RUNNER_TEMP/readme.json" | base64 -d > "$RUNNER_TEMP/README.old"
-          sed -E "s|($GITHUB_REPOSITORY)@[0-9a-f]{40} # v[0-9]+\.[0-9]+\.[0-9]+|\1@$SHA # $TAG|" \
-            "$RUNNER_TEMP/README.old" > "$RUNNER_TEMP/README.md"
-          if ! grep -qF "$GITHUB_REPOSITORY@$SHA # $TAG" "$RUNNER_TEMP/README.md"; then
-            echo "::error::README has no action example to update"
-            exit 1
-          fi
-          if cmp -s "$RUNNER_TEMP/README.old" "$RUNNER_TEMP/README.md"; then
-            echo "README already names $TAG"
-            exit 0
-          fi
-          gh api "repos/$GITHUB_REPOSITORY/git/refs" -f ref="refs/heads/$branch" -f sha="$main" > /dev/null
-          gh api -X PUT "repos/$GITHUB_REPOSITORY/contents/README.md" -f branch="$branch" -f message="$title" \
-            -f sha="$(jq -r .sha "$RUNNER_TEMP/readme.json")" -f content="$(base64 -w0 "$RUNNER_TEMP/README.md")" > /dev/null
-          gh pr create --repo "$GITHUB_REPOSITORY" --base main --head "$branch" --title "$title" \
-            --body "Points the action example in README at $TAG ($SHA), which the action test passed with."
+    uses: ./.github/workflows/update-readme.yml
+    with:
+      tag: ${{ needs.build.outputs.tag }}
