@@ -13,6 +13,10 @@
  * script's command is written as far as the report gives it; any command in a
  * new or changed hook gives the same signal.
  *
+ * Only one version per recent publisher is kept, so the cases hold for the
+ * current baseline of 20 versions (`baselineSize`); changing it means
+ * rebuilding the earlier versions from the registry.
+ *
  * Each case vets the update one hour after the malicious publish, while it was
  * still live. eval/README.md, "Detection: incidents", shows the results.
  */
@@ -110,7 +114,8 @@ const incidents: Incident[] = [
     ],
     expected: { '@ctrl/tinycolor': 'block: fresh-publish, install-scripts' },
   },
-  // Same worm (Snyk, above).
+  // Same worm (Snyk, above). Its 20.0.3, published four minutes earlier, is
+  // left out: the update here is to 20.0.4.
   {
     title: 'ngx-bootstrap 20.0.4',
     published: '2025-09-15T01:16:40Z',
@@ -130,7 +135,8 @@ const incidents: Incident[] = [
   },
   // https://eslint.org/blog/2018/07/postmortem-for-malicious-package-publishes
   // (2018-07-12): a maintainer's account published a malicious postinstall
-  // script. The postmortem does not quote the command.
+  // script, `node ./lib/build.js` in install logs at
+  // https://github.com/eslint/eslint-scope/issues/39.
   {
     title: 'eslint-scope 3.7.2',
     published: '2018-07-12T10:40:00Z',
@@ -143,7 +149,7 @@ const incidents: Incident[] = [
           version: '3.7.2',
           time: '2018-07-12T10:40:00Z',
           publisher: 'ivolodin',
-          scripts: { postinstall: '(not quoted in the postmortem)' },
+          scripts: { postinstall: 'node ./lib/build.js' },
         },
       ]),
     ],
@@ -290,7 +296,8 @@ const incidents: Incident[] = [
   // where 1.14.0 came from GitHub Actions with provenance. Its only change was
   // a new dependency, plain-crypto-js, whose 4.2.1 added a postinstall script
   // running setup.js; 4.2.0 had been published the day before. The report
-  // names neither version's publisher.
+  // names neither version's publisher account: 'unknown' is a made-up name,
+  // the same for both, assuming the attacker published both.
   {
     title: 'axios 1.14.1',
     published: '2026-03-31T00:21:58Z',
@@ -310,7 +317,7 @@ const incidents: Incident[] = [
         { version: '1.14.1', time: '2026-03-31T00:21:58Z', publisher: 'jasonsaayman' },
       ]),
       packument('plain-crypto-js', [
-        { version: '4.2.0', time: '2026-03-30T05:57:00Z', publisher: 'unknown' },
+        { version: '4.2.0', time: '2026-03-30T05:57:32Z', publisher: 'unknown' },
         {
           version: '4.2.1',
           time: '2026-03-30T23:59:12Z',
@@ -404,8 +411,8 @@ describe('incidents', () => {
   // stop. Every malicious version above has been removed.
   it('@ctrl/tinycolor 4.1.1 after removal -> BLOCK', async () => {
     const p = packument('@ctrl/tinycolor', [
-      { version: '4.1.0', time: '2024-04-13T19:04:00Z', publisher: 'scttcper' },
-      { version: '4.1.1', time: '2025-09-15T19:52:00Z', removed: true },
+      { version: '4.1.0', time: '2024-04-13T19:04:45Z', publisher: 'scttcper' },
+      { version: '4.1.1', time: '2025-09-15T19:52:46Z', removed: true },
     ]);
     const [r] = await vetChanges(
       [{ name: '@ctrl/tinycolor', from: '4.1.0', to: '4.1.1' }],

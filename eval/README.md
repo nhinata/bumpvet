@@ -47,28 +47,29 @@ the registry shows bumpvet the same thing either way.
 
 ### Results (2026-10-27, v0.2.1)
 
-Vetted 1 hour after the malicious publish:
+Vetted 1 hour after the malicious publish. An incident's verdict is the
+strictest among the packages it brings in.
 
-| Incident                                       | Verdict         | Signals                                                                  |
-| ---------------------------------------------- | --------------- | ------------------------------------------------------------------------ |
-| `chalk@5.6.1` (2025-09)                        | REVIEW          | publisher-changed, fresh-publish                                         |
-| `debug@4.4.2` (same campaign)                  | OK — **missed** | fresh-publish                                                            |
-| `ansi-styles@6.2.2` (same campaign)            | OK — **missed** | fresh-publish                                                            |
-| `strip-ansi@7.1.1` (same campaign)             | REVIEW          | publisher-changed, fresh-publish                                         |
-| `@ctrl/tinycolor@4.1.1` (2025-09)              | BLOCK           | fresh-publish, install-scripts                                           |
-| `ngx-bootstrap@20.0.4` (same worm)             | BLOCK           | fresh-publish, install-scripts                                           |
-| `eslint-scope@3.7.2` (2018-07)                 | BLOCK           | fresh-publish, install-scripts                                           |
-| `ua-parser-js@0.7.29` (2021-10)                | BLOCK           | fresh-publish, install-scripts                                           |
-| `coa@2.0.3` (2021-11)                          | BLOCK           | fresh-publish, install-scripts                                           |
-| `rc@1.2.9` (2021-11)                           | BLOCK           | fresh-publish, install-scripts                                           |
-| `eslint-config-prettier@8.10.1` (2025-07)      | BLOCK           | fresh-publish, install-scripts                                           |
-| `nx@20.9.0` (2025-08)                          | BLOCK           | provenance-lost, fresh-publish, install-scripts                          |
-| `@rspack/core@1.1.7` (2024-12)                 | BLOCK           | provenance-lost, fresh-publish, install-scripts                          |
-| `axios@1.14.1` (2026-03)                       | BLOCK           | provenance-lost; new dependency `plain-crypto-js@4.2.1`: install-scripts |
-| `@lottiefiles/lottie-player@2.0.5` (2024-10)   | OK — **missed** | fresh-publish                                                            |
-| `@solana/web3.js@1.95.6` (2024-12)             | OK — **missed** | fresh-publish                                                            |
-| `node-ipc@10.1.1` (2022-03, by the maintainer) | OK — **missed** | fresh-publish                                                            |
-| `colors@1.4.1` (2022-01, by the maintainer)    | OK — **missed** | fresh-publish                                                            |
+| Incident                                       | Verdict         | Signals                                                                                                                        |
+| ---------------------------------------------- | --------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `chalk@5.6.1` (2025-09)                        | REVIEW          | publisher-changed, fresh-publish                                                                                               |
+| `debug@4.4.2` (same campaign)                  | OK — **missed** | fresh-publish                                                                                                                  |
+| `ansi-styles@6.2.2` (same campaign)            | OK — **missed** | fresh-publish                                                                                                                  |
+| `strip-ansi@7.1.1` (same campaign)             | REVIEW          | publisher-changed, fresh-publish                                                                                               |
+| `@ctrl/tinycolor@4.1.1` (2025-09)              | BLOCK           | fresh-publish, install-scripts                                                                                                 |
+| `ngx-bootstrap@20.0.4` (same worm)             | BLOCK           | fresh-publish, install-scripts                                                                                                 |
+| `eslint-scope@3.7.2` (2018-07)                 | BLOCK           | fresh-publish, install-scripts                                                                                                 |
+| `ua-parser-js@0.7.29` (2021-10)                | BLOCK           | fresh-publish, install-scripts                                                                                                 |
+| `coa@2.0.3` (2021-11)                          | BLOCK           | fresh-publish, install-scripts                                                                                                 |
+| `rc@1.2.9` (2021-11)                           | BLOCK           | fresh-publish, install-scripts                                                                                                 |
+| `eslint-config-prettier@8.10.1` (2025-07)      | BLOCK           | fresh-publish, install-scripts                                                                                                 |
+| `nx@20.9.0` (2025-08)                          | BLOCK           | provenance-lost, fresh-publish, install-scripts                                                                                |
+| `@rspack/core@1.1.7` (2024-12)                 | BLOCK           | provenance-lost, fresh-publish, install-scripts                                                                                |
+| `axios@1.14.1` (2026-03)                       | BLOCK           | axios: provenance-lost, fresh-publish (REVIEW); new dependency `plain-crypto-js@4.2.1`: fresh-publish, install-scripts (BLOCK) |
+| `@lottiefiles/lottie-player@2.0.5` (2024-10)   | OK — **missed** | fresh-publish                                                                                                                  |
+| `@solana/web3.js@1.95.6` (2024-12)             | OK — **missed** | fresh-publish                                                                                                                  |
+| `node-ipc@10.1.1` (2022-03, by the maintainer) | OK — **missed** | fresh-publish                                                                                                                  |
+| `colors@1.4.1` (2022-01, by the maintainer)    | OK — **missed** | fresh-publish                                                                                                                  |
 
 12 of 18 caught (67%): 10 `BLOCK`, 2 `REVIEW`. All six misses carried their
 payload in the package code and came from an account that publishes the
