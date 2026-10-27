@@ -162,6 +162,10 @@ Run it for any change that can change a verdict. If the numbers move, update
 [eval/README.md](eval/README.md) and, when a decision rests on them,
 [DESIGN.md](DESIGN.md), in the same pull request.
 
+Detection is measured by `npm test`: `test/incidents.test.ts` fixes the
+verdict of each incident. If a change moves one, update the table and the
+totals in eval/README.md, "Detection: incidents", in the same pull request.
+
 ## Review findings
 
 Review findings, from people or tools, are sorted before anything is changed.

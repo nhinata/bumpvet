@@ -332,8 +332,10 @@ const incidents: Incident[] = [
     },
   },
   // https://lottiefiles.com/blog/inside-lottiefiles/resolution-of-security-incident-with-lottiefiles-lottie-player-package
-  // (2024-10-30): an employee's phished account published versions with
-  // malicious code.
+  // (2024-10-30): a phished developer's token published versions with
+  // malicious code. The token was maintainer aidosmf's
+  // (https://www.wiz.io/blog/lottie-player-supply-chain-attack), who had never
+  // published the package.
   {
     title: '@lottiefiles/lottie-player 2.0.5',
     published: '2024-10-30T20:12:15Z',
@@ -343,10 +345,10 @@ const incidents: Incident[] = [
         { version: '2.0.1', time: '2023-06-08T14:26:50Z', publisher: 'jawish' },
         { version: '2.0.2', time: '2023-06-09T08:05:46Z', publisher: 'karamalie' },
         { version: '2.0.4', time: '2024-03-04T15:16:17Z', publisher: 'sam-osb' },
-        { version: '2.0.5', time: '2024-10-30T20:12:15Z', publisher: 'sam-osb' },
+        { version: '2.0.5', time: '2024-10-30T20:12:15Z', publisher: 'aidosmf' },
       ]),
     ],
-    expected: { '@lottiefiles/lottie-player': 'ok: fresh-publish' },
+    expected: { '@lottiefiles/lottie-player': 'review: publisher-changed, fresh-publish' },
   },
   // https://github.com/advisories/GHSA-jcxm-7wvp-g6p5 (2024-12-03): a
   // compromised publish-access account published code that steals private keys.

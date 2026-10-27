@@ -66,14 +66,19 @@ strictest among the packages it brings in.
 | `nx@20.9.0` (2025-08)                          | BLOCK           | provenance-lost, fresh-publish, install-scripts                                                                                |
 | `@rspack/core@1.1.7` (2024-12)                 | BLOCK           | provenance-lost, fresh-publish, install-scripts                                                                                |
 | `axios@1.14.1` (2026-03)                       | BLOCK           | axios: provenance-lost, fresh-publish (REVIEW); new dependency `plain-crypto-js@4.2.1`: fresh-publish, install-scripts (BLOCK) |
-| `@lottiefiles/lottie-player@2.0.5` (2024-10)   | OK — **missed** | fresh-publish                                                                                                                  |
+| `@lottiefiles/lottie-player@2.0.5` (2024-10)   | REVIEW          | publisher-changed, fresh-publish                                                                                               |
 | `@solana/web3.js@1.95.6` (2024-12)             | OK — **missed** | fresh-publish                                                                                                                  |
 | `node-ipc@10.1.1` (2022-03, by the maintainer) | OK — **missed** | fresh-publish                                                                                                                  |
 | `colors@1.4.1` (2022-01, by the maintainer)    | OK — **missed** | fresh-publish                                                                                                                  |
 
-12 of 18 caught (67%): 10 `BLOCK`, 2 `REVIEW`. All six misses carried their
+13 of 18 caught (72%): 10 `BLOCK`, 3 `REVIEW`. All five misses carried their
 payload in the package code and came from an account that publishes the
-package; content analysis (planned) is what would see them. Every malicious
+package; content analysis (planned) is what would see them.
+
+Where a report does not name the publisher or mention provenance, the test
+fills in a value (see its header). One verdict depends on it: no report names
+the account that published `@solana/web3.js@1.95.6`, and one outside its last
+20 publishers would have made it `REVIEW`. Every malicious
 version above has since been removed, so vetted today each is `BLOCK`
 (`not-in-registry`).
 
