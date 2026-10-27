@@ -39,15 +39,46 @@ bumpvet asks for a look.
 
 Malicious releases are removed from npm, so their manifests cannot be
 replayed from the registry. [test/incidents.test.ts](../test/incidents.test.ts)
-rebuilds them from the registry's `time` map (which keeps removed versions)
-and public incident reports.
+rebuilds them from the registry (publish times, and the versions before them)
+and public incident reports (what the malicious version carried); each case
+cites its report. Every one is a malicious new version of an existing package,
+published from a hijacked account or token or by the maintainer on purpose:
+the registry shows bumpvet the same thing either way.
 
-| Incident                                      | Verdict 1h after publish | Signals                          |
-| --------------------------------------------- | ------------------------ | -------------------------------- |
-| `chalk@5.6.1` (2025-09, phished maintainer)   | REVIEW                   | publisher-changed, fresh-publish |
-| `debug@4.4.2` (same campaign)                 | OK — **missed**          | fresh-publish                    |
-| `@ctrl/tinycolor@4.1.1` (2025-09, Shai-Hulud) | BLOCK                    | fresh-publish, install-scripts   |
-| `@ctrl/tinycolor@4.1.1` today (removed)       | BLOCK                    | not-in-registry                  |
+### Results (2026-10-27, v0.2.1)
 
-Three incidents are not a detection rate. A larger, reproducible set is the
-next thing this evaluation needs.
+Vetted 1 hour after the malicious publish:
+
+| Incident                                       | Verdict         | Signals                                                                  |
+| ---------------------------------------------- | --------------- | ------------------------------------------------------------------------ |
+| `chalk@5.6.1` (2025-09)                        | REVIEW          | publisher-changed, fresh-publish                                         |
+| `debug@4.4.2` (same campaign)                  | OK — **missed** | fresh-publish                                                            |
+| `ansi-styles@6.2.2` (same campaign)            | OK — **missed** | fresh-publish                                                            |
+| `strip-ansi@7.1.1` (same campaign)             | REVIEW          | publisher-changed, fresh-publish                                         |
+| `@ctrl/tinycolor@4.1.1` (2025-09)              | BLOCK           | fresh-publish, install-scripts                                           |
+| `ngx-bootstrap@20.0.4` (same worm)             | BLOCK           | fresh-publish, install-scripts                                           |
+| `eslint-scope@3.7.2` (2018-07)                 | BLOCK           | fresh-publish, install-scripts                                           |
+| `ua-parser-js@0.7.29` (2021-10)                | BLOCK           | fresh-publish, install-scripts                                           |
+| `coa@2.0.3` (2021-11)                          | BLOCK           | fresh-publish, install-scripts                                           |
+| `rc@1.2.9` (2021-11)                           | BLOCK           | fresh-publish, install-scripts                                           |
+| `eslint-config-prettier@8.10.1` (2025-07)      | BLOCK           | fresh-publish, install-scripts                                           |
+| `nx@20.9.0` (2025-08)                          | BLOCK           | provenance-lost, fresh-publish, install-scripts                          |
+| `@rspack/core@1.1.7` (2024-12)                 | BLOCK           | provenance-lost, fresh-publish, install-scripts                          |
+| `axios@1.14.1` (2026-03)                       | BLOCK           | provenance-lost; new dependency `plain-crypto-js@4.2.1`: install-scripts |
+| `@lottiefiles/lottie-player@2.0.5` (2024-10)   | OK — **missed** | fresh-publish                                                            |
+| `@solana/web3.js@1.95.6` (2024-12)             | OK — **missed** | fresh-publish                                                            |
+| `node-ipc@10.1.1` (2022-03, by the maintainer) | OK — **missed** | fresh-publish                                                            |
+| `colors@1.4.1` (2022-01, by the maintainer)    | OK — **missed** | fresh-publish                                                            |
+
+12 of 18 caught (67%): 10 `BLOCK`, 2 `REVIEW`. All six misses carried their
+payload in the package code and came from an account that publishes the
+package; content analysis (planned) is what would see them. Every malicious
+version above has since been removed, so vetted today each is `BLOCK`
+(`not-in-registry`).
+
+These are incidents with public reports detailed enough to rebuild, not a
+random sample: install-script attacks are easier to report, and one campaign
+can contribute several packages. Left out: `event-stream@3.3.6` (the
+registry no longer keeps the original time of the dependency that carried the
+payload) and `eslint-config-prettier@10.1.6` (whether it was malicious is
+disputed).
