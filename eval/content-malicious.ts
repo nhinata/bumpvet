@@ -50,7 +50,7 @@ if (mode === 'fetch' && dir) {
   }
 } else if (mode === 'scan' && dir && work) {
   console.log('## Malicious releases\n');
-  console.log('| Release | Missed today | Kinds added | Code files read |');
+  console.log('| Release | Missed 1h after publish | Kinds added | Code files read |');
   console.log('| --- | --- | --- | --- |');
   for (const s of samples) {
     const prev = scan(readTarball(readFileSync(join(dir, 'prev', `${s.id}.tgz`))));

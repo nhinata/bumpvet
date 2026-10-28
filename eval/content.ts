@@ -64,7 +64,9 @@ export function added(prev: Scan, next: Scan): string[] {
 
 /** The files of an npm tarball (.tgz), by path with the leading `package/` removed. */
 export function readTarball(tgz: Buffer): Map<string, Buffer> {
-  const tar = gunzipSync(tgz);
+  // A bound on the unpacked size, so an archive that inflates without end fails
+  // here instead of taking all memory.
+  const tar = gunzipSync(tgz, { maxOutputLength: 500_000_000 });
   const files = new Map<string, Buffer>();
   let longName: string | undefined;
   for (let at = 0; at + 512 <= tar.length;) {
