@@ -20,12 +20,16 @@ import { slim } from '../src/registry.js';
 import { computeSignals } from '../src/signals.js';
 import {
   added,
+  CANDIDATE_SETS,
+  caught,
   fetchTarball,
   NEW_URL_HOST,
   PATTERNS,
   readDirectory,
   readTarball,
   scan,
+  SCOPES,
+  type Scope,
 } from './content.js';
 import { load } from './updates.js';
 
@@ -42,7 +46,7 @@ interface Sample {
 interface Result {
   id: string;
   error?: string;
-  kinds?: string[];
+  kinds?: Record<Scope, string[]>;
   /** An install script was added or changed, as bumpvet's install-scripts signal reads it. */
   installScripts?: boolean;
   files?: string;
@@ -127,7 +131,7 @@ function scanOne(dir: string, work: string, id: string): Result {
   const sample = samples.find((x) => x.id === id)!;
   return {
     id,
-    kinds: added(prev, next),
+    kinds: { code: added(prev, next, 'code'), all: added(prev, next, 'all') },
     installScripts: installScripts(sample, manifest(prevFiles), manifest(files)),
     files: `${prev.files} -> ${next.files}${next.tooLarge ? ` (${next.tooLarge} too large)` : ''}`,
   };
@@ -141,34 +145,64 @@ function report(resultsPath: string): void {
       .map((l) => JSON.parse(l) as Result)
       .map((r) => [r.id, r]),
   );
+  // An install-script change counts as one more kind, in either scope.
   const measured = samples.flatMap((s) => {
     const r = byId.get(s.id);
-    return r?.kinds
-      ? [{ s, r, kinds: r.installScripts ? [INSTALL_SCRIPTS, ...r.kinds] : r.kinds }]
-      : [];
+    if (!r?.kinds) return [];
+    const extra = r.installScripts ? [INSTALL_SCRIPTS] : [];
+    const kinds = { code: [...extra, ...r.kinds.code], all: [...extra, ...r.kinds.all] };
+    return [{ s, r, kinds }];
   });
+  type Measured = (typeof measured)[number];
   const notMeasured = samples.filter((s) => !byId.get(s.id)?.kinds);
   const withoutScripts = measured.filter((m) => !m.r.installScripts);
   const month = (s: Sample) => s.zip.split('/').at(-1)!.slice(0, 7);
-  const count = (set: typeof measured, kind: string) =>
-    set.filter((m) => m.kinds.includes(kind)).length;
+  const count = (set: Measured[], scope: Scope, has: (kinds: string[]) => boolean) =>
+    set.filter((m) => has(m.kinds[scope])).length;
+  const both = (set: Measured[], has: (kinds: string[]) => boolean) =>
+    SCOPES.map((s) => count(set, s, has)).join(' / ');
   const KINDS = [INSTALL_SCRIPTS, ...Object.keys(PATTERNS), NEW_URL_HOST];
 
   console.log(`## Malicious releases: ${measured.length} measured of ${samples.length}\n`);
-  console.log(`Without an install-script change: ${withoutScripts.length}.\n`);
+  console.log(`Without an install-script change: ${withoutScripts.length}.`);
+  console.log('Counts are "code files / all files".\n');
   console.log('| Kind added | Samples | Without an install-script change |');
   console.log('| --- | --- | --- |');
-  for (const kind of KINDS)
-    console.log(
-      `| \`${kind}\` | ${count(measured, kind)} | ${kind === INSTALL_SCRIPTS ? '' : count(withoutScripts, kind)} |`,
-    );
+  for (const kind of KINDS) {
+    const has = (kinds: string[]) => kinds.includes(kind);
+    const rest = kind === INSTALL_SCRIPTS ? '' : both(withoutScripts, has);
+    console.log(`| \`${kind}\` | ${both(measured, has)} | ${rest} |`);
+  }
 
-  console.log('\n### By month the dataset found them\n');
+  console.log('\n### Candidate sets: samples that add any kind in the set\n');
+  console.log('| Set | Kinds | Samples | Without an install-script change |');
+  console.log('| --- | --- | --- | --- |');
+  for (const [name, set] of Object.entries(CANDIDATE_SETS)) {
+    const has = (kinds: string[]) => caught(kinds, set);
+    const withScripts = (kinds: string[]) => kinds.includes(INSTALL_SCRIPTS) || has(kinds);
+    console.log(
+      `| ${name} | ${set.join(', ')} | ${both(measured, has)} (with install-scripts: ${both(measured, withScripts)}) | ${both(withoutScripts, has)} |`,
+    );
+  }
+
+  const widest = Object.values(CANDIDATE_SETS).at(-1)!;
+  const missed = withoutScripts.filter((m) => !caught(m.kinds.all, widest));
+  console.log(
+    `\n### Without an install-script change and caught by no set, all files (${missed.length})\n`,
+  );
+  console.log('| Month | Samples | Packages |');
+  console.log('| --- | --- | --- |');
+  for (const m of [...new Set(missed.map((x) => month(x.s)))].sort()) {
+    const set = missed.filter((x) => month(x.s) === m);
+    console.log(`| ${m} | ${set.length} | ${set.map((x) => `${x.s.name}@${x.s.to}`).join(', ')} |`);
+  }
+
+  console.log('\n### By month the dataset found them, code files\n');
   console.log('| Month | Samples | Kinds added (samples) |');
   console.log('| --- | --- | --- |');
   for (const m of [...new Set(measured.map((x) => month(x.s)))].sort()) {
     const set = measured.filter((x) => month(x.s) === m);
-    const cells = KINDS.map((k) => [k, count(set, k)] as const)
+    const cells = KINDS.map((k) => [k, count(set, 'code', (kinds) => kinds.includes(k))] as const)
       .filter(([, n]) => n)
       .map(([k, n]) => `\`${k}\` ${n}`)
       .join(', ');
@@ -176,15 +210,15 @@ function report(resultsPath: string): void {
   }
 
   console.log('\n### Incidents from test/incidents.test.ts\n');
-  console.log('| Release | Kinds added | Code files read |');
-  console.log('| --- | --- | --- |');
+  console.log('| Release | Kinds added, code files | Added with all files | Code files read |');
+  console.log('| --- | --- | --- | --- |');
   for (const s of samples.filter((x) => x.incident)) {
     const r = byId.get(s.id);
     const m = measured.find((x) => x.s === s);
-    const kinds = m
-      ? m.kinds.map((k) => `\`${k}\``).join(', ') || 'none'
-      : `**${r?.error ?? 'not scanned'}**`;
-    console.log(`| ${s.name} ${s.from} -> ${s.to} | ${kinds} | ${r?.files ?? ''} |`);
+    const list = (kinds: string[]) => kinds.map((k) => `\`${k}\``).join(', ') || 'none';
+    const code = m ? list(m.kinds.code) : `**${r?.error ?? 'not scanned'}**`;
+    const more = m ? list(m.kinds.all.filter((k) => !m.kinds.code.includes(k))) : '';
+    console.log(`| ${s.name} ${s.from} -> ${s.to} | ${code} | ${more} | ${r?.files ?? ''} |`);
   }
 
   if (notMeasured.length) {

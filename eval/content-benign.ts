@@ -8,12 +8,16 @@
  */
 import {
   added,
+  CANDIDATE_SETS,
+  caught,
   fetchTarball,
   PATTERNS,
   NEW_URL_HOST,
   readTarball,
   scan,
+  SCOPES,
   type Scan,
+  type Scope,
 } from './content.js';
 import { PACKAGES, load, updates } from './updates.js';
 
@@ -21,7 +25,7 @@ const KINDS = [...Object.keys(PATTERNS), NEW_URL_HOST];
 
 interface Row {
   update: string;
-  kinds: string[];
+  kinds: Record<Scope, string[]>;
 }
 const rows: Row[] = [];
 const failed: string[] = [];
@@ -51,7 +55,11 @@ async function vetPackage(name: string): Promise<void> {
   for (const { from, to } of updates(p)) {
     const update = `${name} ${from} -> ${to}`;
     try {
-      rows.push({ update, kinds: added(await scanOf(from), await scanOf(to)) });
+      const [prev, next] = [await scanOf(from), await scanOf(to)];
+      rows.push({
+        update,
+        kinds: { code: added(prev, next, 'code'), all: added(prev, next, 'all') },
+      });
     } catch (err) {
       failed.push(`${update}: ${(err as Error).message}`);
     }
@@ -66,17 +74,31 @@ await Promise.all(
   }),
 );
 
+const share = (n: number) => (rows.length ? ((100 * n) / rows.length).toFixed(1) : '0.0');
 console.log(`## Benign updates: ${rows.length} updates of ${PACKAGES.length} packages\n`);
-console.log('| Kind added | Updates | Share | Examples |');
+console.log('| Kind added | Updates (code files) | Updates (all files) | Examples (all files) |');
 console.log('| --- | --- | --- | --- |');
 for (const kind of KINDS) {
-  const hits = rows.filter((r) => r.kinds.includes(kind));
-  const share = rows.length ? ((100 * hits.length) / rows.length).toFixed(1) : '0.0';
-  const examples = hits
+  const [code, all] = SCOPES.map((s) => rows.filter((r) => r.kinds[s].includes(kind)));
+  const examples = all!
     .slice(0, 3)
     .map((r) => r.update)
     .join('; ');
-  console.log(`| \`${kind}\` | ${hits.length} | ${share}% | ${examples} |`);
+  console.log(
+    `| \`${kind}\` | ${code!.length} (${share(code!.length)}%) | ${all!.length} (${share(all!.length)}%) | ${examples} |`,
+  );
+}
+
+console.log('\n### Candidate sets: updates that add any kind in the set\n');
+console.log('| Set | Updates (code files) | Updates (all files) | Examples (all files) |');
+console.log('| --- | --- | --- | --- |');
+for (const [name, set] of Object.entries(CANDIDATE_SETS)) {
+  const [code, all] = SCOPES.map((s) => rows.filter((r) => caught(r.kinds[s], set)));
+  const examples = all!
+    .slice(0, 5)
+    .map((r) => r.update)
+    .join('; ');
+  console.log(`| ${name} | ${code!.length} | ${all!.length} | ${examples} |`);
 }
 console.log(`\nFiles over the size limit, left unread: ${tooLarge}`);
 if (failed.length)

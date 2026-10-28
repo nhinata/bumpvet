@@ -20,45 +20,79 @@ export const PATTERNS: Record<string, RegExp> = {
   eval: /(?<![.\w$])eval\s*\(/,
   'new-function': /\bnew\s+Function\s*\(/,
   'obfuscated-names': /\b_0x[0-9a-f]{4,}\b/,
-  'hex-escapes': /(?:\\x[0-9a-fA-F]{2}){16,}/,
-  'long-base64': /[A-Za-z0-9+/]{1000,}={0,2}/,
+  // Each starts only where a run starts and checks a fixed length, so a long
+  // run is neither searched again from every character nor matched to its end.
+  'hex-escapes': /(?<!\\x[0-9a-fA-F]{2})(?:\\x[0-9a-fA-F]{2}){16}/,
+  'long-base64': /(?<![A-Za-z0-9+/])[A-Za-z0-9+/]{1000}/,
   'crypto-wallet': /\bwindow\.(?:ethereum|solana)\b|\bethereum\.request\b/,
+  // Code pushed out of sight, past the edge of a viewer, after a long run of spaces.
+  'hidden-after-whitespace': /\S[ \t]{200}(?=[ \t]*\S)/,
 };
 /** Not a pattern: a URL host in the code that the previous version's code did not have. */
 export const NEW_URL_HOST = 'new-url-host';
 const URL_HOST = /\bhttps?:\/\/([a-z0-9-]+(?:\.[a-z0-9-]+)+)/gi;
 
+/**
+ * Sets of kinds that could become content signals, each counted as one: a
+ * release is caught when it adds any kind in the set. The first are the kinds
+ * no benign update added in the first counts (2026-10-28).
+ */
+const QUIET = ['obfuscated-names', 'eval', 'long-base64', 'hex-escapes', 'node-network'];
+export const CANDIDATE_SETS: Record<string, string[]> = {
+  quiet: QUIET,
+  'quiet + hidden': [...QUIET, 'hidden-after-whitespace'],
+  'quiet + hidden + xhr + child-process': [
+    ...QUIET,
+    'hidden-after-whitespace',
+    'xhr',
+    'child-process',
+  ],
+};
+export const caught = (kinds: string[], set: string[]) => set.some((k) => kinds.includes(k));
+
+/**
+ * Which files are read: code files only (`.js`, `.cjs`, `.mjs`), or every
+ * file, since Node runs a required file whatever its extension.
+ */
+export const SCOPES = ['code', 'all'] as const;
+export type Scope = (typeof SCOPES)[number];
 const CODE = /\.(?:js|cjs|mjs)$/;
 /** Larger files are left unread and counted, so a size limit can be chosen from the numbers. */
 export const MAX_FILE_BYTES = 20_000_000;
 
-export interface Scan {
+interface Found {
   kinds: Set<string>;
   hosts: Set<string>;
+}
+export interface Scan extends Record<Scope, Found> {
+  /** Code files read. */
   files: number;
   tooLarge: number;
 }
 
 export function scan(files: Map<string, Buffer>): Scan {
-  const result: Scan = { kinds: new Set(), hosts: new Set(), files: 0, tooLarge: 0 };
+  const found = (): Found => ({ kinds: new Set(), hosts: new Set() });
+  const result: Scan = { code: found(), all: found(), files: 0, tooLarge: 0 };
   for (const [path, data] of files) {
-    if (!CODE.test(path)) continue;
     if (data.length > MAX_FILE_BYTES) {
       result.tooLarge++;
       continue;
     }
-    result.files++;
+    const into = CODE.test(path) ? [result.code, result.all] : [result.all];
+    if (into.length === 2) result.files++;
     const text = data.toString('utf8');
-    for (const [kind, re] of Object.entries(PATTERNS)) if (re.test(text)) result.kinds.add(kind);
-    for (const m of text.matchAll(URL_HOST)) result.hosts.add(m[1]!.toLowerCase());
+    for (const [kind, re] of Object.entries(PATTERNS))
+      if (re.test(text)) for (const f of into) f.kinds.add(kind);
+    for (const m of text.matchAll(URL_HOST)) for (const f of into) f.hosts.add(m[1]!.toLowerCase());
   }
   return result;
 }
 
-/** Kinds of code in `next` that `prev` did not have anywhere. */
-export function added(prev: Scan, next: Scan): string[] {
-  const kinds = [...next.kinds].filter((k) => !prev.kinds.has(k));
-  if ([...next.hosts].some((h) => !prev.hosts.has(h))) kinds.push(NEW_URL_HOST);
+/** Kinds in `next` that `prev` did not have anywhere, reading the files of `scope`. */
+export function added(prev: Scan, next: Scan, scope: Scope): string[] {
+  const [before, after] = [prev[scope], next[scope]];
+  const kinds = [...after.kinds].filter((k) => !before.kinds.has(k));
+  if ([...after.hosts].some((h) => !before.hosts.has(h))) kinds.push(NEW_URL_HOST);
   return kinds.sort();
 }
 
