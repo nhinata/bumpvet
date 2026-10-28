@@ -126,14 +126,17 @@ function scanOne(dir: string, work: string, id: string): Result {
   if (tarballs.length === 1) files = readTarball(files.get(tarballs[0]!)!);
   const prev = scan(prevFiles);
   const next = scan(files);
-  // Reading no code would look like adding nothing.
-  if (!next.files) return { id, error: 'no code read' };
+  // Reading nothing would look like adding nothing.
+  if (!next.all.read) return { id, error: 'no files read' };
   const sample = samples.find((x) => x.id === id)!;
   return {
     id,
     kinds: { code: added(prev, next, 'code'), all: added(prev, next, 'all') },
     installScripts: installScripts(sample, manifest(prevFiles), manifest(files)),
-    files: `${prev.files} -> ${next.files}${next.tooLarge ? ` (${next.tooLarge} too large)` : ''}`,
+    files: SCOPES.map(
+      (s) =>
+        `${prev[s].read} -> ${next[s].read}${next[s].tooLarge ? ` (${next[s].tooLarge} too large)` : ''}`,
+    ).join(' / '),
   };
 }
 
@@ -185,8 +188,8 @@ function report(resultsPath: string): void {
     );
   }
 
-  const widest = Object.values(CANDIDATE_SETS).at(-1)!;
-  const missed = withoutScripts.filter((m) => !caught(m.kinds.all, widest));
+  const anySet = [...new Set(Object.values(CANDIDATE_SETS).flat())];
+  const missed = withoutScripts.filter((m) => !caught(m.kinds.all, anySet));
   console.log(
     `\n### Without an install-script change and caught by no set, all files (${missed.length})\n`,
   );
@@ -210,7 +213,7 @@ function report(resultsPath: string): void {
   }
 
   console.log('\n### Incidents from test/incidents.test.ts\n');
-  console.log('| Release | Kinds added, code files | Added with all files | Code files read |');
+  console.log('| Release | Kinds added, code files | Added with all files | Files read |');
   console.log('| --- | --- | --- | --- |');
   for (const s of samples.filter((x) => x.incident)) {
     const r = byId.get(s.id);

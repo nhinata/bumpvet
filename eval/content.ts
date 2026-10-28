@@ -25,8 +25,9 @@ export const PATTERNS: Record<string, RegExp> = {
   'hex-escapes': /(?<!\\x[0-9a-fA-F]{2})(?:\\x[0-9a-fA-F]{2}){16}/,
   'long-base64': /(?<![A-Za-z0-9+/])[A-Za-z0-9+/]{1000}/,
   'crypto-wallet': /\bwindow\.(?:ethereum|solana)\b|\bethereum\.request\b/,
-  // Code pushed out of sight, past the edge of a viewer, after a long run of spaces.
-  'hidden-after-whitespace': /\S[ \t]{200}(?=[ \t]*\S)/,
+  // Code pushed out of sight, past the edge of a viewer, by a long run of
+  // spaces after other code or at the start of a line.
+  'hidden-after-whitespace': /(?:^|\S)[ \t]{200}(?=[ \t]*\S)/m,
 };
 /** Not a pattern: a URL host in the code that the previous version's code did not have. */
 export const NEW_URL_HOST = 'new-url-host';
@@ -63,23 +64,25 @@ export const MAX_FILE_BYTES = 20_000_000;
 interface Found {
   kinds: Set<string>;
   hosts: Set<string>;
-}
-export interface Scan extends Record<Scope, Found> {
-  /** Code files read. */
-  files: number;
+  /** Files read, and files over the size limit left unread. */
+  read: number;
   tooLarge: number;
 }
+export type Scan = Record<Scope, Found>;
 
 export function scan(files: Map<string, Buffer>): Scan {
-  const found = (): Found => ({ kinds: new Set(), hosts: new Set() });
-  const result: Scan = { code: found(), all: found(), files: 0, tooLarge: 0 };
+  const found = (): Found => ({ kinds: new Set(), hosts: new Set(), read: 0, tooLarge: 0 });
+  const result: Scan = { code: found(), all: found() };
   for (const [path, data] of files) {
+    const into = CODE.test(path) ? [result.code, result.all] : [result.all];
     if (data.length > MAX_FILE_BYTES) {
-      result.tooLarge++;
+      for (const f of into) f.tooLarge++;
       continue;
     }
-    const into = CODE.test(path) ? [result.code, result.all] : [result.all];
-    if (into.length === 2) result.files++;
+    // A file with a NUL byte is binary (an image, a font, a native addon): Node
+    // cannot run it as JavaScript, and its bytes would only match by chance.
+    if (data.subarray(0, 8192).includes(0)) continue;
+    for (const f of into) f.read++;
     const text = data.toString('utf8');
     for (const [kind, re] of Object.entries(PATTERNS))
       if (re.test(text)) for (const f of into) f.kinds.add(kind);

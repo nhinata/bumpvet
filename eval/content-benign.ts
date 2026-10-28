@@ -45,7 +45,7 @@ async function vetPackage(name: string): Promise<void> {
     if (!s) {
       s = fetchTarball(p.versions[version]?.dist).then((tgz) => {
         const result = scan(readTarball(tgz));
-        tooLarge += result.tooLarge;
+        tooLarge += result.all.tooLarge;
         return result;
       });
       scans.set(version, s);
@@ -100,6 +100,6 @@ for (const [name, set] of Object.entries(CANDIDATE_SETS)) {
     .join('; ');
   console.log(`| ${name} | ${code!.length} | ${all!.length} | ${examples} |`);
 }
-console.log(`\nFiles over the size limit, left unread: ${tooLarge}`);
+console.log(`\nFiles over the size limit, left unread (any file): ${tooLarge}`);
 if (failed.length)
   console.log(`\nNot measured (${failed.length}):\n${failed.map((f) => `- ${f}`).join('\n')}`);
