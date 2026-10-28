@@ -12,7 +12,7 @@ import { gunzipSync } from 'node:zlib';
 export const PATTERNS: Record<string, RegExp> = {
   'child-process': /\bchild_process\b/,
   'node-network':
-    /\b(?:require\s*\(|from\s*|import\s*\(\s*)['"](?:node:)?(?:https?|net|tls|dgram|dns)['"]/,
+    /\b(?:require\s*\(\s*|from\s*|import\s*\(?\s*)['"](?:node:)?(?:https?|http2|net|tls|dgram|dns)['"]/,
   fetch: /\bfetch\s*\(/,
   xhr: /\bXMLHttpRequest\b/,
   websocket: /\bWebSocket\b/,
@@ -85,8 +85,13 @@ export function readTarball(tgz: Buffer): Map<string, Buffer> {
     }
     if (type === 'x') {
       longName = /\d+ path=([^\n]*)\n/.exec(body.toString('utf8'))?.[1] ?? longName;
+      // A size given here would override the header's; npm does not write one.
+      if (/\d+ size=/.test(body.toString('utf8')))
+        throw new Error('tar: PAX size is not supported');
       continue;
     }
+    // A long link name belongs to the next entry, which is not a file to read.
+    if (type === 'K') continue;
     const prefix = field(345, 155);
     const name = longName ?? (prefix ? `${prefix}/${field(0, 100)}` : field(0, 100));
     longName = undefined;
@@ -115,12 +120,14 @@ export function readDirectory(dir: string): Map<string, Buffer> {
 }
 
 /** Downloads a tarball and checks it against the registry's sha512 integrity. */
-export async function fetchTarball(url: string, integrity: string): Promise<Buffer> {
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`${url}: ${res.status}`);
+export async function fetchTarball(dist: { tarball?: string; integrity?: string } | undefined) {
+  const want = dist?.integrity?.split(/\s+/).find((h) => h.startsWith('sha512-'));
+  if (!dist?.tarball || !want)
+    throw new Error('the registry gives no tarball with a sha512 integrity');
+  const res = await fetch(dist.tarball, { signal: AbortSignal.timeout(120_000) });
+  if (!res.ok) throw new Error(`${dist.tarball}: ${res.status}`);
   const data = Buffer.from(await res.arrayBuffer());
-  const want = integrity.split(/\s+/).find((h) => h.startsWith('sha512-'));
   const got = 'sha512-' + createHash('sha512').update(data).digest('base64');
-  if (!want || want !== got) throw new Error(`${url}: integrity does not match`);
+  if (want !== got) throw new Error(`${dist.tarball}: integrity does not match`);
   return data;
 }

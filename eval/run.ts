@@ -10,10 +10,8 @@
 import { computeSignals } from '../src/signals.js';
 import { decide } from '../src/verdict.js';
 import type { SignalId, Verdict } from '../src/types.js';
-import { PACKAGES, load, updates } from './updates.js';
+import { PACKAGES, arg, load, updates } from './updates.js';
 
-const arg = (flag: string) => Number(process.argv[process.argv.indexOf(flag) + 1]) || undefined;
-const perPackage = arg('--per-package') ?? 10;
 const baselineSize = arg('--baseline');
 const DELAYS = [
   { label: '1h after publish', hours: 1 },
@@ -32,7 +30,7 @@ interface Row {
 const rows: Row[] = [];
 for (const name of PACKAGES) {
   const p = await load(name);
-  for (const { from, to } of updates(p, perPackage)) {
+  for (const { from, to } of updates(p)) {
     const change = { name, from, to };
     for (const d of DELAYS) {
       const now = new Date(Date.parse(p.time[change.to]!) + d.hours * 3_600_000);

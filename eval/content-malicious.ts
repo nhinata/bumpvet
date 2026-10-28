@@ -37,6 +37,7 @@ if (mode === 'fetch' && dir) {
   for (const s of samples) {
     const res = await fetch(
       `https://raw.githubusercontent.com/${dataset.repo}/${dataset.commit}/${s.zip}`,
+      { signal: AbortSignal.timeout(120_000) },
     );
     if (!res.ok) throw new Error(`${s.zip}: ${res.status}`);
     const zip = Buffer.from(await res.arrayBuffer());
@@ -44,8 +45,7 @@ if (mode === 'fetch' && dir) {
     const blob = createHash('sha1').update(`blob ${zip.length}\0`).update(zip).digest('hex');
     if (blob !== s.blob) throw new Error(`${s.zip}: hash does not match samples.json`);
     writeFileSync(join(dir, 'zips', `${s.id}.zip`), zip);
-    const dist = (await load(s.name)).versions[s.from]?.dist;
-    const tgz = await fetchTarball(dist?.tarball ?? '', dist?.integrity ?? '');
+    const tgz = await fetchTarball((await load(s.name)).versions[s.from]?.dist);
     writeFileSync(join(dir, 'prev', `${s.id}.tgz`), tgz);
   }
 } else if (mode === 'scan' && dir && work) {
@@ -56,13 +56,15 @@ if (mode === 'fetch' && dir) {
     const prev = scan(readTarball(readFileSync(join(dir, 'prev', `${s.id}.tgz`))));
     // A sample is the package's files, or the tarball itself.
     let files = readDirectory(join(work, s.id));
-    const tgz = [...files.keys()].filter((f) => f.endsWith('.tgz'));
-    if (tgz.length === 1) files = readTarball(files.get(tgz[0]!)!);
+    const tarballs = [...files.keys()].filter((f) => /\.(?:tgz|tar\.gz)$/.test(f));
+    if (tarballs.length === 1) files = readTarball(files.get(tarballs[0]!)!);
     const next = scan(files);
-    const kinds =
-      added(prev, next)
-        .map((k) => `\`${k}\``)
-        .join(', ') || 'none';
+    // Reading no code would look like adding nothing.
+    const kinds = next.files
+      ? added(prev, next)
+          .map((k) => `\`${k}\``)
+          .join(', ') || 'none'
+      : '**no code read**';
     const read = `${prev.files} -> ${next.files}${next.tooLarge ? ` (${next.tooLarge} too large)` : ''}`;
     console.log(
       `| ${s.name} ${s.from} -> ${s.to} | ${s.missed ? 'yes' : 'no'} | ${kinds} | ${read} |`,

@@ -17,8 +17,6 @@ import {
 } from './content.js';
 import { PACKAGES, load, updates } from './updates.js';
 
-const arg = (flag: string) => Number(process.argv[process.argv.indexOf(flag) + 1]) || undefined;
-const perPackage = arg('--per-package') ?? 10;
 const KINDS = [...Object.keys(PATTERNS), NEW_URL_HOST];
 
 interface Row {
@@ -30,13 +28,18 @@ const failed: string[] = [];
 let tooLarge = 0;
 
 async function vetPackage(name: string): Promise<void> {
-  const p = await load(name);
+  let p;
+  try {
+    p = await load(name);
+  } catch (err) {
+    failed.push(`${name}: ${(err as Error).message}`);
+    return;
+  }
   const scans = new Map<string, Promise<Scan>>();
   const scanOf = (version: string) => {
     let s = scans.get(version);
     if (!s) {
-      const dist = p.versions[version]?.dist;
-      s = fetchTarball(dist?.tarball ?? '', dist?.integrity ?? '').then((tgz) => {
+      s = fetchTarball(p.versions[version]?.dist).then((tgz) => {
         const result = scan(readTarball(tgz));
         tooLarge += result.tooLarge;
         return result;
@@ -45,7 +48,7 @@ async function vetPackage(name: string): Promise<void> {
     }
     return s;
   };
-  for (const { from, to } of updates(p, perPackage)) {
+  for (const { from, to } of updates(p)) {
     const update = `${name} ${from} -> ${to}`;
     try {
       rows.push({ update, kinds: added(await scanOf(from), await scanOf(to)) });
@@ -63,7 +66,7 @@ await Promise.all(
   }),
 );
 
-console.log(`## Benign updates: ${rows.length} of ${PACKAGES.length} packages\n`);
+console.log(`## Benign updates: ${rows.length} updates of ${PACKAGES.length} packages\n`);
 console.log('| Kind added | Updates | Share | Examples |');
 console.log('| --- | --- | --- | --- |');
 for (const kind of KINDS) {
