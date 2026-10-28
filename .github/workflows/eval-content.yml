@@ -2,7 +2,7 @@ name: Evaluate content
 
 # Groundwork for content signals (issue #44): which kinds of code malicious
 # releases added, and how often benign updates add the same kinds. Both tables
-# go to the run's summary.
+# go to the run's summary and log.
 #
 # The malicious samples are real malware, read as text and never run. They
 # are unzipped only inside a container with no network, no capabilities, a
@@ -22,7 +22,7 @@ concurrency:
 jobs:
   malicious:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -35,20 +35,27 @@ jobs:
       - run: npm ci
       - run: npx tsc -p tsconfig.json
       - run: node dist-eval/eval/content-malicious.js fetch "$RUNNER_TEMP/samples"
+      # One sample at a time: unzipped into memory, read, and removed.
       - name: Scan the samples without network
         run: |
           docker run --rm --network none --cap-drop ALL --security-opt no-new-privileges \
-            --read-only --user 1000:1000 --tmpfs /work:rw,noexec,nosuid,nodev,size=1g \
+            --read-only --user 1000:1000 --tmpfs /work:rw,noexec,nosuid,nodev,size=2g \
             -v "$PWD:/app:ro" -v "$RUNNER_TEMP/samples:/in:ro" -w /app \
             node:24-bookworm@sha256:6449e19d8184d84062525b6a7524def03146c2cb04a7f08b076680d0e8e4240a \
             sh -ec '
               for zip in /in/zips/*.zip; do
                 id=$(basename "$zip" .zip)
                 mkdir "/work/$id"
-                unzip -q -P infected "$zip" -d "/work/$id"
+                if unzip -q -P infected "$zip" -d "/work/$id"; then
+                  node dist-eval/eval/content-malicious.js scan /in "/work/$id" "$id"
+                else
+                  echo "{\"id\":\"$id\",\"error\":\"unzip failed\"}"
+                fi
+                rm -rf "/work/$id"
               done
-              node dist-eval/eval/content-malicious.js scan /in /work
-            ' >> "$GITHUB_STEP_SUMMARY"
+            ' > "$RUNNER_TEMP/results.jsonl"
+      # In the log as well as the summary, so it can be read without signing in.
+      - run: node dist-eval/eval/content-malicious.js report "$RUNNER_TEMP/results.jsonl" | tee -a "$GITHUB_STEP_SUMMARY"
 
   benign:
     runs-on: ubuntu-latest
@@ -62,4 +69,4 @@ jobs:
           node-version: 24
           package-manager-cache: false
       - run: npm ci
-      - run: npm run --silent eval:content >> "$GITHUB_STEP_SUMMARY"
+      - run: npm run --silent eval:content | tee -a "$GITHUB_STEP_SUMMARY"

@@ -1,38 +1,799 @@
 {
   "dataset": {
     "repo": "DataDog/malicious-software-packages-dataset",
-    "commit": "e51c2b57744d23453f6ba7be9812f81b55c26eb6"
+    "commit": "82276012b3271668783ff47c3296138b3241a491"
+  },
+  "picked": {
+    "repo": "DataDog/guarddog",
+    "commit": "a46949ddd7e164defe1a2ad78f7c8f6586c6667a"
   },
   "samples": [
     {
-      "id": "debug",
-      "name": "debug",
-      "from": "4.4.1",
-      "to": "4.4.2",
-      "missed": true,
-      "zip": "samples/npm/compromised_lib/debug/4.4.2/2025-09-08-debug-v4.4.2.zip",
-      "blob": "331cfe6e3f7390ebcacdcde982ca042701efd434"
+      "id": "_accordproject_concerto-linter-default-ruleset-3.24.1",
+      "name": "@accordproject/concerto-linter-default-ruleset",
+      "from": "3.24.0",
+      "to": "3.24.1",
+      "zip": "samples/npm/compromised_lib/@accordproject@concerto-linter-default-ruleset/3.24.1/2025-11-24-@accordproject_concerto-linter-default-ruleset-v3.24.1.zip",
+      "blob": "0aed5965749d8103a0b22aea0cc452439ab278e7"
     },
     {
-      "id": "ansi-styles",
-      "name": "ansi-styles",
-      "from": "6.2.1",
-      "to": "6.2.2",
-      "missed": true,
-      "zip": "samples/npm/compromised_lib/ansi-styles/6.2.2/2025-09-08-ansi-styles-v6.2.2.zip",
-      "blob": "20131febeb67688eee17f1857dc2a837ad8efe3a"
+      "id": "_accordproject_concerto-metamodel-3.12.5",
+      "name": "@accordproject/concerto-metamodel",
+      "from": "3.12.4",
+      "to": "3.12.5",
+      "zip": "samples/npm/compromised_lib/@accordproject@concerto-metamodel/3.12.5/2025-11-24-@accordproject_concerto-metamodel-v3.12.5.zip",
+      "blob": "328bf3f3e0c4adf486a211485d30fbd7d53710e8"
     },
     {
-      "id": "solana-web3",
-      "name": "@solana/web3.js",
-      "from": "1.95.5",
-      "to": "1.95.7",
-      "missed": true,
-      "zip": "samples/npm/compromised_lib/@solana@web3.js/1.95.7/2024-12-03-@solana_web3.js-v1.95.7.zip",
-      "blob": "fee554638593fdc881c446d34afae9fffb9a109a"
+      "id": "_accordproject_concerto-types-3.24.1",
+      "name": "@accordproject/concerto-types",
+      "from": "3.24.0",
+      "to": "3.24.1",
+      "zip": "samples/npm/compromised_lib/@accordproject@concerto-types/3.24.1/2025-11-24-@accordproject_concerto-types-v3.24.1.zip",
+      "blob": "c25339f67b04e08d0abf16719eb3d7e5219959a9"
     },
     {
-      "id": "tinycolor",
+      "id": "_accordproject_markdown-it-cicero-0.16.26",
+      "name": "@accordproject/markdown-it-cicero",
+      "from": "0.16.25",
+      "to": "0.16.26",
+      "zip": "samples/npm/compromised_lib/@accordproject@markdown-it-cicero/0.16.26/2025-11-24-@accordproject_markdown-it-cicero-v0.16.26.zip",
+      "blob": "4fccf9c779a5102b38cc5b442dff851be090b70c"
+    },
+    {
+      "id": "_accordproject_template-engine-2.7.2",
+      "name": "@accordproject/template-engine",
+      "from": "2.7.1",
+      "to": "2.7.2",
+      "zip": "samples/npm/compromised_lib/@accordproject@template-engine/2.7.2/2025-11-24-@accordproject_template-engine-v2.7.2.zip",
+      "blob": "2867dc3df346767827c4eb7a79036a384a2dd097"
+    },
+    {
+      "id": "_actbase_css-to-react-native-transform-1.0.3",
+      "name": "@actbase/css-to-react-native-transform",
+      "from": "1.0.2",
+      "to": "1.0.3",
+      "zip": "samples/npm/compromised_lib/@actbase@css-to-react-native-transform/1.0.3/2025-11-24-@actbase_css-to-react-native-transform-v1.0.3.zip",
+      "blob": "24a09307a78300633040bbb963355335d1c1c9d5"
+    },
+    {
+      "id": "_actbase_native-0.1.32",
+      "name": "@actbase/native",
+      "from": "0.1.31",
+      "to": "0.1.32",
+      "zip": "samples/npm/compromised_lib/@actbase@native/0.1.32/2025-11-24-@actbase_native-v0.1.32.zip",
+      "blob": "de55793fb3bb512201641dd44fb48338e6cd8ad6"
+    },
+    {
+      "id": "_actbase_node-server-1.1.19",
+      "name": "@actbase/node-server",
+      "from": "1.1.18",
+      "to": "1.1.19",
+      "zip": "samples/npm/compromised_lib/@actbase@node-server/1.1.19/2025-11-24-@actbase_node-server-v1.1.19.zip",
+      "blob": "abd6ed08fd55936231e6d18606622a033d1032dd"
+    },
+    {
+      "id": "_actbase_react-absolute-0.8.3",
+      "name": "@actbase/react-absolute",
+      "from": "0.8.2",
+      "to": "0.8.3",
+      "zip": "samples/npm/compromised_lib/@actbase@react-absolute/0.8.3/2025-11-24-@actbase_react-absolute-v0.8.3.zip",
+      "blob": "5b5b978202a8576b7c44b322c8c3588c5a0b44d7"
+    },
+    {
+      "id": "_actbase_react-daum-postcode-1.0.5",
+      "name": "@actbase/react-daum-postcode",
+      "from": "1.0.4",
+      "to": "1.0.5",
+      "zip": "samples/npm/compromised_lib/@actbase@react-daum-postcode/1.0.5/2025-11-24-@actbase_react-daum-postcode-v1.0.5.zip",
+      "blob": "7555c3ee47cc9e7ff7bb76547d04aa05e01e90ed"
+    },
+    {
+      "id": "_actbase_react-kakaosdk-0.9.27",
+      "name": "@actbase/react-kakaosdk",
+      "from": "0.9.26",
+      "to": "0.9.27",
+      "zip": "samples/npm/compromised_lib/@actbase@react-kakaosdk/0.9.27/2025-11-24-@actbase_react-kakaosdk-v0.9.27.zip",
+      "blob": "9db510c9a6286065f6f039fce85217f9121a04f0"
+    },
+    {
+      "id": "_actbase_react-native-actionsheet-1.0.3",
+      "name": "@actbase/react-native-actionsheet",
+      "from": "1.0.2",
+      "to": "1.0.3",
+      "zip": "samples/npm/compromised_lib/@actbase@react-native-actionsheet/1.0.3/2025-11-24-@actbase_react-native-actionsheet-v1.0.3.zip",
+      "blob": "c45c544424ee5dc26e51fccdcba58fb747502f81"
+    },
+    {
+      "id": "_actbase_react-native-devtools-0.1.3",
+      "name": "@actbase/react-native-devtools",
+      "from": "0.1.2",
+      "to": "0.1.3",
+      "zip": "samples/npm/compromised_lib/@actbase@react-native-devtools/0.1.3/2025-11-24-@actbase_react-native-devtools-v0.1.3.zip",
+      "blob": "a50b1f987336238b88e3ebc19d2099de147f7eac"
+    },
+    {
+      "id": "_actbase_react-native-fast-image-8.5.13",
+      "name": "@actbase/react-native-fast-image",
+      "from": "8.5.12",
+      "to": "8.5.13",
+      "zip": "samples/npm/compromised_lib/@actbase@react-native-fast-image/8.5.13/2025-11-24-@actbase_react-native-fast-image-v8.5.13.zip",
+      "blob": "b137a3d60b49186f8cea3644e5f3d8c0e2c03aa4"
+    },
+    {
+      "id": "_actbase_react-native-kakao-channel-1.0.2",
+      "name": "@actbase/react-native-kakao-channel",
+      "from": "1.0.1",
+      "to": "1.0.2",
+      "zip": "samples/npm/compromised_lib/@actbase@react-native-kakao-channel/1.0.2/2025-11-24-@actbase_react-native-kakao-channel-v1.0.2.zip",
+      "blob": "1bf66ffb6012c9291b3ee8817e34343fc31c0cef"
+    },
+    {
+      "id": "_actbase_react-native-kakao-navi-2.0.4",
+      "name": "@actbase/react-native-kakao-navi",
+      "from": "2.0.3",
+      "to": "2.0.4",
+      "zip": "samples/npm/compromised_lib/@actbase@react-native-kakao-navi/2.0.4/2025-11-24-@actbase_react-native-kakao-navi-v2.0.4.zip",
+      "blob": "c21f09d8c4b8b9ae3e32c26a3221d513a15e4b48"
+    },
+    {
+      "id": "_actbase_react-native-less-transformer-1.0.6",
+      "name": "@actbase/react-native-less-transformer",
+      "from": "1.0.5",
+      "to": "1.0.6",
+      "zip": "samples/npm/compromised_lib/@actbase@react-native-less-transformer/1.0.6/2025-11-24-@actbase_react-native-less-transformer-v1.0.6.zip",
+      "blob": "e507f0adc187382832646e6fd86bd2b72a65f137"
+    },
+    {
+      "id": "_actbase_react-native-naver-login-1.0.1",
+      "name": "@actbase/react-native-naver-login",
+      "from": "1.0.0",
+      "to": "1.0.1",
+      "zip": "samples/npm/compromised_lib/@actbase@react-native-naver-login/1.0.1/2025-11-24-@actbase_react-native-naver-login-v1.0.1.zip",
+      "blob": "5c3daf791bf958ab189e29f5abd9f0c2ef9930be"
+    },
+    {
+      "id": "_actbase_react-native-simple-video-1.0.13",
+      "name": "@actbase/react-native-simple-video",
+      "from": "1.0.12",
+      "to": "1.0.13",
+      "zip": "samples/npm/compromised_lib/@actbase@react-native-simple-video/1.0.13/2025-11-24-@actbase_react-native-simple-video-v1.0.13.zip",
+      "blob": "090ddfb16850c353b7263230cd23204425092ce0"
+    },
+    {
+      "id": "_actbase_react-native-tiktok-1.1.3",
+      "name": "@actbase/react-native-tiktok",
+      "from": "1.1.2",
+      "to": "1.1.3",
+      "zip": "samples/npm/compromised_lib/@actbase@react-native-tiktok/1.1.3/2025-11-24-@actbase_react-native-tiktok-v1.1.3.zip",
+      "blob": "9932a69fe3a7265e37a7bb17d29d9d00506bf570"
+    },
+    {
+      "id": "_ahmedhfarag_ngx-perfect-scrollbar-20.0.20",
+      "name": "@ahmedhfarag/ngx-perfect-scrollbar",
+      "from": "20.0.19",
+      "to": "20.0.20",
+      "zip": "samples/npm/compromised_lib/@ahmedhfarag@ngx-perfect-scrollbar/20.0.20/2025-09-15-@ahmedhfarag_ngx-perfect-scrollbar-v20.0.20.zip",
+      "blob": "09a35dd31273920102a15eed48825bf136b07a5a"
+    },
+    {
+      "id": "_ahmedhfarag_ngx-virtual-scroller-4.0.4",
+      "name": "@ahmedhfarag/ngx-virtual-scroller",
+      "from": "4.0.3",
+      "to": "4.0.4",
+      "zip": "samples/npm/compromised_lib/@ahmedhfarag@ngx-virtual-scroller/4.0.4/2025-09-15-@ahmedhfarag_ngx-virtual-scroller-v4.0.4.zip",
+      "blob": "3662fbb27125fbd124a8b18214f511570085e6b0"
+    },
+    {
+      "id": "_aifabrix_miso-client-4.7.2",
+      "name": "@aifabrix/miso-client",
+      "from": "4.7.1",
+      "to": "4.7.2",
+      "zip": "samples/npm/compromised_lib/@aifabrix@miso-client/4.7.2/2026-03-07-@aifabrix_miso-client-v4.7.2.zip",
+      "blob": "f92eaa9c2fd97f04e5aa188eaf6c5ad899701eb5"
+    },
+    {
+      "id": "_alexcolls_nuxt-socket.io-0.0.8",
+      "name": "@alexcolls/nuxt-socket.io",
+      "from": "0.0.6",
+      "to": "0.0.8",
+      "zip": "samples/npm/compromised_lib/@alexcolls@nuxt-socket.io/0.0.8/2025-11-24-@alexcolls_nuxt-socket.io-v0.0.8.zip",
+      "blob": "ac330081518c29cf028faae1307e03b44fbd8b5e"
+    },
+    {
+      "id": "_alexcolls_nuxt-ux-0.6.2",
+      "name": "@alexcolls/nuxt-ux",
+      "from": "0.6.0",
+      "to": "0.6.2",
+      "zip": "samples/npm/compromised_lib/@alexcolls@nuxt-ux/0.6.2/2025-11-24-@alexcolls_nuxt-ux-v0.6.2.zip",
+      "blob": "ca34c76f353c5d046c680f6d800caf64e15e2347"
+    },
+    {
+      "id": "_antstackio_eslint-config-antstack-0.0.3",
+      "name": "@antstackio/eslint-config-antstack",
+      "from": "0.0.2",
+      "to": "0.0.3",
+      "zip": "samples/npm/compromised_lib/@antstackio@eslint-config-antstack/0.0.3/2025-11-24-@antstackio_eslint-config-antstack-v0.0.3.zip",
+      "blob": "627ad0ccbe4ebd192f4d3c4fc0214fc47a0e6b3d"
+    },
+    {
+      "id": "_antstackio_express-graphql-proxy-0.2.8",
+      "name": "@antstackio/express-graphql-proxy",
+      "from": "0.2.7",
+      "to": "0.2.8",
+      "zip": "samples/npm/compromised_lib/@antstackio@express-graphql-proxy/0.2.8/2025-11-24-@antstackio_express-graphql-proxy-v0.2.8.zip",
+      "blob": "876d151ebe48c7668129b523e912b243d5cc62d6"
+    },
+    {
+      "id": "_antstackio_graphql-body-parser-0.1.1",
+      "name": "@antstackio/graphql-body-parser",
+      "from": "0.1.0",
+      "to": "0.1.1",
+      "zip": "samples/npm/compromised_lib/@antstackio@graphql-body-parser/0.1.1/2025-11-24-@antstackio_graphql-body-parser-v0.1.1.zip",
+      "blob": "94348cb74eaabe1af3d61cc605b51d86ce1c6264"
+    },
+    {
+      "id": "_antstackio_json-to-graphql-1.0.3",
+      "name": "@antstackio/json-to-graphql",
+      "from": "1.0.2",
+      "to": "1.0.3",
+      "zip": "samples/npm/compromised_lib/@antstackio@json-to-graphql/1.0.3/2025-11-24-@antstackio_json-to-graphql-v1.0.3.zip",
+      "blob": "21f0d8ab4998a8c2543c6a453fc175b0cae07916"
+    },
+    {
+      "id": "_antstackio_shelbysam-1.1.7",
+      "name": "@antstackio/shelbysam",
+      "from": "1.1.6",
+      "to": "1.1.7",
+      "zip": "samples/npm/compromised_lib/@antstackio@shelbysam/1.1.7/2025-11-24-@antstackio_shelbysam-v1.1.7.zip",
+      "blob": "f687533938a528bdd4e0138a720bb05234ec9fe2"
+    },
+    {
+      "id": "_art-ws_common-2.0.28",
+      "name": "@art-ws/common",
+      "from": "2.0.24",
+      "to": "2.0.28",
+      "zip": "samples/npm/compromised_lib/@art-ws@common/2.0.28/2025-09-15-@art-ws_common-v2.0.28.zip",
+      "blob": "ee8e7a4faa751a905698950ee79ddd68aad36629"
+    },
+    {
+      "id": "_art-ws_config-eslint-2.0.4",
+      "name": "@art-ws/config-eslint",
+      "from": "2.0.3",
+      "to": "2.0.4",
+      "zip": "samples/npm/compromised_lib/@art-ws@config-eslint/2.0.4/2025-09-15-@art-ws_config-eslint-v2.0.4.zip",
+      "blob": "fe22197da2a2c4ff07f391e86da57ee08b83c898"
+    },
+    {
+      "id": "_art-ws_config-ts-2.0.8",
+      "name": "@art-ws/config-ts",
+      "from": "2.0.6",
+      "to": "2.0.8",
+      "zip": "samples/npm/compromised_lib/@art-ws@config-ts/2.0.8/2025-09-15-@art-ws_config-ts-v2.0.8.zip",
+      "blob": "56cf859dec8703850a065364ff7c13daaf0d8492"
+    },
+    {
+      "id": "_art-ws_db-context-2.0.24",
+      "name": "@art-ws/db-context",
+      "from": "2.0.20",
+      "to": "2.0.24",
+      "zip": "samples/npm/compromised_lib/@art-ws@db-context/2.0.24/2025-09-15-@art-ws_db-context-v2.0.24.zip",
+      "blob": "7dc75adf9dd800c81dbef05f72d19199eaf57b3d"
+    },
+    {
+      "id": "_art-ws_di-node-2.0.13",
+      "name": "@art-ws/di-node",
+      "from": "2.0.12",
+      "to": "2.0.13",
+      "zip": "samples/npm/compromised_lib/@art-ws@di-node/2.0.13/2025-09-15-@art-ws_di-node-v2.0.13.zip",
+      "blob": "b38552f58f4690c59447b8e2c08783a626133b29"
+    },
+    {
+      "id": "_art-ws_di-2.0.32",
+      "name": "@art-ws/di",
+      "from": "2.0.31",
+      "to": "2.0.32",
+      "zip": "samples/npm/compromised_lib/@art-ws@di/2.0.32/2025-09-15-@art-ws_di-v2.0.32.zip",
+      "blob": "f1ecb625daad8459eb7ac9e00367af94e524b2f6"
+    },
+    {
+      "id": "_art-ws_eslint-1.0.6",
+      "name": "@art-ws/eslint",
+      "from": "1.0.4",
+      "to": "1.0.6",
+      "zip": "samples/npm/compromised_lib/@art-ws@eslint/1.0.6/2025-09-15-@art-ws_eslint-v1.0.6.zip",
+      "blob": "ed32f6a8d886980c07fff173e1517cba185d3020"
+    },
+    {
+      "id": "_art-ws_fastify-http-server-2.0.27",
+      "name": "@art-ws/fastify-http-server",
+      "from": "2.0.23",
+      "to": "2.0.27",
+      "zip": "samples/npm/compromised_lib/@art-ws@fastify-http-server/2.0.27/2025-09-15-@art-ws_fastify-http-server-v2.0.27.zip",
+      "blob": "6208a4e141c5520fa11fc4ebcf60179da6868a31"
+    },
+    {
+      "id": "_art-ws_http-server-2.0.25",
+      "name": "@art-ws/http-server",
+      "from": "2.0.20",
+      "to": "2.0.25",
+      "zip": "samples/npm/compromised_lib/@art-ws@http-server/2.0.25/2025-09-15-@art-ws_http-server-v2.0.25.zip",
+      "blob": "cb096396aa84263f7d1198ba490f2f9e1bba4b0a"
+    },
+    {
+      "id": "_art-ws_openapi-0.1.9",
+      "name": "@art-ws/openapi",
+      "from": "0.1.8",
+      "to": "0.1.9",
+      "zip": "samples/npm/compromised_lib/@art-ws@openapi/0.1.9/2025-09-15-@art-ws_openapi-v0.1.9.zip",
+      "blob": "f7a1ad730137186a13c14e173ddd65c681ef30bf"
+    },
+    {
+      "id": "_art-ws_package-base-1.0.5",
+      "name": "@art-ws/package-base",
+      "from": "1.0.4",
+      "to": "1.0.5",
+      "zip": "samples/npm/compromised_lib/@art-ws@package-base/1.0.5/2025-09-15-@art-ws_package-base-v1.0.5.zip",
+      "blob": "75307f48fd8eeecca7769c6da0c1196a3c8ca2f6"
+    },
+    {
+      "id": "_art-ws_prettier-1.0.5",
+      "name": "@art-ws/prettier",
+      "from": "1.0.4",
+      "to": "1.0.5",
+      "zip": "samples/npm/compromised_lib/@art-ws@prettier/1.0.5/2025-09-15-@art-ws_prettier-v1.0.5.zip",
+      "blob": "37f22b9404a9613780cc7f70aec7271d3a590336"
+    },
+    {
+      "id": "_art-ws_slf-2.0.22",
+      "name": "@art-ws/slf",
+      "from": "2.0.21",
+      "to": "2.0.22",
+      "zip": "samples/npm/compromised_lib/@art-ws@slf/2.0.22/2025-09-15-@art-ws_slf-v2.0.22.zip",
+      "blob": "cd6a1143b5e99b29ee35b0be60417da8d5ccc17e"
+    },
+    {
+      "id": "_art-ws_ssl-info-1.0.9",
+      "name": "@art-ws/ssl-info",
+      "from": "1.0.8",
+      "to": "1.0.9",
+      "zip": "samples/npm/compromised_lib/@art-ws@ssl-info/1.0.9/2025-09-15-@art-ws_ssl-info-v1.0.9.zip",
+      "blob": "3cb0babf5b1e4be290ea0da0775081d1ec0d291d"
+    },
+    {
+      "id": "_art-ws_web-app-1.0.3",
+      "name": "@art-ws/web-app",
+      "from": "1.0.2",
+      "to": "1.0.3",
+      "zip": "samples/npm/compromised_lib/@art-ws@web-app/1.0.3/2025-09-15-@art-ws_web-app-v1.0.3.zip",
+      "blob": "8a9bd1c5ba932d8a3ac283569f441b89b150cd3a"
+    },
+    {
+      "id": "_aryanhussain_my-angular-lib-0.0.23",
+      "name": "@aryanhussain/my-angular-lib",
+      "from": "0.0.22",
+      "to": "0.0.23",
+      "zip": "samples/npm/compromised_lib/@aryanhussain@my-angular-lib/0.0.23/2025-11-24-@aryanhussain_my-angular-lib-v0.0.23.zip",
+      "blob": "4674a7c9e4dd8ca9edde872ac35924f93e2973d6"
+    },
+    {
+      "id": "_asyncapi_avro-schema-parser-3.0.26",
+      "name": "@asyncapi/avro-schema-parser",
+      "from": "3.0.24",
+      "to": "3.0.26",
+      "zip": "samples/npm/compromised_lib/@asyncapi@avro-schema-parser/3.0.26/2025-11-24-@asyncapi_avro-schema-parser-v3.0.26.zip",
+      "blob": "4ff1397669f109887e705d5754f5b526b308a6a7"
+    },
+    {
+      "id": "_asyncapi_bundler-0.6.6",
+      "name": "@asyncapi/bundler",
+      "from": "0.6.4",
+      "to": "0.6.6",
+      "zip": "samples/npm/compromised_lib/@asyncapi@bundler/0.6.6/2025-11-24-@asyncapi_bundler-v0.6.6.zip",
+      "blob": "d537fdf600bec65acccd60e8d7de5eaadc1a5583"
+    },
+    {
+      "id": "_asyncapi_cli-4.1.3",
+      "name": "@asyncapi/cli",
+      "from": "4.1.1",
+      "to": "4.1.3",
+      "zip": "samples/npm/compromised_lib/@asyncapi@cli/4.1.3/2025-11-24-@asyncapi_cli-v4.1.3.zip",
+      "blob": "60beea830ba322ef5dbfb4fdbdcf6f1908cc7de7"
+    },
+    {
+      "id": "_asyncapi_converter-1.6.4",
+      "name": "@asyncapi/converter",
+      "from": "1.6.2",
+      "to": "1.6.4",
+      "zip": "samples/npm/compromised_lib/@asyncapi@converter/1.6.4/2025-11-24-@asyncapi_converter-v1.6.4.zip",
+      "blob": "761bcdf784b5471798019b6de532f413f13a7e24"
+    },
+    {
+      "id": "_asyncapi_diff-0.5.1",
+      "name": "@asyncapi/diff",
+      "from": "0.5.0",
+      "to": "0.5.1",
+      "zip": "samples/npm/compromised_lib/@asyncapi@diff/0.5.1/2025-11-24-@asyncapi_diff-v0.5.1.zip",
+      "blob": "83f7577922b523469ef155e08b8f430de79d86ea"
+    },
+    {
+      "id": "_asyncapi_generator-components-0.3.3",
+      "name": "@asyncapi/generator-components",
+      "from": "0.3.1",
+      "to": "0.3.3",
+      "zip": "samples/npm/compromised_lib/@asyncapi@generator-components/0.3.3/2025-11-24-@asyncapi_generator-components-v0.3.3.zip",
+      "blob": "62f2827b48eebb5e571565bf735452a03d953d57"
+    },
+    {
+      "id": "_asyncapi_generator-helpers-0.2.2",
+      "name": "@asyncapi/generator-helpers",
+      "from": "0.2.0",
+      "to": "0.2.2",
+      "zip": "samples/npm/compromised_lib/@asyncapi@generator-helpers/0.2.2/2025-11-24-@asyncapi_generator-helpers-v0.2.2.zip",
+      "blob": "a1faefadc228d27a9870f40f97401a1227aea56b"
+    },
+    {
+      "id": "_asyncapi_generator-react-sdk-1.1.4",
+      "name": "@asyncapi/generator-react-sdk",
+      "from": "1.1.3",
+      "to": "1.1.4",
+      "zip": "samples/npm/compromised_lib/@asyncapi@generator-react-sdk/1.1.4/2025-11-24-@asyncapi_generator-react-sdk-v1.1.4.zip",
+      "blob": "75378a0045e43bee9c3e3d89b914dcc04742dd7d"
+    },
+    {
+      "id": "_asyncapi_generator-2.8.6",
+      "name": "@asyncapi/generator",
+      "from": "2.8.4",
+      "to": "2.8.6",
+      "zip": "samples/npm/compromised_lib/@asyncapi@generator/2.8.6/2025-11-24-@asyncapi_generator-v2.8.6.zip",
+      "blob": "40054f32309db40526937cbf574ae78bf29e509f"
+    },
+    {
+      "id": "_asyncapi_html-template-3.3.2",
+      "name": "@asyncapi/html-template",
+      "from": "3.3.1",
+      "to": "3.3.2",
+      "zip": "samples/npm/compromised_lib/@asyncapi@html-template/3.3.2/2025-11-24-@asyncapi_html-template-v3.3.2.zip",
+      "blob": "6a42275b4c479e0260f479a68dc88e5d686f4402"
+    },
+    {
+      "id": "_asyncapi_java-spring-template-1.6.2",
+      "name": "@asyncapi/java-spring-template",
+      "from": "1.6.0",
+      "to": "1.6.2",
+      "zip": "samples/npm/compromised_lib/@asyncapi@java-spring-template/1.6.2/2025-11-24-@asyncapi_java-spring-template-v1.6.2.zip",
+      "blob": "f9c006a6cc746793011c245bf5e84acbb267679b"
+    },
+    {
+      "id": "_asyncapi_java-template-0.3.5",
+      "name": "@asyncapi/java-template",
+      "from": "0.3.4",
+      "to": "0.3.5",
+      "zip": "samples/npm/compromised_lib/@asyncapi@java-template/0.3.5/2025-11-24-@asyncapi_java-template-v0.3.5.zip",
+      "blob": "a35ba02777428e833abdc7cf4171fef41de7a102"
+    },
+    {
+      "id": "_asyncapi_keeper-0.0.3",
+      "name": "@asyncapi/keeper",
+      "from": "0.0.1",
+      "to": "0.0.3",
+      "zip": "samples/npm/compromised_lib/@asyncapi@keeper/0.0.3/2025-11-24-@asyncapi_keeper-v0.0.3.zip",
+      "blob": "d1dcfa6671af6572631933937cdc3ec2edabe2e9"
+    },
+    {
+      "id": "_asyncapi_markdown-template-1.6.8",
+      "name": "@asyncapi/markdown-template",
+      "from": "1.6.7",
+      "to": "1.6.8",
+      "zip": "samples/npm/compromised_lib/@asyncapi@markdown-template/1.6.8/2025-11-24-@asyncapi_markdown-template-v1.6.8.zip",
+      "blob": "eaaa76f70f84bf4ffc378ace4e27409e50eb1fd4"
+    },
+    {
+      "id": "_asyncapi_modelina-5.10.3",
+      "name": "@asyncapi/modelina",
+      "from": "5.10.1",
+      "to": "5.10.3",
+      "zip": "samples/npm/compromised_lib/@asyncapi@modelina/5.10.3/2025-11-24-@asyncapi_modelina-v5.10.3.zip",
+      "blob": "ae3d380579d5050b2045af5d09e07d34eea37332"
+    },
+    {
+      "id": "_asyncapi_multi-parser-2.2.2",
+      "name": "@asyncapi/multi-parser",
+      "from": "2.2.0",
+      "to": "2.2.2",
+      "zip": "samples/npm/compromised_lib/@asyncapi@multi-parser/2.2.2/2025-11-24-@asyncapi_multi-parser-v2.2.2.zip",
+      "blob": "efc716f448ee1592f949f27fd353e7a8ee1e591e"
+    },
+    {
+      "id": "_asyncapi_nodejs-template-3.0.5",
+      "name": "@asyncapi/nodejs-template",
+      "from": "3.0.4",
+      "to": "3.0.5",
+      "zip": "samples/npm/compromised_lib/@asyncapi@nodejs-template/3.0.5/2025-11-24-@asyncapi_nodejs-template-v3.0.5.zip",
+      "blob": "2ea3d002d72471baaa2b3ec38789409e5255436c"
+    },
+    {
+      "id": "_asyncapi_nunjucks-filters-2.1.2",
+      "name": "@asyncapi/nunjucks-filters",
+      "from": "2.1.0",
+      "to": "2.1.2",
+      "zip": "samples/npm/compromised_lib/@asyncapi@nunjucks-filters/2.1.2/2025-11-24-@asyncapi_nunjucks-filters-v2.1.2.zip",
+      "blob": "a9b92b8860d91283b48596605a02d7d22decfd56"
+    },
+    {
+      "id": "_asyncapi_openapi-schema-parser-3.0.26",
+      "name": "@asyncapi/openapi-schema-parser",
+      "from": "3.0.24",
+      "to": "3.0.26",
+      "zip": "samples/npm/compromised_lib/@asyncapi@openapi-schema-parser/3.0.26/2025-11-24-@asyncapi_openapi-schema-parser-v3.0.26.zip",
+      "blob": "ff1a17ed7e3abaf016945ec7dabbf2cea6500c64"
+    },
+    {
+      "id": "_asyncapi_optimizer-1.0.6",
+      "name": "@asyncapi/optimizer",
+      "from": "1.0.4",
+      "to": "1.0.6",
+      "zip": "samples/npm/compromised_lib/@asyncapi@optimizer/1.0.6/2025-11-24-@asyncapi_optimizer-v1.0.6.zip",
+      "blob": "3d55544f0254df017a63ee2a340947225400c4ca"
+    },
+    {
+      "id": "_asyncapi_parser-3.4.2",
+      "name": "@asyncapi/parser",
+      "from": "3.4.0",
+      "to": "3.4.2",
+      "zip": "samples/npm/compromised_lib/@asyncapi@parser/3.4.2/2025-11-24-@asyncapi_parser-v3.4.2.zip",
+      "blob": "792b42cc9db09fbd5cf0f22d75fbac686dcb7dc6"
+    },
+    {
+      "id": "_asyncapi_php-template-0.1.1",
+      "name": "@asyncapi/php-template",
+      "from": "0.1.0",
+      "to": "0.1.1",
+      "zip": "samples/npm/compromised_lib/@asyncapi@php-template/0.1.1/2025-11-24-@asyncapi_php-template-v0.1.1.zip",
+      "blob": "588e20ceb6324f57c9c3c24d01017f4e728edf26"
+    },
+    {
+      "id": "_asyncapi_problem-1.0.1",
+      "name": "@asyncapi/problem",
+      "from": "1.0.0",
+      "to": "1.0.1",
+      "zip": "samples/npm/compromised_lib/@asyncapi@problem/1.0.1/2025-11-24-@asyncapi_problem-v1.0.1.zip",
+      "blob": "d7f106a3e6657ca3cdfd21590289a044847d9060"
+    },
+    {
+      "id": "_asyncapi_protobuf-schema-parser-3.5.3",
+      "name": "@asyncapi/protobuf-schema-parser",
+      "from": "3.5.1",
+      "to": "3.5.3",
+      "zip": "samples/npm/compromised_lib/@asyncapi@protobuf-schema-parser/3.5.3/2025-11-24-@asyncapi_protobuf-schema-parser-v3.5.3.zip",
+      "blob": "ae978ce5e90975e4e7e1b9e12f547aa9ed321b89"
+    },
+    {
+      "id": "_asyncapi_python-paho-template-0.2.14",
+      "name": "@asyncapi/python-paho-template",
+      "from": "0.2.13",
+      "to": "0.2.14",
+      "zip": "samples/npm/compromised_lib/@asyncapi@python-paho-template/0.2.14/2025-11-24-@asyncapi_python-paho-template-v0.2.14.zip",
+      "blob": "9d838ed2d9d2b0d99ee2e90a3bea718ecea74351"
+    },
+    {
+      "id": "_asyncapi_react-component-2.6.7",
+      "name": "@asyncapi/react-component",
+      "from": "2.6.5",
+      "to": "2.6.7",
+      "zip": "samples/npm/compromised_lib/@asyncapi@react-component/2.6.7/2025-11-24-@asyncapi_react-component-v2.6.7.zip",
+      "blob": "721790bd7a1f0718b9a09c142ebeeb2de5e9bc5d"
+    },
+    {
+      "id": "_asyncapi_server-api-0.16.24",
+      "name": "@asyncapi/server-api",
+      "from": "0.16.23",
+      "to": "0.16.24",
+      "zip": "samples/npm/compromised_lib/@asyncapi@server-api/0.16.24/2025-11-24-@asyncapi_server-api-v0.16.24.zip",
+      "blob": "dc75ee892778846f15c566c53ecda7a71c9847b5"
+    },
+    {
+      "id": "_asyncapi_specs-6.8.3",
+      "name": "@asyncapi/specs",
+      "from": "6.8.1",
+      "to": "6.8.3",
+      "zip": "samples/npm/compromised_lib/@asyncapi@specs/6.8.3/2025-11-24-@asyncapi_specs-v6.8.3.zip",
+      "blob": "f5abec1e9eef05d4fc04b2f29aceb39dd9b0b244"
+    },
+    {
+      "id": "_asyncapi_studio-1.0.3",
+      "name": "@asyncapi/studio",
+      "from": "1.0.1",
+      "to": "1.0.3",
+      "zip": "samples/npm/compromised_lib/@asyncapi@studio/1.0.3/2025-11-24-@asyncapi_studio-v1.0.3.zip",
+      "blob": "e138e261328b86ca043edb03f547900d26a55e40"
+    },
+    {
+      "id": "_browserbasehq_bb9-1.2.21",
+      "name": "@browserbasehq/bb9",
+      "from": "1.2.20",
+      "to": "1.2.21",
+      "zip": "samples/npm/compromised_lib/@browserbasehq@bb9/1.2.21/2025-11-24-@browserbasehq_bb9-v1.2.21.zip",
+      "blob": "5e3ae6e3e83ac3b5d0863155c2cbbb87eced88e2"
+    },
+    {
+      "id": "_browserbasehq_director-ai-1.0.3",
+      "name": "@browserbasehq/director-ai",
+      "from": "1.0.2",
+      "to": "1.0.3",
+      "zip": "samples/npm/compromised_lib/@browserbasehq@director-ai/1.0.3/2025-11-24-@browserbasehq_director-ai-v1.0.3.zip",
+      "blob": "48daf0c447244e50a8d32938cc98df5c152e62ef"
+    },
+    {
+      "id": "_browserbasehq_mcp-2.1.1",
+      "name": "@browserbasehq/mcp",
+      "from": "2.1.0",
+      "to": "2.1.1",
+      "zip": "samples/npm/compromised_lib/@browserbasehq@mcp/2.1.1/2025-11-24-@browserbasehq_mcp-v2.1.1.zip",
+      "blob": "97b59581b944182ab9e7ad31b2dbfed1f7bdd89f"
+    },
+    {
+      "id": "_browserbasehq_sdk-functions-0.0.4",
+      "name": "@browserbasehq/sdk-functions",
+      "from": "0.0.3",
+      "to": "0.0.4",
+      "zip": "samples/npm/compromised_lib/@browserbasehq@sdk-functions/0.0.4/2025-11-24-@browserbasehq_sdk-functions-v0.0.4.zip",
+      "blob": "d57b864ead078a781d3e3d1d0543604eb38eb49c"
+    },
+    {
+      "id": "_browserbasehq_stagehand-3.0.4",
+      "name": "@browserbasehq/stagehand",
+      "from": "3.0.3",
+      "to": "3.0.4",
+      "zip": "samples/npm/compromised_lib/@browserbasehq@stagehand/3.0.4/2025-11-24-@browserbasehq_stagehand-v3.0.4.zip",
+      "blob": "4058a4537690883c4e5243321041803bcf534a7b"
+    },
+    {
+      "id": "_clausehq_flows-step-mqtt-0.1.14",
+      "name": "@clausehq/flows-step-mqtt",
+      "from": "0.1.13",
+      "to": "0.1.14",
+      "zip": "samples/npm/compromised_lib/@clausehq@flows-step-mqtt/0.1.14/2025-11-24-@clausehq_flows-step-mqtt-v0.1.14.zip",
+      "blob": "033ab9702f3292a9dd4b9c0f22369e20f2ae52dd"
+    },
+    {
+      "id": "_clausehq_flows-step-sendgridemail-0.1.14",
+      "name": "@clausehq/flows-step-sendgridemail",
+      "from": "0.1.13",
+      "to": "0.1.14",
+      "zip": "samples/npm/compromised_lib/@clausehq@flows-step-sendgridemail/0.1.14/2025-11-24-@clausehq_flows-step-sendgridemail-v0.1.14.zip",
+      "blob": "8f845c32ece5a81296076ec20ce6ef7981ea23da"
+    },
+    {
+      "id": "_clausehq_flows-step-taskscreateurl-0.1.14",
+      "name": "@clausehq/flows-step-taskscreateurl",
+      "from": "0.1.13",
+      "to": "0.1.14",
+      "zip": "samples/npm/compromised_lib/@clausehq@flows-step-taskscreateurl/0.1.14/2025-11-24-@clausehq_flows-step-taskscreateurl-v0.1.14.zip",
+      "blob": "24a35ede4ade5b63e65e9164d10a20d0ea2fb8e7"
+    },
+    {
+      "id": "_coveops_abi-2.0.1",
+      "name": "@coveops/abi",
+      "from": "2.0.0",
+      "to": "2.0.1",
+      "zip": "samples/npm/compromised_lib/@coveops@abi/2.0.1/2025-09-09-@coveops_abi-v2.0.1.zip",
+      "blob": "06b2cf74cb022f9d090623fb3ed7674b1d5b2673"
+    },
+    {
+      "id": "_crowdstrike_commitlint-8.1.2",
+      "name": "@crowdstrike/commitlint",
+      "from": "8.1.0",
+      "to": "8.1.2",
+      "zip": "samples/npm/compromised_lib/@crowdstrike@commitlint/8.1.2/2025-09-16-@crowdstrike_commitlint-v8.1.2.zip",
+      "blob": "2b6e08d5fac9acf637886a0cf1c82613207fb796"
+    },
+    {
+      "id": "_crowdstrike_falcon-shoelace-0.4.2",
+      "name": "@crowdstrike/falcon-shoelace",
+      "from": "0.4.0",
+      "to": "0.4.2",
+      "zip": "samples/npm/compromised_lib/@crowdstrike@falcon-shoelace/0.4.2/2025-09-16-@crowdstrike_falcon-shoelace-v0.4.2.zip",
+      "blob": "fe4af4bec9e0170b08c0aa44c1eadbc5ffdc2571"
+    },
+    {
+      "id": "_crowdstrike_foundry-js-0.19.2",
+      "name": "@crowdstrike/foundry-js",
+      "from": "0.19.0",
+      "to": "0.19.2",
+      "zip": "samples/npm/compromised_lib/@crowdstrike@foundry-js/0.19.2/2025-09-16-@crowdstrike_foundry-js-v0.19.2.zip",
+      "blob": "f158c8f54cf6598d5b6b2d506d1e99202ad76bad"
+    },
+    {
+      "id": "_crowdstrike_glide-core-0.34.3",
+      "name": "@crowdstrike/glide-core",
+      "from": "0.34.1",
+      "to": "0.34.3",
+      "zip": "samples/npm/compromised_lib/@crowdstrike@glide-core/0.34.3/2025-09-16-@crowdstrike_glide-core-v0.34.3.zip",
+      "blob": "486eba534b92d0d7b4796ec0c12d7036d116e7bf"
+    },
+    {
+      "id": "_crowdstrike_tailwind-toucan-base-5.0.2",
+      "name": "@crowdstrike/tailwind-toucan-base",
+      "from": "5.0.0",
+      "to": "5.0.2",
+      "zip": "samples/npm/compromised_lib/@crowdstrike@tailwind-toucan-base/5.0.2/2025-09-16-@crowdstrike_tailwind-toucan-base-v5.0.2.zip",
+      "blob": "9fc86452b967de6f4ad91d46c5984da3cf2a8170"
+    },
+    {
+      "id": "_ctrl_deluge-7.2.2",
+      "name": "@ctrl/deluge",
+      "from": "7.2.0",
+      "to": "7.2.2",
+      "zip": "samples/npm/compromised_lib/@ctrl@deluge/7.2.2/2025-09-15-@ctrl_deluge-v7.2.2.zip",
+      "blob": "a53025b0319256d0217ad1bdc24a03baf632c295"
+    },
+    {
+      "id": "_ctrl_golang-template-1.4.3",
+      "name": "@ctrl/golang-template",
+      "from": "1.4.1",
+      "to": "1.4.3",
+      "zip": "samples/npm/compromised_lib/@ctrl@golang-template/1.4.3/2025-09-15-@ctrl_golang-template-v1.4.3.zip",
+      "blob": "42ea4138a72db53e00439ca4c7e1c667f7d83be0"
+    },
+    {
+      "id": "_ctrl_magnet-link-4.0.4",
+      "name": "@ctrl/magnet-link",
+      "from": "4.0.2",
+      "to": "4.0.4",
+      "zip": "samples/npm/compromised_lib/@ctrl@magnet-link/4.0.4/2025-09-15-@ctrl_magnet-link-v4.0.4.zip",
+      "blob": "08849690efd698cf0101275d34533e56fe0f1867"
+    },
+    {
+      "id": "_ctrl_ngx-codemirror-7.0.2",
+      "name": "@ctrl/ngx-codemirror",
+      "from": "7.0.0",
+      "to": "7.0.2",
+      "zip": "samples/npm/compromised_lib/@ctrl@ngx-codemirror/7.0.2/2025-09-15-@ctrl_ngx-codemirror-v7.0.2.zip",
+      "blob": "45820bb3e4c3a185daba4eea0407fa22f429716b"
+    },
+    {
+      "id": "_ctrl_ngx-csv-6.0.2",
+      "name": "@ctrl/ngx-csv",
+      "from": "6.0.0",
+      "to": "6.0.2",
+      "zip": "samples/npm/compromised_lib/@ctrl@ngx-csv/6.0.2/2025-09-15-@ctrl_ngx-csv-v6.0.2.zip",
+      "blob": "5172080546fb9e55803cc4b9a8d89df895e5bdab"
+    },
+    {
+      "id": "_ctrl_ngx-rightclick-4.0.2",
+      "name": "@ctrl/ngx-rightclick",
+      "from": "4.0.0",
+      "to": "4.0.2",
+      "zip": "samples/npm/compromised_lib/@ctrl@ngx-rightclick/4.0.2/2025-09-15-@ctrl_ngx-rightclick-v4.0.2.zip",
+      "blob": "a59dadd6749b606a9f6e2cd2141b4544b4a554fc"
+    },
+    {
+      "id": "_ctrl_qbittorrent-9.7.2",
+      "name": "@ctrl/qbittorrent",
+      "from": "9.7.0",
+      "to": "9.7.2",
+      "zip": "samples/npm/compromised_lib/@ctrl@qbittorrent/9.7.2/2025-09-15-@ctrl_qbittorrent-v9.7.2.zip",
+      "blob": "0859b78582ff41d572ae262923691abe2b8fab05"
+    },
+    {
+      "id": "_ctrl_react-adsense-2.0.2",
+      "name": "@ctrl/react-adsense",
+      "from": "2.0.0",
+      "to": "2.0.2",
+      "zip": "samples/npm/compromised_lib/@ctrl@react-adsense/2.0.2/2025-09-15-@ctrl_react-adsense-v2.0.2.zip",
+      "blob": "34945b66d264ae9c261e0c7334e5e0db21d8ad5c"
+    },
+    {
+      "id": "_ctrl_shared-torrent-6.3.2",
+      "name": "@ctrl/shared-torrent",
+      "from": "6.3.0",
+      "to": "6.3.2",
+      "zip": "samples/npm/compromised_lib/@ctrl@shared-torrent/6.3.2/2025-09-15-@ctrl_shared-torrent-v6.3.2.zip",
+      "blob": "7f58faf79853651560aed5ef3e0ed895f38cda1d"
+    },
+    {
+      "id": "_ctrl_tinycolor-4.1.1",
       "name": "@ctrl/tinycolor",
       "from": "4.1.0",
       "to": "4.1.1",
@@ -41,16 +802,2531 @@
       "blob": "880551a6fe3b44d92422d87a5f84c0be2346a184"
     },
     {
-      "id": "ngx-bootstrap",
-      "name": "ngx-bootstrap",
-      "from": "20.0.2",
-      "to": "20.0.5",
-      "missed": false,
-      "zip": "samples/npm/compromised_lib/ngx-bootstrap/20.0.5/2025-09-15-ngx-bootstrap-v20.0.5.zip",
-      "blob": "3e201ba8dab07d4c6e79ce1db7472cde23374308"
+      "id": "_ctrl_tinycolor-4.1.2",
+      "name": "@ctrl/tinycolor",
+      "from": "4.1.0",
+      "to": "4.1.2",
+      "zip": "samples/npm/compromised_lib/@ctrl@tinycolor/4.1.2/2025-09-15-@ctrl_tinycolor-v4.1.2.zip",
+      "blob": "adbd58ff7a1e14744743dbd078d2f7aa4f600341"
     },
     {
-      "id": "eslint-config-prettier",
+      "id": "_ctrl_torrent-file-4.1.2",
+      "name": "@ctrl/torrent-file",
+      "from": "4.1.0",
+      "to": "4.1.2",
+      "zip": "samples/npm/compromised_lib/@ctrl@torrent-file/4.1.2/2025-09-15-@ctrl_torrent-file-v4.1.2.zip",
+      "blob": "4ed4ca080b4865825e49fecf89c2100b985ba51b"
+    },
+    {
+      "id": "_ctrl_transmission-7.3.1",
+      "name": "@ctrl/transmission",
+      "from": "7.3.0",
+      "to": "7.3.1",
+      "zip": "samples/npm/compromised_lib/@ctrl@transmission/7.3.1/2025-09-15-@ctrl_transmission-v7.3.1.zip",
+      "blob": "36070963924ae68f87a6212567ccc4226a9ea6ae"
+    },
+    {
+      "id": "_ctrl_ts-base32-4.0.2",
+      "name": "@ctrl/ts-base32",
+      "from": "4.0.0",
+      "to": "4.0.2",
+      "zip": "samples/npm/compromised_lib/@ctrl@ts-base32/4.0.2/2025-09-15-@ctrl_ts-base32-v4.0.2.zip",
+      "blob": "76e2ba900f8945760fd5b1677bf3ceeb4203ebff"
+    },
+    {
+      "id": "_dev-blinq_cucumber-js-1.0.131",
+      "name": "@dev-blinq/cucumber-js",
+      "from": "1.0.130",
+      "to": "1.0.131",
+      "zip": "samples/npm/compromised_lib/@dev-blinq@cucumber-js/1.0.131/2025-11-24-@dev-blinq_cucumber-js-v1.0.131.zip",
+      "blob": "ea9a7b5efd0fc7f574d46dd7d145d1365a43c829"
+    },
+    {
+      "id": "_dev-blinq_cucumber_client-1.0.738",
+      "name": "@dev-blinq/cucumber_client",
+      "from": "1.0.735",
+      "to": "1.0.738",
+      "zip": "samples/npm/compromised_lib/@dev-blinq@cucumber_client/1.0.738/2025-11-24-@dev-blinq_cucumber_client-v1.0.738.zip",
+      "blob": "c5c6448980cc9cfde71bd1d6289726f3c56abb0c"
+    },
+    {
+      "id": "_duckdb_duckdb-wasm-1.29.2",
+      "name": "@duckdb/duckdb-wasm",
+      "from": "1.29.0",
+      "to": "1.29.2",
+      "zip": "samples/npm/compromised_lib/@duckdb@duckdb-wasm/1.29.2/2025-09-09-@duckdb_duckdb-wasm-v1.29.2.zip",
+      "blob": "c78da713affc59b91ca4aeaa66adbfa2ce8b7816"
+    },
+    {
+      "id": "_emilgroup_account-sdk-node-1.40.1",
+      "name": "@emilgroup/account-sdk-node",
+      "from": "1.40.0",
+      "to": "1.40.1",
+      "zip": "samples/npm/compromised_lib/@emilgroup@account-sdk-node/1.40.1/2026-03-20-@emilgroup_account-sdk-node-v1.40.1.zip",
+      "blob": "32379e37aee812674ac866b8d8c9b4212f612049"
+    },
+    {
+      "id": "_emilgroup_account-sdk-1.41.1",
+      "name": "@emilgroup/account-sdk",
+      "from": "1.41.0",
+      "to": "1.41.1",
+      "zip": "samples/npm/compromised_lib/@emilgroup@account-sdk/1.41.1/2026-03-20-@emilgroup_account-sdk-v1.41.1.zip",
+      "blob": "aa6eb995051dad1ca1a0b7bf562bdcd26759e206"
+    },
+    {
+      "id": "_emilgroup_accounting-sdk-node-1.26.1",
+      "name": "@emilgroup/accounting-sdk-node",
+      "from": "1.26.0",
+      "to": "1.26.1",
+      "zip": "samples/npm/compromised_lib/@emilgroup@accounting-sdk-node/1.26.1/2026-03-20-@emilgroup_accounting-sdk-node-v1.26.1.zip",
+      "blob": "b093f4f2e953970e425b3b012a68d3c7b6784af2"
+    },
+    {
+      "id": "_emilgroup_accounting-sdk-1.27.3",
+      "name": "@emilgroup/accounting-sdk",
+      "from": "1.27.0",
+      "to": "1.27.3",
+      "zip": "samples/npm/compromised_lib/@emilgroup@accounting-sdk/1.27.3/2026-03-20-@emilgroup_accounting-sdk-v1.27.3.zip",
+      "blob": "7ac300a5cba1c939519996d4febeeef8439fe498"
+    },
+    {
+      "id": "_emilgroup_api-documentation-1.19.1",
+      "name": "@emilgroup/api-documentation",
+      "from": "1.19.0",
+      "to": "1.19.1",
+      "zip": "samples/npm/compromised_lib/@emilgroup@api-documentation/1.19.1/2026-03-20-@emilgroup_api-documentation-v1.19.1.zip",
+      "blob": "c710e85d674c86c231ee889758559b3359d37abe"
+    },
+    {
+      "id": "_emilgroup_auth-sdk-node-1.21.1",
+      "name": "@emilgroup/auth-sdk-node",
+      "from": "1.21.0",
+      "to": "1.21.1",
+      "zip": "samples/npm/compromised_lib/@emilgroup@auth-sdk-node/1.21.1/2026-03-20-@emilgroup_auth-sdk-node-v1.21.1.zip",
+      "blob": "923835ab49f3bdfa670dec74d86232db7c02efb3"
+    },
+    {
+      "id": "_emilgroup_auth-sdk-1.25.2",
+      "name": "@emilgroup/auth-sdk",
+      "from": "1.25.0",
+      "to": "1.25.2",
+      "zip": "samples/npm/compromised_lib/@emilgroup@auth-sdk/1.25.2/2026-03-20-@emilgroup_auth-sdk-v1.25.2.zip",
+      "blob": "b3d217c073c510aba6457268d83b816349e1fdd8"
+    },
+    {
+      "id": "_emilgroup_billing-sdk-node-1.57.1",
+      "name": "@emilgroup/billing-sdk-node",
+      "from": "1.57.0",
+      "to": "1.57.1",
+      "zip": "samples/npm/compromised_lib/@emilgroup@billing-sdk-node/1.57.1/2026-03-20-@emilgroup_billing-sdk-node-v1.57.1.zip",
+      "blob": "9b9dcc63ea74c9f14c49c34a3100a986c176f807"
+    },
+    {
+      "id": "_emilgroup_billing-sdk-1.56.1",
+      "name": "@emilgroup/billing-sdk",
+      "from": "1.56.0",
+      "to": "1.56.1",
+      "zip": "samples/npm/compromised_lib/@emilgroup@billing-sdk/1.56.1/2026-03-20-@emilgroup_billing-sdk-v1.56.1.zip",
+      "blob": "b097f439bd5ca7aa634e0a97a061087f746deae4"
+    },
+    {
+      "id": "_emilgroup_claim-sdk-node-1.39.2",
+      "name": "@emilgroup/claim-sdk-node",
+      "from": "1.39.0",
+      "to": "1.39.2",
+      "zip": "samples/npm/compromised_lib/@emilgroup@claim-sdk-node/1.39.2/2026-03-20-@emilgroup_claim-sdk-node-v1.39.2.zip",
+      "blob": "114793bb09eb13b73662e4902519b868887a6505"
+    },
+    {
+      "id": "_emilgroup_claim-sdk-1.41.2",
+      "name": "@emilgroup/claim-sdk",
+      "from": "1.41.0",
+      "to": "1.41.2",
+      "zip": "samples/npm/compromised_lib/@emilgroup@claim-sdk/1.41.2/2026-03-20-@emilgroup_claim-sdk-v1.41.2.zip",
+      "blob": "bcaa92462af31f2558ddb62ed19da9fa4ecc9379"
+    },
+    {
+      "id": "_emilgroup_commission-sdk-1.0.3",
+      "name": "@emilgroup/commission-sdk",
+      "from": "1.0.2",
+      "to": "1.0.3",
+      "zip": "samples/npm/compromised_lib/@emilgroup@commission-sdk/1.0.3/2026-03-20-@emilgroup_commission-sdk-v1.0.3.zip",
+      "blob": "9abfe822940557a197857a9c0562713fee65e57e"
+    },
+    {
+      "id": "_emilgroup_customer-sdk-node-1.55.1",
+      "name": "@emilgroup/customer-sdk-node",
+      "from": "1.55.0",
+      "to": "1.55.1",
+      "zip": "samples/npm/compromised_lib/@emilgroup@customer-sdk-node/1.55.1/2026-03-20-@emilgroup_customer-sdk-node-v1.55.1.zip",
+      "blob": "26c065bf8a0a696fc3390f5ffac999c9d164ef4d"
+    },
+    {
+      "id": "_emilgroup_customer-sdk-1.54.5",
+      "name": "@emilgroup/customer-sdk",
+      "from": "1.54.0",
+      "to": "1.54.5",
+      "zip": "samples/npm/compromised_lib/@emilgroup@customer-sdk/1.54.5/2026-03-20-@emilgroup_customer-sdk-v1.54.5.zip",
+      "blob": "b46a97ae43113fe8c9929f07ecf475ffb0f41a54"
+    },
+    {
+      "id": "_emilgroup_discount-sdk-node-1.5.2",
+      "name": "@emilgroup/discount-sdk-node",
+      "from": "1.5.0",
+      "to": "1.5.2",
+      "zip": "samples/npm/compromised_lib/@emilgroup@discount-sdk-node/1.5.2/2026-03-20-@emilgroup_discount-sdk-node-v1.5.2.zip",
+      "blob": "1e553eb4d827ea303779eaf46d49f2205bc4cf83"
+    },
+    {
+      "id": "_emilgroup_discount-sdk-1.5.3",
+      "name": "@emilgroup/discount-sdk",
+      "from": "1.5.1",
+      "to": "1.5.3",
+      "zip": "samples/npm/compromised_lib/@emilgroup@discount-sdk/1.5.3/2026-03-20-@emilgroup_discount-sdk-v1.5.3.zip",
+      "blob": "8d3af19f3a4f1c988dad14c2531f67dd0d38b003"
+    },
+    {
+      "id": "_emilgroup_document-sdk-node-1.43.5",
+      "name": "@emilgroup/document-sdk-node",
+      "from": "1.43.0",
+      "to": "1.43.5",
+      "zip": "samples/npm/compromised_lib/@emilgroup@document-sdk-node/1.43.5/2026-03-20-@emilgroup_document-sdk-node-v1.43.5.zip",
+      "blob": "dba31ceda196f84aff799445f706b17ecbe8a755"
+    },
+    {
+      "id": "_emilgroup_document-sdk-1.45.2",
+      "name": "@emilgroup/document-sdk",
+      "from": "1.45.0",
+      "to": "1.45.2",
+      "zip": "samples/npm/compromised_lib/@emilgroup@document-sdk/1.45.2/2026-03-20-@emilgroup_document-sdk-v1.45.2.zip",
+      "blob": "a4e28b0d3abb1b609afbab3d4ecb99c419e16ad3"
+    },
+    {
+      "id": "_emilgroup_document-uploader-0.0.12",
+      "name": "@emilgroup/document-uploader",
+      "from": "0.0.10",
+      "to": "0.0.12",
+      "zip": "samples/npm/compromised_lib/@emilgroup@document-uploader/0.0.12/2026-03-20-@emilgroup_document-uploader-v0.0.12.zip",
+      "blob": "ca67e43b0eb48959403d3ad315162cc313855f94"
+    },
+    {
+      "id": "_emilgroup_docxtemplater-util-1.1.4",
+      "name": "@emilgroup/docxtemplater-util",
+      "from": "1.1.2",
+      "to": "1.1.4",
+      "zip": "samples/npm/compromised_lib/@emilgroup@docxtemplater-util/1.1.4/2026-03-20-@emilgroup_docxtemplater-util-v1.1.4.zip",
+      "blob": "1d2073053494847849760506d36c7e0705094313"
+    },
+    {
+      "id": "_emilgroup_gdv-sdk-node-2.6.3",
+      "name": "@emilgroup/gdv-sdk-node",
+      "from": "2.6.0",
+      "to": "2.6.3",
+      "zip": "samples/npm/compromised_lib/@emilgroup@gdv-sdk-node/2.6.3/2026-03-20-@emilgroup_gdv-sdk-node-v2.6.3.zip",
+      "blob": "d0805ad6276d2108ffe4366dca05708c204c3968"
+    },
+    {
+      "id": "_emilgroup_gdv-sdk-2.6.2",
+      "name": "@emilgroup/gdv-sdk",
+      "from": "2.6.0",
+      "to": "2.6.2",
+      "zip": "samples/npm/compromised_lib/@emilgroup@gdv-sdk/2.6.2/2026-03-20-@emilgroup_gdv-sdk-v2.6.2.zip",
+      "blob": "3654e052bcb51f9ad4ad1340269b9b691d3b81f1"
+    },
+    {
+      "id": "_emilgroup_insurance-sdk-node-1.95.2",
+      "name": "@emilgroup/insurance-sdk-node",
+      "from": "1.95.0",
+      "to": "1.95.2",
+      "zip": "samples/npm/compromised_lib/@emilgroup@insurance-sdk-node/1.95.2/2026-03-20-@emilgroup_insurance-sdk-node-v1.95.2.zip",
+      "blob": "bd1fa30a4b08a6fe0457fc3851abfdf11a8500cd"
+    },
+    {
+      "id": "_emilgroup_insurance-sdk-1.97.5",
+      "name": "@emilgroup/insurance-sdk",
+      "from": "1.97.0",
+      "to": "1.97.5",
+      "zip": "samples/npm/compromised_lib/@emilgroup@insurance-sdk/1.97.5/2026-03-20-@emilgroup_insurance-sdk-v1.97.5.zip",
+      "blob": "2096a2bcd7d7af868bfdd3d0a579d63d33401899"
+    },
+    {
+      "id": "_emilgroup_notification-sdk-node-1.4.1",
+      "name": "@emilgroup/notification-sdk-node",
+      "from": "1.4.0",
+      "to": "1.4.1",
+      "zip": "samples/npm/compromised_lib/@emilgroup@notification-sdk-node/1.4.1/2026-03-20-@emilgroup_notification-sdk-node-v1.4.1.zip",
+      "blob": "1ec67820431206c3fb58c2f320a83212896c7f1f"
+    },
+    {
+      "id": "_emilgroup_numbergenerator-sdk-node-1.3.3",
+      "name": "@emilgroup/numbergenerator-sdk-node",
+      "from": "1.3.1",
+      "to": "1.3.3",
+      "zip": "samples/npm/compromised_lib/@emilgroup@numbergenerator-sdk-node/1.3.3/2026-03-20-@emilgroup_numbergenerator-sdk-node-v1.3.3.zip",
+      "blob": "e713c4a593e3caeadad51d70126d5c4aa4377ea5"
+    },
+    {
+      "id": "_emilgroup_partner-portal-sdk-node-1.1.2",
+      "name": "@emilgroup/partner-portal-sdk-node",
+      "from": "1.1.0",
+      "to": "1.1.2",
+      "zip": "samples/npm/compromised_lib/@emilgroup@partner-portal-sdk-node/1.1.2/2026-03-20-@emilgroup_partner-portal-sdk-node-v1.1.2.zip",
+      "blob": "7d239260e74491c430b73508345fba19c0e38663"
+    },
+    {
+      "id": "_emilgroup_partner-portal-sdk-1.1.3",
+      "name": "@emilgroup/partner-portal-sdk",
+      "from": "1.1.1",
+      "to": "1.1.3",
+      "zip": "samples/npm/compromised_lib/@emilgroup@partner-portal-sdk/1.1.3/2026-03-20-@emilgroup_partner-portal-sdk-v1.1.3.zip",
+      "blob": "3abe24d1c8ddb6f0bbe60b6ae8860c42cbb27682"
+    },
+    {
+      "id": "_emilgroup_partner-sdk-node-1.19.2",
+      "name": "@emilgroup/partner-sdk-node",
+      "from": "1.19.0",
+      "to": "1.19.2",
+      "zip": "samples/npm/compromised_lib/@emilgroup@partner-sdk-node/1.19.2/2026-03-20-@emilgroup_partner-sdk-node-v1.19.2.zip",
+      "blob": "403688ed63f031f0267729141c652053116ea23c"
+    },
+    {
+      "id": "_emilgroup_partner-sdk-1.19.3",
+      "name": "@emilgroup/partner-sdk",
+      "from": "1.19.0",
+      "to": "1.19.3",
+      "zip": "samples/npm/compromised_lib/@emilgroup@partner-sdk/1.19.3/2026-03-20-@emilgroup_partner-sdk-v1.19.3.zip",
+      "blob": "becfc87f2887aca1de8dbc48396cd1d98852924f"
+    },
+    {
+      "id": "_emilgroup_process-manager-sdk-node-1.13.2",
+      "name": "@emilgroup/process-manager-sdk-node",
+      "from": "1.13.0",
+      "to": "1.13.2",
+      "zip": "samples/npm/compromised_lib/@emilgroup@process-manager-sdk-node/1.13.2/2026-03-20-@emilgroup_process-manager-sdk-node-v1.13.2.zip",
+      "blob": "3bb1f7e40ec6fbea5a3be77b70467cbf19000629"
+    },
+    {
+      "id": "_emilgroup_process-manager-sdk-1.4.2",
+      "name": "@emilgroup/process-manager-sdk",
+      "from": "1.4.0",
+      "to": "1.4.2",
+      "zip": "samples/npm/compromised_lib/@emilgroup@process-manager-sdk/1.4.2/2026-03-20-@emilgroup_process-manager-sdk-v1.4.2.zip",
+      "blob": "a79f6ceb9b7934ce6616a9f1344a7e017d7d11c2"
+    },
+    {
+      "id": "_emilgroup_public-api-sdk-node-1.35.1",
+      "name": "@emilgroup/public-api-sdk-node",
+      "from": "1.35.0",
+      "to": "1.35.1",
+      "zip": "samples/npm/compromised_lib/@emilgroup@public-api-sdk-node/1.35.1/2026-03-20-@emilgroup_public-api-sdk-node-v1.35.1.zip",
+      "blob": "451728ec9fe2d050f86a0b22e241d4372a8e3884"
+    },
+    {
+      "id": "_emilgroup_public-api-sdk-1.33.1",
+      "name": "@emilgroup/public-api-sdk",
+      "from": "1.33.0",
+      "to": "1.33.1",
+      "zip": "samples/npm/compromised_lib/@emilgroup@public-api-sdk/1.33.1/2026-03-20-@emilgroup_public-api-sdk-v1.33.1.zip",
+      "blob": "ba209f7bf1ea3ff110cb3a9efac13cfcc545c267"
+    },
+    {
+      "id": "_emilgroup_setting-sdk-node-0.2.2",
+      "name": "@emilgroup/setting-sdk-node",
+      "from": "0.2.0",
+      "to": "0.2.2",
+      "zip": "samples/npm/compromised_lib/@emilgroup@setting-sdk-node/0.2.2/2026-03-20-@emilgroup_setting-sdk-node-v0.2.2.zip",
+      "blob": "10d0c2caf1fb1f09817acbaf60d73a4f5abb8cab"
+    },
+    {
+      "id": "_emilgroup_setting-sdk-0.2.3",
+      "name": "@emilgroup/setting-sdk",
+      "from": "0.2.2",
+      "to": "0.2.3",
+      "zip": "samples/npm/compromised_lib/@emilgroup@setting-sdk/0.2.3/2026-03-20-@emilgroup_setting-sdk-v0.2.3.zip",
+      "blob": "0027edb2434817eabac5bf1c8aca3250460cce2b"
+    },
+    {
+      "id": "_emilgroup_task-sdk-node-1.0.4",
+      "name": "@emilgroup/task-sdk-node",
+      "from": "1.0.3",
+      "to": "1.0.4",
+      "zip": "samples/npm/compromised_lib/@emilgroup@task-sdk-node/1.0.4/2026-03-20-@emilgroup_task-sdk-node-v1.0.4.zip",
+      "blob": "5d6f69764c1e901b6c05c7e3ba1a3df774496065"
+    },
+    {
+      "id": "_emilgroup_task-sdk-1.0.3",
+      "name": "@emilgroup/task-sdk",
+      "from": "1.0.2",
+      "to": "1.0.3",
+      "zip": "samples/npm/compromised_lib/@emilgroup@task-sdk/1.0.3/2026-03-20-@emilgroup_task-sdk-v1.0.3.zip",
+      "blob": "be3709fbc8d9c9ab70d2fb431eff5ce4029bb3fa"
+    },
+    {
+      "id": "_emilgroup_tenant-sdk-node-1.33.1",
+      "name": "@emilgroup/tenant-sdk-node",
+      "from": "1.33.0",
+      "to": "1.33.1",
+      "zip": "samples/npm/compromised_lib/@emilgroup@tenant-sdk-node/1.33.1/2026-03-20-@emilgroup_tenant-sdk-node-v1.33.1.zip",
+      "blob": "b5c104121033004301dcff7efddfc755fbdeb53c"
+    },
+    {
+      "id": "_emilgroup_tenant-sdk-1.34.2",
+      "name": "@emilgroup/tenant-sdk",
+      "from": "1.34.0",
+      "to": "1.34.2",
+      "zip": "samples/npm/compromised_lib/@emilgroup@tenant-sdk/1.34.2/2026-03-20-@emilgroup_tenant-sdk-v1.34.2.zip",
+      "blob": "d779055086718381c47824cdef55496b8bb89dcf"
+    },
+    {
+      "id": "_emilgroup_translation-sdk-node-1.1.2",
+      "name": "@emilgroup/translation-sdk-node",
+      "from": "1.1.0",
+      "to": "1.1.2",
+      "zip": "samples/npm/compromised_lib/@emilgroup@translation-sdk-node/1.1.2/2026-03-20-@emilgroup_translation-sdk-node-v1.1.2.zip",
+      "blob": "f1c9b773361119298177e7a40ff96dbbcf751db6"
+    },
+    {
+      "id": "_ensdomains_address-encoder-1.1.5",
+      "name": "@ensdomains/address-encoder",
+      "from": "1.1.4",
+      "to": "1.1.5",
+      "zip": "samples/npm/compromised_lib/@ensdomains@address-encoder/1.1.5/2025-11-24-@ensdomains_address-encoder-v1.1.5.zip",
+      "blob": "04f0ce1c97b947cab192a3a26a22050ad4895998"
+    },
+    {
+      "id": "_ensdomains_blacklist-1.0.1",
+      "name": "@ensdomains/blacklist",
+      "from": "1.0.0",
+      "to": "1.0.1",
+      "zip": "samples/npm/compromised_lib/@ensdomains@blacklist/1.0.1/2025-11-24-@ensdomains_blacklist-v1.0.1.zip",
+      "blob": "93c9f4748127ea63f86c0c1805cd1025e3fd1104"
+    },
+    {
+      "id": "_ensdomains_ccip-read-dns-gateway-0.1.1",
+      "name": "@ensdomains/ccip-read-dns-gateway",
+      "from": "0.1.0",
+      "to": "0.1.1",
+      "zip": "samples/npm/compromised_lib/@ensdomains@ccip-read-dns-gateway/0.1.1/2025-11-24-@ensdomains_ccip-read-dns-gateway-v0.1.1.zip",
+      "blob": "2daa2da55606ef9bd2836fb79c5a842a9b5cbb7d"
+    },
+    {
+      "id": "_ensdomains_ccip-read-worker-viem-0.0.4",
+      "name": "@ensdomains/ccip-read-worker-viem",
+      "from": "0.0.3",
+      "to": "0.0.4",
+      "zip": "samples/npm/compromised_lib/@ensdomains@ccip-read-worker-viem/0.0.4/2025-11-24-@ensdomains_ccip-read-worker-viem-v0.0.4.zip",
+      "blob": "fbd5a9382aa35838291408e11fb07bfd55b1c1ef"
+    },
+    {
+      "id": "_ensdomains_curvearithmetics-1.0.1",
+      "name": "@ensdomains/curvearithmetics",
+      "from": "1.0.0",
+      "to": "1.0.1",
+      "zip": "samples/npm/compromised_lib/@ensdomains@curvearithmetics/1.0.1/2025-11-24-@ensdomains_curvearithmetics-v1.0.1.zip",
+      "blob": "473974413123b86a9bc068bb96b4c831fc0f41df"
+    },
+    {
+      "id": "_ensdomains_ensjs-4.0.3",
+      "name": "@ensdomains/ensjs",
+      "from": "4.0.2",
+      "to": "4.0.3",
+      "zip": "samples/npm/compromised_lib/@ensdomains@ensjs/4.0.3/2025-11-24-@ensdomains_ensjs-v4.0.3.zip",
+      "blob": "1231ad4c8ab0fdc294c0479fff59f16ae830e2d5"
+    },
+    {
+      "id": "_ensdomains_hardhat-chai-matchers-viem-0.1.15",
+      "name": "@ensdomains/hardhat-chai-matchers-viem",
+      "from": "0.1.14",
+      "to": "0.1.15",
+      "zip": "samples/npm/compromised_lib/@ensdomains@hardhat-chai-matchers-viem/0.1.15/2025-11-24-@ensdomains_hardhat-chai-matchers-viem-v0.1.15.zip",
+      "blob": "71c5a93d67e9c51e5348e3bdccfb2e3076a682e8"
+    },
+    {
+      "id": "_ensdomains_hardhat-toolbox-viem-extended-0.0.6",
+      "name": "@ensdomains/hardhat-toolbox-viem-extended",
+      "from": "0.0.5",
+      "to": "0.0.6",
+      "zip": "samples/npm/compromised_lib/@ensdomains@hardhat-toolbox-viem-extended/0.0.6/2025-11-24-@ensdomains_hardhat-toolbox-viem-extended-v0.0.6.zip",
+      "blob": "e18931737deb92a7871188325a0578c506992045"
+    },
+    {
+      "id": "_ensdomains_react-ens-address-0.0.32",
+      "name": "@ensdomains/react-ens-address",
+      "from": "0.0.31",
+      "to": "0.0.32",
+      "zip": "samples/npm/compromised_lib/@ensdomains@react-ens-address/0.0.32/2025-11-24-@ensdomains_react-ens-address-v0.0.32.zip",
+      "blob": "135ba222f713cb32220e5fc7f866ac80616e23f6"
+    },
+    {
+      "id": "_ensdomains_renewal-0.0.13",
+      "name": "@ensdomains/renewal",
+      "from": "0.0.12",
+      "to": "0.0.13",
+      "zip": "samples/npm/compromised_lib/@ensdomains@renewal/0.0.13/2025-11-24-@ensdomains_renewal-v0.0.13.zip",
+      "blob": "b68bc4e6a7866bbb759920910e4c4f0b2506210f"
+    },
+    {
+      "id": "_ensdomains_server-analytics-0.0.2",
+      "name": "@ensdomains/server-analytics",
+      "from": "0.0.1",
+      "to": "0.0.2",
+      "zip": "samples/npm/compromised_lib/@ensdomains@server-analytics/0.0.2/2025-11-24-@ensdomains_server-analytics-v0.0.2.zip",
+      "blob": "c1529d51dd4db327dc7f3ad2ef367743f7ab2fb0"
+    },
+    {
+      "id": "_ensdomains_subdomain-registrar-0.2.4",
+      "name": "@ensdomains/subdomain-registrar",
+      "from": "0.2.3",
+      "to": "0.2.4",
+      "zip": "samples/npm/compromised_lib/@ensdomains@subdomain-registrar/0.2.4/2025-11-24-@ensdomains_subdomain-registrar-v0.2.4.zip",
+      "blob": "4f44aa258e6ee67364647ea7251b8e179ddf01dd"
+    },
+    {
+      "id": "_ensdomains_test-utils-1.3.1",
+      "name": "@ensdomains/test-utils",
+      "from": "1.3.0",
+      "to": "1.3.1",
+      "zip": "samples/npm/compromised_lib/@ensdomains@test-utils/1.3.1/2025-11-24-@ensdomains_test-utils-v1.3.1.zip",
+      "blob": "e78f35339dbca0d839da9e9bf519ead37e875360"
+    },
+    {
+      "id": "_ensdomains_thorin-0.6.51",
+      "name": "@ensdomains/thorin",
+      "from": "0.6.50",
+      "to": "0.6.51",
+      "zip": "samples/npm/compromised_lib/@ensdomains@thorin/0.6.51/2025-11-24-@ensdomains_thorin-v0.6.51.zip",
+      "blob": "8d64cbbc259cb84a267a3410329e8bf9823c8bcc"
+    },
+    {
+      "id": "_ensdomains_ui-3.4.6",
+      "name": "@ensdomains/ui",
+      "from": "3.4.5",
+      "to": "3.4.6",
+      "zip": "samples/npm/compromised_lib/@ensdomains@ui/3.4.6/2025-11-24-@ensdomains_ui-v3.4.6.zip",
+      "blob": "6e02833521d810465c4da0caf4738544ca9f1934"
+    },
+    {
+      "id": "_ensdomains_vite-plugin-i18next-loader-4.0.4",
+      "name": "@ensdomains/vite-plugin-i18next-loader",
+      "from": "4.0.3",
+      "to": "4.0.4",
+      "zip": "samples/npm/compromised_lib/@ensdomains@vite-plugin-i18next-loader/4.0.4/2025-11-24-@ensdomains_vite-plugin-i18next-loader-v4.0.4.zip",
+      "blob": "318cd6e8d4ecaea3fb577667f4669bac20204f34"
+    },
+    {
+      "id": "_ensdomains_web3modal-1.10.2",
+      "name": "@ensdomains/web3modal",
+      "from": "1.10.1",
+      "to": "1.10.2",
+      "zip": "samples/npm/compromised_lib/@ensdomains@web3modal/1.10.2/2025-11-24-@ensdomains_web3modal-v1.10.2.zip",
+      "blob": "883004302318d9c2cc4e60ea7741a060481663e6"
+    },
+    {
+      "id": "_everreal_validate-esmoduleinterop-imports-1.4.5",
+      "name": "@everreal/validate-esmoduleinterop-imports",
+      "from": "1.4.3",
+      "to": "1.4.5",
+      "zip": "samples/npm/compromised_lib/@everreal@validate-esmoduleinterop-imports/1.4.5/2025-11-24-@everreal_validate-esmoduleinterop-imports-v1.4.5.zip",
+      "blob": "527b5022aee4e29a0072c4d9403e169cc11f83c3"
+    },
+    {
+      "id": "_faq-component_core-0.0.4",
+      "name": "@faq-component/core",
+      "from": "0.0.3",
+      "to": "0.0.4",
+      "zip": "samples/npm/compromised_lib/@faq-component@core/0.0.4/2025-11-24-@faq-component_core-v0.0.4.zip",
+      "blob": "bb9dc6a0e2a5a2be9e98fbc5b7b627ee60507218"
+    },
+    {
+      "id": "_faq-component_react-1.0.1",
+      "name": "@faq-component/react",
+      "from": "1.0.0",
+      "to": "1.0.1",
+      "zip": "samples/npm/compromised_lib/@faq-component@react/1.0.1/2025-11-24-@faq-component_react-v1.0.1.zip",
+      "blob": "f96f4e5214e08a5dfb34afc43371c87468973a5b"
+    },
+    {
+      "id": "_gluestack-ui_utils-0.1.17",
+      "name": "@gluestack-ui/utils",
+      "from": "0.1.15",
+      "to": "0.1.17",
+      "zip": "samples/npm/compromised_lib/@gluestack-ui@utils/0.1.17/2025-06-07-@gluestack-ui_utils-v0.1.17.zip",
+      "blob": "cf10e15241143c861f6ed940a8df2155d6afd14a"
+    },
+    {
+      "id": "_hapheus_n8n-nodes-pgp-1.5.1",
+      "name": "@hapheus/n8n-nodes-pgp",
+      "from": "1.5.0",
+      "to": "1.5.1",
+      "zip": "samples/npm/compromised_lib/@hapheus@n8n-nodes-pgp/1.5.1/2025-11-24-@hapheus_n8n-nodes-pgp-v1.5.1.zip",
+      "blob": "45b498c182e469c3442ab07bed311175571deca8"
+    },
+    {
+      "id": "_hestjs_core-0.2.1",
+      "name": "@hestjs/core",
+      "from": "0.2.0",
+      "to": "0.2.1",
+      "zip": "samples/npm/compromised_lib/@hestjs@core/0.2.1/2025-09-14-@hestjs_core-v0.2.1.zip",
+      "blob": "d6020d7f7ee9b166a648d0cf0c13666c5392520c"
+    },
+    {
+      "id": "_hestjs_cqrs-0.1.6",
+      "name": "@hestjs/cqrs",
+      "from": "0.1.5",
+      "to": "0.1.6",
+      "zip": "samples/npm/compromised_lib/@hestjs@cqrs/0.1.6/2025-09-14-@hestjs_cqrs-v0.1.6.zip",
+      "blob": "ebcbc8022855e619fa3934340f911e0309eeb465"
+    },
+    {
+      "id": "_hestjs_demo-0.1.2",
+      "name": "@hestjs/demo",
+      "from": "0.1.1",
+      "to": "0.1.2",
+      "zip": "samples/npm/compromised_lib/@hestjs@demo/0.1.2/2025-09-14-@hestjs_demo-v0.1.2.zip",
+      "blob": "f91ed56385fb56b2bcfcf3b95ebbcee4710b1edd"
+    },
+    {
+      "id": "_hestjs_eslint-config-0.1.2",
+      "name": "@hestjs/eslint-config",
+      "from": "0.1.1",
+      "to": "0.1.2",
+      "zip": "samples/npm/compromised_lib/@hestjs@eslint-config/0.1.2/2025-09-14-@hestjs_eslint-config-v0.1.2.zip",
+      "blob": "413b015ffbdffdfce8003fb2d91ff366e860f52e"
+    },
+    {
+      "id": "_hestjs_logger-0.1.6",
+      "name": "@hestjs/logger",
+      "from": "0.1.5",
+      "to": "0.1.6",
+      "zip": "samples/npm/compromised_lib/@hestjs@logger/0.1.6/2025-09-14-@hestjs_logger-v0.1.6.zip",
+      "blob": "e8560072b4f3d43060c29a3f46596a0ad5312fd7"
+    },
+    {
+      "id": "_hestjs_scalar-0.1.7",
+      "name": "@hestjs/scalar",
+      "from": "0.1.6",
+      "to": "0.1.7",
+      "zip": "samples/npm/compromised_lib/@hestjs@scalar/0.1.7/2025-09-14-@hestjs_scalar-v0.1.7.zip",
+      "blob": "a628212043eaa70019c2ed2433b2a18eb6ac623f"
+    },
+    {
+      "id": "_hestjs_validation-0.1.6",
+      "name": "@hestjs/validation",
+      "from": "0.1.5",
+      "to": "0.1.6",
+      "zip": "samples/npm/compromised_lib/@hestjs@validation/0.1.6/2025-09-14-@hestjs_validation-v0.1.6.zip",
+      "blob": "65789259d1d5bf3927bbc40ccac4b0d1579dcba9"
+    },
+    {
+      "id": "_ifelsedeveloper_protocol-contracts-svm-idl-0.1.2",
+      "name": "@ifelsedeveloper/protocol-contracts-svm-idl",
+      "from": "0.1.1",
+      "to": "0.1.2",
+      "zip": "samples/npm/compromised_lib/@ifelsedeveloper@protocol-contracts-svm-idl/0.1.2/2025-11-24-@ifelsedeveloper_protocol-contracts-svm-idl-v0.1.2.zip",
+      "blob": "183501170f4a9143a48f4dd32813c8777dbf12da"
+    },
+    {
+      "id": "_kvytech_cli-0.0.7",
+      "name": "@kvytech/cli",
+      "from": "0.0.6",
+      "to": "0.0.7",
+      "zip": "samples/npm/compromised_lib/@kvytech@cli/0.0.7/2025-11-24-@kvytech_cli-v0.0.7.zip",
+      "blob": "3bdbd93bc829bbf1a6beec5e674638c01de156db"
+    },
+    {
+      "id": "_kvytech_components-0.0.2",
+      "name": "@kvytech/components",
+      "from": "0.0.1",
+      "to": "0.0.2",
+      "zip": "samples/npm/compromised_lib/@kvytech@components/0.0.2/2025-11-24-@kvytech_components-v0.0.2.zip",
+      "blob": "1dc4ddb4a9d3aa622307c35f0e19e5ffdda7ec0d"
+    },
+    {
+      "id": "_kvytech_habbit-e2e-test-0.0.2",
+      "name": "@kvytech/habbit-e2e-test",
+      "from": "0.0.1",
+      "to": "0.0.2",
+      "zip": "samples/npm/compromised_lib/@kvytech@habbit-e2e-test/0.0.2/2025-11-24-@kvytech_habbit-e2e-test-v0.0.2.zip",
+      "blob": "ec3f8de226e49a344079c4e78aa57ef04784f929"
+    },
+    {
+      "id": "_kvytech_medusa-plugin-announcement-0.0.8",
+      "name": "@kvytech/medusa-plugin-announcement",
+      "from": "0.0.7",
+      "to": "0.0.8",
+      "zip": "samples/npm/compromised_lib/@kvytech@medusa-plugin-announcement/0.0.8/2025-11-24-@kvytech_medusa-plugin-announcement-v0.0.8.zip",
+      "blob": "e4341659414f4b3f67b8e101ae49f9512ff5f404"
+    },
+    {
+      "id": "_kvytech_medusa-plugin-management-0.0.5",
+      "name": "@kvytech/medusa-plugin-management",
+      "from": "0.0.4",
+      "to": "0.0.5",
+      "zip": "samples/npm/compromised_lib/@kvytech@medusa-plugin-management/0.0.5/2025-11-24-@kvytech_medusa-plugin-management-v0.0.5.zip",
+      "blob": "f6674a421bb0128518f4e01d9dcc6b43cfecb528"
+    },
+    {
+      "id": "_kvytech_medusa-plugin-newsletter-0.0.5",
+      "name": "@kvytech/medusa-plugin-newsletter",
+      "from": "0.0.4",
+      "to": "0.0.5",
+      "zip": "samples/npm/compromised_lib/@kvytech@medusa-plugin-newsletter/0.0.5/2025-11-24-@kvytech_medusa-plugin-newsletter-v0.0.5.zip",
+      "blob": "d32a5e0c9e6a5acb1e0a25ec5ade8aec70d77b92"
+    },
+    {
+      "id": "_kvytech_medusa-plugin-product-reviews-0.0.9",
+      "name": "@kvytech/medusa-plugin-product-reviews",
+      "from": "0.0.8",
+      "to": "0.0.9",
+      "zip": "samples/npm/compromised_lib/@kvytech@medusa-plugin-product-reviews/0.0.9/2025-11-24-@kvytech_medusa-plugin-product-reviews-v0.0.9.zip",
+      "blob": "6a6876149b6f04f6868b6498f78768cb8da38f35"
+    },
+    {
+      "id": "_kvytech_medusa-plugin-promotion-0.0.2",
+      "name": "@kvytech/medusa-plugin-promotion",
+      "from": "0.0.1",
+      "to": "0.0.2",
+      "zip": "samples/npm/compromised_lib/@kvytech@medusa-plugin-promotion/0.0.2/2025-11-24-@kvytech_medusa-plugin-promotion-v0.0.2.zip",
+      "blob": "0db74cc04fcfa9950ea547bc8ea76885c80cda7a"
+    },
+    {
+      "id": "_kvytech_web-0.0.2",
+      "name": "@kvytech/web",
+      "from": "0.0.1",
+      "to": "0.0.2",
+      "zip": "samples/npm/compromised_lib/@kvytech@web/0.0.2/2025-11-24-@kvytech_web-v0.0.2.zip",
+      "blob": "57c4ceb9ea328f22a7df12625ec2eab1966744e8"
+    },
+    {
+      "id": "_leafnoise_mirage-2.0.3",
+      "name": "@leafnoise/mirage",
+      "from": "2.0.2",
+      "to": "2.0.3",
+      "zip": "samples/npm/compromised_lib/@leafnoise@mirage/2.0.3/2026-03-21-@leafnoise_mirage-v2.0.3.zip",
+      "blob": "5793ad134d844af1198d63385a57a56a1e326189"
+    },
+    {
+      "id": "_lessondesk_schoolbus-5.2.3",
+      "name": "@lessondesk/schoolbus",
+      "from": "5.2.1",
+      "to": "5.2.3",
+      "zip": "samples/npm/compromised_lib/@lessondesk@schoolbus/5.2.3/2025-11-24-@lessondesk_schoolbus-v5.2.3.zip",
+      "blob": "83af0b098e81098b05aba5f6fe3a4718a493aee5"
+    },
+    {
+      "id": "_markvivanco_app-version-checker-1.0.2",
+      "name": "@markvivanco/app-version-checker",
+      "from": "1.0.0",
+      "to": "1.0.2",
+      "zip": "samples/npm/compromised_lib/@markvivanco@app-version-checker/1.0.2/2025-11-24-@markvivanco_app-version-checker-v1.0.2.zip",
+      "blob": "ec3f614e162097b1a6b7c4dca72e39c053523813"
+    },
+    {
+      "id": "_mcp-use_cli-2.2.7",
+      "name": "@mcp-use/cli",
+      "from": "2.2.5",
+      "to": "2.2.7",
+      "zip": "samples/npm/compromised_lib/@mcp-use@cli/2.2.7/2025-11-24-@mcp-use_cli-v2.2.7.zip",
+      "blob": "6d0b7cac46ddfd3e7d723ae5c2020fc96c878629"
+    },
+    {
+      "id": "_mcp-use_inspector-0.6.3",
+      "name": "@mcp-use/inspector",
+      "from": "0.6.1",
+      "to": "0.6.3",
+      "zip": "samples/npm/compromised_lib/@mcp-use@inspector/0.6.3/2025-11-24-@mcp-use_inspector-v0.6.3.zip",
+      "blob": "555a9ebaee3fbb138b5a41d433256b077f8be37e"
+    },
+    {
+      "id": "_mcp-use_mcp-use-1.0.2",
+      "name": "@mcp-use/mcp-use",
+      "from": "1.0.0",
+      "to": "1.0.2",
+      "zip": "samples/npm/compromised_lib/@mcp-use@mcp-use/1.0.2/2025-11-24-@mcp-use_mcp-use-v1.0.2.zip",
+      "blob": "96e849b812febfe14812ac966614a4d4e259743f"
+    },
+    {
+      "id": "_nativescript-community_arraybuffers-1.1.7",
+      "name": "@nativescript-community/arraybuffers",
+      "from": "1.1.5",
+      "to": "1.1.7",
+      "zip": "samples/npm/compromised_lib/@nativescript-community@arraybuffers/1.1.7/2025-09-15-@nativescript-community_arraybuffers-v1.1.7.zip",
+      "blob": "639916c41526b18b0bf3f4253b87ad4ac07682dc"
+    },
+    {
+      "id": "_nativescript-community_gesturehandler-2.0.35",
+      "name": "@nativescript-community/gesturehandler",
+      "from": "2.0.34",
+      "to": "2.0.35",
+      "zip": "samples/npm/compromised_lib/@nativescript-community@gesturehandler/2.0.35/2025-09-15-@nativescript-community_gesturehandler-v2.0.35.zip",
+      "blob": "b33ba2577cc9fd60ed5cabef365f6bf8944e80b4"
+    },
+    {
+      "id": "_nativescript-community_perms-3.0.9",
+      "name": "@nativescript-community/perms",
+      "from": "3.0.4",
+      "to": "3.0.9",
+      "zip": "samples/npm/compromised_lib/@nativescript-community@perms/3.0.9/2025-09-15-@nativescript-community_perms-v3.0.9.zip",
+      "blob": "6bcfcf167fd33dc868e2acceedcffa7e3bd6fd52"
+    },
+    {
+      "id": "_nativescript-community_sentry-4.6.43",
+      "name": "@nativescript-community/sentry",
+      "from": "4.6.42",
+      "to": "4.6.43",
+      "zip": "samples/npm/compromised_lib/@nativescript-community@sentry/4.6.43/2025-09-15-@nativescript-community_sentry-v4.6.43.zip",
+      "blob": "0d8309d3726c9f89fa8fb4e95f68b4a651f189a5"
+    },
+    {
+      "id": "_nativescript-community_sqlite-3.5.5",
+      "name": "@nativescript-community/sqlite",
+      "from": "3.5.1",
+      "to": "3.5.5",
+      "zip": "samples/npm/compromised_lib/@nativescript-community@sqlite/3.5.5/2025-09-15-@nativescript-community_sqlite-v3.5.5.zip",
+      "blob": "67cc9e2ab94b7f77a4e3ff72005e4e82d8f2bc0a"
+    },
+    {
+      "id": "_nativescript-community_text-1.6.9",
+      "name": "@nativescript-community/text",
+      "from": "1.6.8",
+      "to": "1.6.9",
+      "zip": "samples/npm/compromised_lib/@nativescript-community@text/1.6.9/2025-09-15-@nativescript-community_text-v1.6.9.zip",
+      "blob": "8e831d08691b919062d39ea36876918e42139c2b"
+    },
+    {
+      "id": "_nativescript-community_ui-collectionview-6.0.6",
+      "name": "@nativescript-community/ui-collectionview",
+      "from": "6.0.5",
+      "to": "6.0.6",
+      "zip": "samples/npm/compromised_lib/@nativescript-community@ui-collectionview/6.0.6/2025-09-15-@nativescript-community_ui-collectionview-v6.0.6.zip",
+      "blob": "b2f07184c67b98e244bdf8c244cbfb1a10431a6f"
+    },
+    {
+      "id": "_nativescript-community_ui-document-picker-1.1.28",
+      "name": "@nativescript-community/ui-document-picker",
+      "from": "1.1.26",
+      "to": "1.1.28",
+      "zip": "samples/npm/compromised_lib/@nativescript-community@ui-document-picker/1.1.28/2025-09-15-@nativescript-community_ui-document-picker-v1.1.28.zip",
+      "blob": "278533c11f74441dd56a9e9d0041d9df8cb5f961"
+    },
+    {
+      "id": "_nativescript-community_ui-drawer-0.1.30",
+      "name": "@nativescript-community/ui-drawer",
+      "from": "0.1.29",
+      "to": "0.1.30",
+      "zip": "samples/npm/compromised_lib/@nativescript-community@ui-drawer/0.1.30/2025-09-15-@nativescript-community_ui-drawer-v0.1.30.zip",
+      "blob": "01dc11e2946de8e20f2cf30ba942fd0e684c87e6"
+    },
+    {
+      "id": "_nativescript-community_ui-image-4.5.6",
+      "name": "@nativescript-community/ui-image",
+      "from": "4.5.5",
+      "to": "4.5.6",
+      "zip": "samples/npm/compromised_lib/@nativescript-community@ui-image/4.5.6/2025-09-15-@nativescript-community_ui-image-v4.5.6.zip",
+      "blob": "0e9be86371e000d26771db32dc2dfbb1c0bbd1ae"
+    },
+    {
+      "id": "_nativescript-community_ui-label-1.3.36",
+      "name": "@nativescript-community/ui-label",
+      "from": "1.3.34",
+      "to": "1.3.36",
+      "zip": "samples/npm/compromised_lib/@nativescript-community@ui-label/1.3.36/2025-09-15-@nativescript-community_ui-label-v1.3.36.zip",
+      "blob": "40049e8bf0585651397051b3bdaaa8a8bccc1fdf"
+    },
+    {
+      "id": "_nativescript-community_ui-material-bottom-navigation-7.2.73",
+      "name": "@nativescript-community/ui-material-bottom-navigation",
+      "from": "7.2.71",
+      "to": "7.2.73",
+      "zip": "samples/npm/compromised_lib/@nativescript-community@ui-material-bottom-navigation/7.2.73/2025-09-15-@nativescript-community_ui-material-bottom-navigation-v7.2.73.zip",
+      "blob": "8628cf4daa3108ca7c31b961c782fb10f79a40ed"
+    },
+    {
+      "id": "_nativescript-community_ui-material-bottomsheet-7.2.72",
+      "name": "@nativescript-community/ui-material-bottomsheet",
+      "from": "7.2.71",
+      "to": "7.2.72",
+      "zip": "samples/npm/compromised_lib/@nativescript-community@ui-material-bottomsheet/7.2.72/2025-09-15-@nativescript-community_ui-material-bottomsheet-v7.2.72.zip",
+      "blob": "055326452b53139e6707fe3d76c541bae10810b0"
+    },
+    {
+      "id": "_nativescript-community_ui-material-core-tabs-7.2.76",
+      "name": "@nativescript-community/ui-material-core-tabs",
+      "from": "7.2.71",
+      "to": "7.2.76",
+      "zip": "samples/npm/compromised_lib/@nativescript-community@ui-material-core-tabs/7.2.76/2025-09-15-@nativescript-community_ui-material-core-tabs-v7.2.76.zip",
+      "blob": "f389a278715c7479d11b1ffc1e7d3a3da246f8f8"
+    },
+    {
+      "id": "_nativescript-community_ui-material-core-7.2.76",
+      "name": "@nativescript-community/ui-material-core",
+      "from": "7.2.71",
+      "to": "7.2.76",
+      "zip": "samples/npm/compromised_lib/@nativescript-community@ui-material-core/7.2.76/2025-09-15-@nativescript-community_ui-material-core-v7.2.76.zip",
+      "blob": "d0158b2c77cfc81545f1214ec723eff3ad3f7ce9"
+    },
+    {
+      "id": "_nativescript-community_ui-material-tabs-7.2.73",
+      "name": "@nativescript-community/ui-material-tabs",
+      "from": "7.2.71",
+      "to": "7.2.73",
+      "zip": "samples/npm/compromised_lib/@nativescript-community@ui-material-tabs/7.2.73/2025-09-15-@nativescript-community_ui-material-tabs-v7.2.73.zip",
+      "blob": "6cf26d9d03a3483a478db84033c4fc985244dafe"
+    },
+    {
+      "id": "_nativescript-community_ui-pager-14.1.38",
+      "name": "@nativescript-community/ui-pager",
+      "from": "14.1.34",
+      "to": "14.1.38",
+      "zip": "samples/npm/compromised_lib/@nativescript-community@ui-pager/14.1.38/2025-09-15-@nativescript-community_ui-pager-v14.1.38.zip",
+      "blob": "349a6137ee74c7e684072670b48629c791eed818"
+    },
+    {
+      "id": "_nativescript-community_ui-pulltorefresh-2.5.5",
+      "name": "@nativescript-community/ui-pulltorefresh",
+      "from": "2.5.3",
+      "to": "2.5.5",
+      "zip": "samples/npm/compromised_lib/@nativescript-community@ui-pulltorefresh/2.5.5/2025-09-15-@nativescript-community_ui-pulltorefresh-v2.5.5.zip",
+      "blob": "43488f97170ca15b3a26cad4b24bfa9d91836b50"
+    },
+    {
+      "id": "_nexe_config-manager-0.1.1",
+      "name": "@nexe/config-manager",
+      "from": "0.1.0",
+      "to": "0.1.1",
+      "zip": "samples/npm/compromised_lib/@nexe@config-manager/0.1.1/2025-09-14-@nexe_config-manager-v0.1.1.zip",
+      "blob": "d454e57eb22f70e051bb5557681f5de8ca90d048"
+    },
+    {
+      "id": "_nexe_eslint-config-0.1.1",
+      "name": "@nexe/eslint-config",
+      "from": "0.1.0",
+      "to": "0.1.1",
+      "zip": "samples/npm/compromised_lib/@nexe@eslint-config/0.1.1/2025-09-14-@nexe_eslint-config-v0.1.1.zip",
+      "blob": "4080fc7c93a52749b7a727cb1f2aa669fc9cf751"
+    },
+    {
+      "id": "_nexe_logger-0.1.3",
+      "name": "@nexe/logger",
+      "from": "0.1.2",
+      "to": "0.1.3",
+      "zip": "samples/npm/compromised_lib/@nexe@logger/0.1.3/2025-09-14-@nexe_logger-v0.1.3.zip",
+      "blob": "77ee7ab01966e56aa640df868388735071ba983a"
+    },
+    {
+      "id": "_nstudio_angular-20.0.5",
+      "name": "@nstudio/angular",
+      "from": "20.0.3",
+      "to": "20.0.5",
+      "zip": "samples/npm/compromised_lib/@nstudio@angular/20.0.5/2025-09-15-@nstudio_angular-v20.0.5.zip",
+      "blob": "03ace4501e7c72aebc0e4f6f052ab0307ccb0ce6"
+    },
+    {
+      "id": "_nstudio_focus-20.0.6",
+      "name": "@nstudio/focus",
+      "from": "20.0.3",
+      "to": "20.0.6",
+      "zip": "samples/npm/compromised_lib/@nstudio@focus/20.0.6/2025-09-15-@nstudio_focus-v20.0.6.zip",
+      "blob": "eaf0b6cb5e5e8ef91e6b0eeabf22e21130fd1d92"
+    },
+    {
+      "id": "_nstudio_nativescript-checkbox-2.0.9",
+      "name": "@nstudio/nativescript-checkbox",
+      "from": "2.0.5",
+      "to": "2.0.9",
+      "zip": "samples/npm/compromised_lib/@nstudio@nativescript-checkbox/2.0.9/2025-09-15-@nstudio_nativescript-checkbox-v2.0.9.zip",
+      "blob": "d0042f51dac9c61bdec727ef366ba3b314687ba6"
+    },
+    {
+      "id": "_nstudio_nativescript-loading-indicator-5.0.4",
+      "name": "@nstudio/nativescript-loading-indicator",
+      "from": "5.0.0",
+      "to": "5.0.4",
+      "zip": "samples/npm/compromised_lib/@nstudio@nativescript-loading-indicator/5.0.4/2025-09-15-@nstudio_nativescript-loading-indicator-v5.0.4.zip",
+      "blob": "9ea4cce7cdf40322cd312b1252a318d46b26d1eb"
+    },
+    {
+      "id": "_nstudio_ui-collectionview-5.1.14",
+      "name": "@nstudio/ui-collectionview",
+      "from": "5.1.10",
+      "to": "5.1.14",
+      "zip": "samples/npm/compromised_lib/@nstudio@ui-collectionview/5.1.14/2025-09-15-@nstudio_ui-collectionview-v5.1.14.zip",
+      "blob": "12c761b4de5f9ec682a14ccc28e4f914c798c870"
+    },
+    {
+      "id": "_nstudio_web-angular-20.0.4",
+      "name": "@nstudio/web-angular",
+      "from": "20.0.3",
+      "to": "20.0.4",
+      "zip": "samples/npm/compromised_lib/@nstudio@web-angular/20.0.4/2025-09-15-@nstudio_web-angular-v20.0.4.zip",
+      "blob": "d66c86d514993a1484c18052b09e22cae17ab25e"
+    },
+    {
+      "id": "_nstudio_web-20.0.4",
+      "name": "@nstudio/web",
+      "from": "20.0.3",
+      "to": "20.0.4",
+      "zip": "samples/npm/compromised_lib/@nstudio@web/20.0.4/2025-09-15-@nstudio_web-v20.0.4.zip",
+      "blob": "a46587040c91d0410be5d39cc6a0218c9d9b4cc5"
+    },
+    {
+      "id": "_nstudio_xplat-utils-20.0.6",
+      "name": "@nstudio/xplat-utils",
+      "from": "20.0.3",
+      "to": "20.0.6",
+      "zip": "samples/npm/compromised_lib/@nstudio@xplat-utils/20.0.6/2025-09-15-@nstudio_xplat-utils-v20.0.6.zip",
+      "blob": "8d56724266b0c31461a1a3ce627633abcdb82ae6"
+    },
+    {
+      "id": "_nstudio_xplat-20.0.7",
+      "name": "@nstudio/xplat",
+      "from": "20.0.3",
+      "to": "20.0.7",
+      "zip": "samples/npm/compromised_lib/@nstudio@xplat/20.0.7/2025-09-15-@nstudio_xplat-v20.0.7.zip",
+      "blob": "b0f5b22d4ab09bac31a4bd634cacee3d6ae1dda4"
+    },
+    {
+      "id": "_nx_devkit-21.5.0",
+      "name": "@nx/devkit",
+      "from": "21.4.1",
+      "to": "21.5.0",
+      "zip": "samples/npm/compromised_lib/@nx@devkit/21.5.0/2025-08-26-@nx_devkit-v21.5.0.zip",
+      "blob": "f1cbbaa33aa059a538af535992fc025d018c7959"
+    },
+    {
+      "id": "_nx_enterprise-cloud-3.2.0",
+      "name": "@nx/enterprise-cloud",
+      "from": "3.1.0",
+      "to": "3.2.0",
+      "zip": "samples/npm/compromised_lib/@nx@enterprise-cloud/3.2.0/2025-08-26-@nx_enterprise-cloud-v3.2.0.zip",
+      "blob": "4d96f257180fac92595466ced750678e0f7a5558"
+    },
+    {
+      "id": "_nx_eslint-21.5.0",
+      "name": "@nx/eslint",
+      "from": "21.4.1",
+      "to": "21.5.0",
+      "zip": "samples/npm/compromised_lib/@nx@eslint/21.5.0/2025-08-26-@nx_eslint-v21.5.0.zip",
+      "blob": "308166fb939cfe7dc2dc56b253396e4eb832d9aa"
+    },
+    {
+      "id": "_nx_js-21.5.0",
+      "name": "@nx/js",
+      "from": "21.4.1",
+      "to": "21.5.0",
+      "zip": "samples/npm/compromised_lib/@nx@js/21.5.0/2025-08-26-@nx_js-v21.5.0.zip",
+      "blob": "e7b96082e5f974b306627c5b8d02875adf6287a1"
+    },
+    {
+      "id": "_nx_key-3.2.0",
+      "name": "@nx/key",
+      "from": "3.1.0",
+      "to": "3.2.0",
+      "zip": "samples/npm/compromised_lib/@nx@key/3.2.0/2025-08-26-@nx_key-v3.2.0.zip",
+      "blob": "f6d06ddbaf56ac61830cc8091a52fe1b1ef44593"
+    },
+    {
+      "id": "_nx_node-21.5.0",
+      "name": "@nx/node",
+      "from": "21.4.1",
+      "to": "21.5.0",
+      "zip": "samples/npm/compromised_lib/@nx@node/21.5.0/2025-08-26-@nx_node-v21.5.0.zip",
+      "blob": "c4df06646b7e3176fc72762dbafe3cd3a314c557"
+    },
+    {
+      "id": "_nx_workspace-21.5.0",
+      "name": "@nx/workspace",
+      "from": "21.4.1",
+      "to": "21.5.0",
+      "zip": "samples/npm/compromised_lib/@nx@workspace/21.5.0/2025-08-26-@nx_workspace-v21.5.0.zip",
+      "blob": "812bdfdc8a31681d9ccff3ae57a175bb56c7eec5"
+    },
+    {
+      "id": "_opengov_ppf-backend-types-1.141.2",
+      "name": "@opengov/ppf-backend-types",
+      "from": "1.141.1",
+      "to": "1.141.2",
+      "zip": "samples/npm/compromised_lib/@opengov@ppf-backend-types/1.141.2/2026-03-24-@opengov_ppf-backend-types-v1.141.2.zip",
+      "blob": "c6779231517805a8f1072b48f9d44cf1c0fff95f"
+    },
+    {
+      "id": "_operato_board-9.0.51",
+      "name": "@operato/board",
+      "from": "9.0.34",
+      "to": "9.0.51",
+      "zip": "samples/npm/compromised_lib/@operato@board/9.0.51/2025-09-16-@operato_board-v9.0.51.zip",
+      "blob": "cd9c4edec40392b84fccdc03ddf9fdf2cd0bc836"
+    },
+    {
+      "id": "_operato_data-grist-9.0.37",
+      "name": "@operato/data-grist",
+      "from": "9.0.34",
+      "to": "9.0.37",
+      "zip": "samples/npm/compromised_lib/@operato@data-grist/9.0.37/2025-09-16-@operato_data-grist-v9.0.37.zip",
+      "blob": "77e66ae74ea01ffbd9aa0b1683a30914974de9da"
+    },
+    {
+      "id": "_operato_graphql-9.0.51",
+      "name": "@operato/graphql",
+      "from": "9.0.34",
+      "to": "9.0.51",
+      "zip": "samples/npm/compromised_lib/@operato@graphql/9.0.51/2025-09-16-@operato_graphql-v9.0.51.zip",
+      "blob": "b496fb8ea05fc23de8532a25194d2912a16a09de"
+    },
+    {
+      "id": "_operato_headroom-9.0.37",
+      "name": "@operato/headroom",
+      "from": "9.0.34",
+      "to": "9.0.37",
+      "zip": "samples/npm/compromised_lib/@operato@headroom/9.0.37/2025-09-16-@operato_headroom-v9.0.37.zip",
+      "blob": "6b1321f68a496c169f12d8de30fb070a50a8e4e5"
+    },
+    {
+      "id": "_operato_help-9.0.51",
+      "name": "@operato/help",
+      "from": "9.0.34",
+      "to": "9.0.51",
+      "zip": "samples/npm/compromised_lib/@operato@help/9.0.51/2025-09-16-@operato_help-v9.0.51.zip",
+      "blob": "6ee894ab0262368519e7db0d76a00f86e651729d"
+    },
+    {
+      "id": "_operato_i18n-9.0.36",
+      "name": "@operato/i18n",
+      "from": "9.0.34",
+      "to": "9.0.36",
+      "zip": "samples/npm/compromised_lib/@operato@i18n/9.0.36/2025-09-16-@operato_i18n-v9.0.36.zip",
+      "blob": "7b1c8f64ad61133f21ca5e4baf10c5924fcc5bca"
+    },
+    {
+      "id": "_operato_input-9.0.48",
+      "name": "@operato/input",
+      "from": "9.0.34",
+      "to": "9.0.48",
+      "zip": "samples/npm/compromised_lib/@operato@input/9.0.48/2025-09-16-@operato_input-v9.0.48.zip",
+      "blob": "bbc397691ff10dd8882e0c10303e4632b6410504"
+    },
+    {
+      "id": "_operato_layout-9.0.37",
+      "name": "@operato/layout",
+      "from": "9.0.34",
+      "to": "9.0.37",
+      "zip": "samples/npm/compromised_lib/@operato@layout/9.0.37/2025-09-16-@operato_layout-v9.0.37.zip",
+      "blob": "ba0acf16d522624eaa314308d71e22127459d370"
+    },
+    {
+      "id": "_operato_popup-9.0.51",
+      "name": "@operato/popup",
+      "from": "9.0.34",
+      "to": "9.0.51",
+      "zip": "samples/npm/compromised_lib/@operato@popup/9.0.51/2025-09-16-@operato_popup-v9.0.51.zip",
+      "blob": "7cb97a16ca702db74b51c87f3511e3ce6b647bd8"
+    },
+    {
+      "id": "_operato_pull-to-refresh-9.0.47",
+      "name": "@operato/pull-to-refresh",
+      "from": "9.0.34",
+      "to": "9.0.47",
+      "zip": "samples/npm/compromised_lib/@operato@pull-to-refresh/9.0.47/2025-09-16-@operato_pull-to-refresh-v9.0.47.zip",
+      "blob": "e937e26860897a5593d949f08a0f4bef8daa986f"
+    },
+    {
+      "id": "_operato_shell-9.0.39",
+      "name": "@operato/shell",
+      "from": "9.0.34",
+      "to": "9.0.39",
+      "zip": "samples/npm/compromised_lib/@operato@shell/9.0.39/2025-09-16-@operato_shell-v9.0.39.zip",
+      "blob": "415c42ea548fdc661a8280753e4dcc30e149328b"
+    },
+    {
+      "id": "_operato_styles-9.0.37",
+      "name": "@operato/styles",
+      "from": "9.0.34",
+      "to": "9.0.37",
+      "zip": "samples/npm/compromised_lib/@operato@styles/9.0.37/2025-09-16-@operato_styles-v9.0.37.zip",
+      "blob": "175888f34577cfeadadd2b64695249e16850630e"
+    },
+    {
+      "id": "_operato_utils-9.0.51",
+      "name": "@operato/utils",
+      "from": "9.0.34",
+      "to": "9.0.51",
+      "zip": "samples/npm/compromised_lib/@operato@utils/9.0.51/2025-09-16-@operato_utils-v9.0.51.zip",
+      "blob": "78d5cb8527075bc41a9a141f15b4fd275072486b"
+    },
+    {
+      "id": "_orbitgtbelgium_mapbox-gl-draw-cut-polygon-mode-2.0.5",
+      "name": "@orbitgtbelgium/mapbox-gl-draw-cut-polygon-mode",
+      "from": "2.0.4",
+      "to": "2.0.5",
+      "zip": "samples/npm/compromised_lib/@orbitgtbelgium@mapbox-gl-draw-cut-polygon-mode/2.0.5/2025-11-24-@orbitgtbelgium_mapbox-gl-draw-cut-polygon-mode-v2.0.5.zip",
+      "blob": "fe7715090eed35f2f316e5a1e6e5c2506d7aefdd"
+    },
+    {
+      "id": "_orbitgtbelgium_mapbox-gl-draw-scale-rotate-mode-1.1.1",
+      "name": "@orbitgtbelgium/mapbox-gl-draw-scale-rotate-mode",
+      "from": "1.1.0",
+      "to": "1.1.1",
+      "zip": "samples/npm/compromised_lib/@orbitgtbelgium@mapbox-gl-draw-scale-rotate-mode/1.1.1/2025-11-24-@orbitgtbelgium_mapbox-gl-draw-scale-rotate-mode-v1.1.1.zip",
+      "blob": "c07e2c9d1c7ab29db3dc32c8bf08a6c2f9c16812"
+    },
+    {
+      "id": "_orbitgtbelgium_orbit-components-1.2.9",
+      "name": "@orbitgtbelgium/orbit-components",
+      "from": "1.2.8",
+      "to": "1.2.9",
+      "zip": "samples/npm/compromised_lib/@orbitgtbelgium@orbit-components/1.2.9/2025-11-24-@orbitgtbelgium_orbit-components-v1.2.9.zip",
+      "blob": "0f5ea051c379d0a08c695f5d7381b8f591f3b87e"
+    },
+    {
+      "id": "_orbitgtbelgium_time-slider-1.0.187",
+      "name": "@orbitgtbelgium/time-slider",
+      "from": "1.0.186",
+      "to": "1.0.187",
+      "zip": "samples/npm/compromised_lib/@orbitgtbelgium@time-slider/1.0.187/2025-11-24-@orbitgtbelgium_time-slider-v1.0.187.zip",
+      "blob": "2494884ca35b39b68b0d0973a6919ab0c3b5acea"
+    },
+    {
+      "id": "_osmanekrem_bmad-1.0.6",
+      "name": "@osmanekrem/bmad",
+      "from": "1.0.5",
+      "to": "1.0.6",
+      "zip": "samples/npm/compromised_lib/@osmanekrem@bmad/1.0.6/2025-11-24-@osmanekrem_bmad-v1.0.6.zip",
+      "blob": "b26069f674983c119ae170ae9a232d0268a9d46e"
+    },
+    {
+      "id": "_osmanekrem_error-handler-1.2.2",
+      "name": "@osmanekrem/error-handler",
+      "from": "1.2.1",
+      "to": "1.2.2",
+      "zip": "samples/npm/compromised_lib/@osmanekrem@error-handler/1.2.2/2025-11-24-@osmanekrem_error-handler-v1.2.2.zip",
+      "blob": "92848d577d2f12dbabaa5d82a6bb49f4eed183fa"
+    },
+    {
+      "id": "_pkgr_core-0.2.8",
+      "name": "@pkgr/core",
+      "from": "0.2.7",
+      "to": "0.2.8",
+      "zip": "samples/npm/compromised_lib/@pkgr@core/0.2.8/2025-07-18-@pkgr_core-v0.2.8.zip",
+      "blob": "09df4690484dd04370278085d26c01cdeb5681b0"
+    },
+    {
+      "id": "_posthog_agent-1.24.1",
+      "name": "@posthog/agent",
+      "from": "1.24.0",
+      "to": "1.24.1",
+      "zip": "samples/npm/compromised_lib/@posthog@agent/1.24.1/2025-11-24-@posthog_agent-v1.24.1.zip",
+      "blob": "40fd530d68a475a5bbe98c08317727d8b445e8c5"
+    },
+    {
+      "id": "_posthog_core-1.5.6",
+      "name": "@posthog/core",
+      "from": "1.5.5",
+      "to": "1.5.6",
+      "zip": "samples/npm/compromised_lib/@posthog@core/1.5.6/2025-11-24-@posthog_core-v1.5.6.zip",
+      "blob": "e2e24dabe23373acaddd2d9cedf32065952ff780"
+    },
+    {
+      "id": "_posthog_currency-normalization-plugin-0.0.8",
+      "name": "@posthog/currency-normalization-plugin",
+      "from": "0.0.7",
+      "to": "0.0.8",
+      "zip": "samples/npm/compromised_lib/@posthog@currency-normalization-plugin/0.0.8/2025-11-24-@posthog_currency-normalization-plugin-v0.0.8.zip",
+      "blob": "188a00776bbc3e26078888f37e89d4e3ebaf5e81"
+    },
+    {
+      "id": "_posthog_databricks-plugin-0.0.8",
+      "name": "@posthog/databricks-plugin",
+      "from": "0.0.7",
+      "to": "0.0.8",
+      "zip": "samples/npm/compromised_lib/@posthog@databricks-plugin/0.0.8/2025-11-24-@posthog_databricks-plugin-v0.0.8.zip",
+      "blob": "da399fa1e7cc5587fe1cb1b1649b983dc8cf0415"
+    },
+    {
+      "id": "_posthog_drop-events-on-property-plugin-0.0.8",
+      "name": "@posthog/drop-events-on-property-plugin",
+      "from": "0.0.7",
+      "to": "0.0.8",
+      "zip": "samples/npm/compromised_lib/@posthog@drop-events-on-property-plugin/0.0.8/2025-11-24-@posthog_drop-events-on-property-plugin-v0.0.8.zip",
+      "blob": "bf3c29372207b9325a023227e11ee0bae6f0538e"
+    },
+    {
+      "id": "_posthog_filter-out-plugin-0.0.8",
+      "name": "@posthog/filter-out-plugin",
+      "from": "0.0.7",
+      "to": "0.0.8",
+      "zip": "samples/npm/compromised_lib/@posthog@filter-out-plugin/0.0.8/2025-11-24-@posthog_filter-out-plugin-v0.0.8.zip",
+      "blob": "6385236dfa3a48ce239d1ab117bb93147e265de2"
+    },
+    {
+      "id": "_posthog_first-time-event-tracker-0.0.8",
+      "name": "@posthog/first-time-event-tracker",
+      "from": "0.0.7",
+      "to": "0.0.8",
+      "zip": "samples/npm/compromised_lib/@posthog@first-time-event-tracker/0.0.8/2025-11-24-@posthog_first-time-event-tracker-v0.0.8.zip",
+      "blob": "c5448fe0875ecfc307254993d5cd3107ac2dc1d1"
+    },
+    {
+      "id": "_posthog_heartbeat-plugin-0.0.8",
+      "name": "@posthog/heartbeat-plugin",
+      "from": "0.0.7",
+      "to": "0.0.8",
+      "zip": "samples/npm/compromised_lib/@posthog@heartbeat-plugin/0.0.8/2025-11-24-@posthog_heartbeat-plugin-v0.0.8.zip",
+      "blob": "596b42102a005752c5346e51d65699a0b60ea1c3"
+    },
+    {
+      "id": "_posthog_hedgehog-mode-0.0.42",
+      "name": "@posthog/hedgehog-mode",
+      "from": "0.0.41",
+      "to": "0.0.42",
+      "zip": "samples/npm/compromised_lib/@posthog@hedgehog-mode/0.0.42/2025-11-24-@posthog_hedgehog-mode-v0.0.42.zip",
+      "blob": "4c89f9d1857d6ec88c318602a4c72313cb310bd3"
+    },
+    {
+      "id": "_posthog_maxmind-plugin-0.1.6",
+      "name": "@posthog/maxmind-plugin",
+      "from": "0.1.5",
+      "to": "0.1.6",
+      "zip": "samples/npm/compromised_lib/@posthog@maxmind-plugin/0.1.6/2025-11-24-@posthog_maxmind-plugin-v0.1.6.zip",
+      "blob": "4ee21fa5789fee22fc9a7a3eb78f62e1903e6830"
+    },
+    {
+      "id": "_posthog_nextjs-0.0.3",
+      "name": "@posthog/nextjs",
+      "from": "0.0.2",
+      "to": "0.0.3",
+      "zip": "samples/npm/compromised_lib/@posthog@nextjs/0.0.3/2025-11-24-@posthog_nextjs-v0.0.3.zip",
+      "blob": "2a17c9484f8eefba5b3e57ee2a860745afe8e3d3"
+    },
+    {
+      "id": "_posthog_pagerduty-plugin-0.0.8",
+      "name": "@posthog/pagerduty-plugin",
+      "from": "0.0.7",
+      "to": "0.0.8",
+      "zip": "samples/npm/compromised_lib/@posthog@pagerduty-plugin/0.0.8/2025-11-24-@posthog_pagerduty-plugin-v0.0.8.zip",
+      "blob": "b3ab4a5c58d6c8330e8f0c01eda449b4a14d1cbb"
+    },
+    {
+      "id": "_posthog_plugin-server-1.10.8",
+      "name": "@posthog/plugin-server",
+      "from": "1.10.7",
+      "to": "1.10.8",
+      "zip": "samples/npm/compromised_lib/@posthog@plugin-server/1.10.8/2025-11-24-@posthog_plugin-server-v1.10.8.zip",
+      "blob": "63921236edac01e5469ea65457f574477801998c"
+    },
+    {
+      "id": "_posthog_postgres-plugin-0.0.8",
+      "name": "@posthog/postgres-plugin",
+      "from": "0.0.7",
+      "to": "0.0.8",
+      "zip": "samples/npm/compromised_lib/@posthog@postgres-plugin/0.0.8/2025-11-24-@posthog_postgres-plugin-v0.0.8.zip",
+      "blob": "8e3e45e7f62b7bab8ae90e1d0ede6e278af4912d"
+    },
+    {
+      "id": "_posthog_rrweb-player-0.0.31",
+      "name": "@posthog/rrweb-player",
+      "from": "0.0.30",
+      "to": "0.0.31",
+      "zip": "samples/npm/compromised_lib/@posthog@rrweb-player/0.0.31/2025-11-24-@posthog_rrweb-player-v0.0.31.zip",
+      "blob": "19d7ba55b2aedcdce6b6cd7da16bd240a11c4b91"
+    },
+    {
+      "id": "_posthog_rrweb-record-0.0.31",
+      "name": "@posthog/rrweb-record",
+      "from": "0.0.30",
+      "to": "0.0.31",
+      "zip": "samples/npm/compromised_lib/@posthog@rrweb-record/0.0.31/2025-11-24-@posthog_rrweb-record-v0.0.31.zip",
+      "blob": "d01440e9f2927c4a2761d73984d5eab8b222a7c8"
+    },
+    {
+      "id": "_posthog_rrweb-replay-0.0.19",
+      "name": "@posthog/rrweb-replay",
+      "from": "0.0.18",
+      "to": "0.0.19",
+      "zip": "samples/npm/compromised_lib/@posthog@rrweb-replay/0.0.19/2025-11-24-@posthog_rrweb-replay-v0.0.19.zip",
+      "blob": "1774f793e1b06bc12025ec0b46adc09ad4938a39"
+    },
+    {
+      "id": "_posthog_rrweb-0.0.31",
+      "name": "@posthog/rrweb",
+      "from": "0.0.30",
+      "to": "0.0.31",
+      "zip": "samples/npm/compromised_lib/@posthog@rrweb/0.0.31/2025-11-24-@posthog_rrweb-v0.0.31.zip",
+      "blob": "5c20db613313fbc7e61b30a7819f53c417d48720"
+    },
+    {
+      "id": "_posthog_taxonomy-plugin-0.0.8",
+      "name": "@posthog/taxonomy-plugin",
+      "from": "0.0.7",
+      "to": "0.0.8",
+      "zip": "samples/npm/compromised_lib/@posthog@taxonomy-plugin/0.0.8/2025-11-24-@posthog_taxonomy-plugin-v0.0.8.zip",
+      "blob": "5847055c08645bb588a879772a1a81cc35942cf5"
+    },
+    {
+      "id": "_posthog_twitter-followers-plugin-0.0.8",
+      "name": "@posthog/twitter-followers-plugin",
+      "from": "0.0.7",
+      "to": "0.0.8",
+      "zip": "samples/npm/compromised_lib/@posthog@twitter-followers-plugin/0.0.8/2025-11-24-@posthog_twitter-followers-plugin-v0.0.8.zip",
+      "blob": "7731b9ac2e7f10d54005bfebd686660b65530b1d"
+    },
+    {
+      "id": "_posthog_variance-plugin-0.0.8",
+      "name": "@posthog/variance-plugin",
+      "from": "0.0.7",
+      "to": "0.0.8",
+      "zip": "samples/npm/compromised_lib/@posthog@variance-plugin/0.0.8/2025-11-24-@posthog_variance-plugin-v0.0.8.zip",
+      "blob": "7dca138a154134238c2e3a0d54224e75ee4c73f7"
+    },
+    {
+      "id": "_posthog_web-dev-server-1.0.5",
+      "name": "@posthog/web-dev-server",
+      "from": "1.0.4",
+      "to": "1.0.5",
+      "zip": "samples/npm/compromised_lib/@posthog@web-dev-server/1.0.5/2025-11-24-@posthog_web-dev-server-v1.0.5.zip",
+      "blob": "05385898ccc1a62c2111b0a01b98282423be62cd"
+    },
+    {
+      "id": "_posthog_wizard-1.18.1",
+      "name": "@posthog/wizard",
+      "from": "1.18.0",
+      "to": "1.18.1",
+      "zip": "samples/npm/compromised_lib/@posthog@wizard/1.18.1/2025-11-24-@posthog_wizard-v1.18.1.zip",
+      "blob": "ee7217f1e4e7a144dadecab967df192759583216"
+    },
+    {
+      "id": "_postman_csv-parse-4.0.5",
+      "name": "@postman/csv-parse",
+      "from": "4.0.2",
+      "to": "4.0.5",
+      "zip": "samples/npm/compromised_lib/@postman@csv-parse/4.0.5/2025-11-24-@postman_csv-parse-v4.0.5.zip",
+      "blob": "cec063f48aca18c298f9f91682bf353acf72e31d"
+    },
+    {
+      "id": "_postman_final-node-keytar-7.9.3",
+      "name": "@postman/final-node-keytar",
+      "from": "7.9.0",
+      "to": "7.9.3",
+      "zip": "samples/npm/compromised_lib/@postman@final-node-keytar/7.9.3/2025-11-24-@postman_final-node-keytar-v7.9.3.zip",
+      "blob": "58d17767cfd74ec63fef51382657967f0def53cf"
+    },
+    {
+      "id": "_postman_mcp-ui-client-5.5.3",
+      "name": "@postman/mcp-ui-client",
+      "from": "5.5.0",
+      "to": "5.5.3",
+      "zip": "samples/npm/compromised_lib/@postman@mcp-ui-client/5.5.3/2025-11-24-@postman_mcp-ui-client-v5.5.3.zip",
+      "blob": "19c0439adbddab9ce8d3f14c514e9050c119c1cd"
+    },
+    {
+      "id": "_postman_node-keytar-7.9.6",
+      "name": "@postman/node-keytar",
+      "from": "7.9.3",
+      "to": "7.9.6",
+      "zip": "samples/npm/compromised_lib/@postman@node-keytar/7.9.6/2025-11-24-@postman_node-keytar-v7.9.6.zip",
+      "blob": "24a2f2b403b42b869269a29df43e13c0d6a6b03a"
+    },
+    {
+      "id": "_postman_pm-bin-linux-x64-1.24.5",
+      "name": "@postman/pm-bin-linux-x64",
+      "from": "1.24.2",
+      "to": "1.24.5",
+      "zip": "samples/npm/compromised_lib/@postman@pm-bin-linux-x64/1.24.5/2025-11-24-@postman_pm-bin-linux-x64-v1.24.5.zip",
+      "blob": "b8bbb2a7b29232e2b6d7e9672361c3e2a1f3420a"
+    },
+    {
+      "id": "_postman_pm-bin-macos-arm64-1.24.5",
+      "name": "@postman/pm-bin-macos-arm64",
+      "from": "1.24.2",
+      "to": "1.24.5",
+      "zip": "samples/npm/compromised_lib/@postman@pm-bin-macos-arm64/1.24.5/2025-11-24-@postman_pm-bin-macos-arm64-v1.24.5.zip",
+      "blob": "bd8ec795b19a8276097482603737e12538b4f391"
+    },
+    {
+      "id": "_postman_pm-bin-macos-x64-1.24.5",
+      "name": "@postman/pm-bin-macos-x64",
+      "from": "1.24.2",
+      "to": "1.24.5",
+      "zip": "samples/npm/compromised_lib/@postman@pm-bin-macos-x64/1.24.5/2025-11-24-@postman_pm-bin-macos-x64-v1.24.5.zip",
+      "blob": "a4a509d90d8d9cf4fcd88f236403f4963476a157"
+    },
+    {
+      "id": "_postman_pm-bin-windows-x64-1.24.5",
+      "name": "@postman/pm-bin-windows-x64",
+      "from": "1.24.2",
+      "to": "1.24.5",
+      "zip": "samples/npm/compromised_lib/@postman@pm-bin-windows-x64/1.24.5/2025-11-24-@postman_pm-bin-windows-x64-v1.24.5.zip",
+      "blob": "3231625cd804ea8b5bc06d586fb44f96750998d1"
+    },
+    {
+      "id": "_postman_postman-collection-fork-4.3.5",
+      "name": "@postman/postman-collection-fork",
+      "from": "4.3.2",
+      "to": "4.3.5",
+      "zip": "samples/npm/compromised_lib/@postman@postman-collection-fork/4.3.5/2025-11-24-@postman_postman-collection-fork-v4.3.5.zip",
+      "blob": "a24fc6b228c328c62879962096bd4ef26ef7e208"
+    },
+    {
+      "id": "_postman_postman-mcp-cli-1.0.4",
+      "name": "@postman/postman-mcp-cli",
+      "from": "1.0.2",
+      "to": "1.0.4",
+      "zip": "samples/npm/compromised_lib/@postman@postman-mcp-cli/1.0.4/2025-11-24-@postman_postman-mcp-cli-v1.0.4.zip",
+      "blob": "d861f4a17367ca6ad808982cc651e52aac986512"
+    },
+    {
+      "id": "_postman_postman-mcp-server-2.4.12",
+      "name": "@postman/postman-mcp-server",
+      "from": "2.4.9",
+      "to": "2.4.12",
+      "zip": "samples/npm/compromised_lib/@postman@postman-mcp-server/2.4.12/2025-11-24-@postman_postman-mcp-server-v2.4.12.zip",
+      "blob": "b88e665545bbc5b0da74afcdc9727e8ec7779277"
+    },
+    {
+      "id": "_postman_pretty-ms-6.1.3",
+      "name": "@postman/pretty-ms",
+      "from": "6.1.0",
+      "to": "6.1.3",
+      "zip": "samples/npm/compromised_lib/@postman@pretty-ms/6.1.3/2025-11-24-@postman_pretty-ms-v6.1.3.zip",
+      "blob": "1a65d0477eeac1ca5240ccef49e77f581aea0a67"
+    },
+    {
+      "id": "_postman_tunnel-agent-0.6.6",
+      "name": "@postman/tunnel-agent",
+      "from": "0.6.4",
+      "to": "0.6.6",
+      "zip": "samples/npm/compromised_lib/@postman@tunnel-agent/0.6.6/2025-11-24-@postman_tunnel-agent-v0.6.6.zip",
+      "blob": "9c0a215e36330b27c038cf159da58b41403519b1"
+    },
+    {
+      "id": "_postman_wdio-allure-reporter-0.0.9",
+      "name": "@postman/wdio-allure-reporter",
+      "from": "0.0.6",
+      "to": "0.0.9",
+      "zip": "samples/npm/compromised_lib/@postman@wdio-allure-reporter/0.0.9/2025-11-24-@postman_wdio-allure-reporter-v0.0.9.zip",
+      "blob": "1fbcdfd18d6c55e21ca8a3eefacfff28403369c1"
+    },
+    {
+      "id": "_postman_wdio-junit-reporter-0.0.6",
+      "name": "@postman/wdio-junit-reporter",
+      "from": "0.0.3",
+      "to": "0.0.6",
+      "zip": "samples/npm/compromised_lib/@postman@wdio-junit-reporter/0.0.6/2025-11-24-@postman_wdio-junit-reporter-v0.0.6.zip",
+      "blob": "0522bb39a4d87a64be224f821846c5c52d8f6394"
+    },
+    {
+      "id": "_pradhumngautam_common-app-1.0.2",
+      "name": "@pradhumngautam/common-app",
+      "from": "1.0.1",
+      "to": "1.0.2",
+      "zip": "samples/npm/compromised_lib/@pradhumngautam@common-app/1.0.2/2025-11-24-@pradhumngautam_common-app-v1.0.2.zip",
+      "blob": "55d4f3136f1c02c6a7bb716c35da4b7a9cd500d4"
+    },
+    {
+      "id": "_pruthvi21_use-debounce-1.0.3",
+      "name": "@pruthvi21/use-debounce",
+      "from": "1.0.2",
+      "to": "1.0.3",
+      "zip": "samples/npm/compromised_lib/@pruthvi21@use-debounce/1.0.3/2025-11-24-@pruthvi21_use-debounce-v1.0.3.zip",
+      "blob": "f00cdf229224176e1236dabdfc45aaa0ba3bd607"
+    },
+    {
+      "id": "_quick-start-soft_quick-document-translator-1.4.2511142126",
+      "name": "@quick-start-soft/quick-document-translator",
+      "from": "1.4.2511142125",
+      "to": "1.4.2511142126",
+      "zip": "samples/npm/compromised_lib/@quick-start-soft@quick-document-translator/1.4.2511142126/2025-11-24-@quick-start-soft_quick-document-translator-v1.4.2511142126.zip",
+      "blob": "f1bf2257124fe4c49a9f9cd682b1b4f245f83eab"
+    },
+    {
+      "id": "_quick-start-soft_quick-git-clean-markdown-1.4.2511142126",
+      "name": "@quick-start-soft/quick-git-clean-markdown",
+      "from": "1.4.2511142125",
+      "to": "1.4.2511142126",
+      "zip": "samples/npm/compromised_lib/@quick-start-soft@quick-git-clean-markdown/1.4.2511142126/2025-11-24-@quick-start-soft_quick-git-clean-markdown-v1.4.2511142126.zip",
+      "blob": "ba0e8a5ab5043d1e39588cafb677812a91e4ee33"
+    },
+    {
+      "id": "_quick-start-soft_quick-markdown-compose-1.4.2506300029",
+      "name": "@quick-start-soft/quick-markdown-compose",
+      "from": "1.4.2506300028",
+      "to": "1.4.2506300029",
+      "zip": "samples/npm/compromised_lib/@quick-start-soft@quick-markdown-compose/1.4.2506300029/2025-11-24-@quick-start-soft_quick-markdown-compose-v1.4.2506300029.zip",
+      "blob": "f4d55e7b15c9be8710e7cec2c1904af7e2d47a01"
+    },
+    {
+      "id": "_quick-start-soft_quick-markdown-image-1.4.2511142126",
+      "name": "@quick-start-soft/quick-markdown-image",
+      "from": "1.4.2511142125",
+      "to": "1.4.2511142126",
+      "zip": "samples/npm/compromised_lib/@quick-start-soft@quick-markdown-image/1.4.2511142126/2025-11-24-@quick-start-soft_quick-markdown-image-v1.4.2511142126.zip",
+      "blob": "7371b1ad0ac60e12557c9b922274a8f2bb3acabd"
+    },
+    {
+      "id": "_quick-start-soft_quick-markdown-print-1.4.2511142126",
+      "name": "@quick-start-soft/quick-markdown-print",
+      "from": "1.4.2511142125",
+      "to": "1.4.2511142126",
+      "zip": "samples/npm/compromised_lib/@quick-start-soft@quick-markdown-print/1.4.2511142126/2025-11-24-@quick-start-soft_quick-markdown-print-v1.4.2511142126.zip",
+      "blob": "d1689d64b9e880ecc0d3577207b84ad7eec3e1c5"
+    },
+    {
+      "id": "_quick-start-soft_quick-markdown-translator-1.4.2509202331",
+      "name": "@quick-start-soft/quick-markdown-translator",
+      "from": "1.4.2509202330",
+      "to": "1.4.2509202331",
+      "zip": "samples/npm/compromised_lib/@quick-start-soft@quick-markdown-translator/1.4.2509202331/2025-11-24-@quick-start-soft_quick-markdown-translator-v1.4.2509202331.zip",
+      "blob": "3959c53c437562611d49e1e2fa2938dce6c997d9"
+    },
+    {
+      "id": "_quick-start-soft_quick-markdown-1.4.2511142126",
+      "name": "@quick-start-soft/quick-markdown",
+      "from": "1.4.2511142125",
+      "to": "1.4.2511142126",
+      "zip": "samples/npm/compromised_lib/@quick-start-soft@quick-markdown/1.4.2511142126/2025-11-24-@quick-start-soft_quick-markdown-v1.4.2511142126.zip",
+      "blob": "cccabf81b8ddea46a59cb14b4db985f9b2133742"
+    },
+    {
+      "id": "_quick-start-soft_quick-remove-image-background-1.4.2511142126",
+      "name": "@quick-start-soft/quick-remove-image-background",
+      "from": "1.4.2511142125",
+      "to": "1.4.2511142126",
+      "zip": "samples/npm/compromised_lib/@quick-start-soft@quick-remove-image-background/1.4.2511142126/2025-11-24-@quick-start-soft_quick-remove-image-background-v1.4.2511142126.zip",
+      "blob": "15fc5f0a27fe32c518f09eaa2ea8e028da7c4d5e"
+    },
+    {
+      "id": "_quick-start-soft_quick-task-refine-1.4.2511142126",
+      "name": "@quick-start-soft/quick-task-refine",
+      "from": "1.4.2511142125",
+      "to": "1.4.2511142126",
+      "zip": "samples/npm/compromised_lib/@quick-start-soft@quick-task-refine/1.4.2511142126/2025-11-24-@quick-start-soft_quick-task-refine-v1.4.2511142126.zip",
+      "blob": "29554508f9d6cf5e29593f0bed043185b5277d12"
+    },
+    {
+      "id": "_react-native-aria_button-0.2.11",
+      "name": "@react-native-aria/button",
+      "from": "0.2.10",
+      "to": "0.2.11",
+      "zip": "samples/npm/compromised_lib/@react-native-aria@button/0.2.11/2025-06-07-@react-native-aria_button-v0.2.11.zip",
+      "blob": "62d3324d436b6f34d5c9060dd6f712ff75e26000"
+    },
+    {
+      "id": "_react-native-aria_checkbox-0.2.11",
+      "name": "@react-native-aria/checkbox",
+      "from": "0.2.10",
+      "to": "0.2.11",
+      "zip": "samples/npm/compromised_lib/@react-native-aria@checkbox/0.2.11/2025-06-07-@react-native-aria_checkbox-v0.2.11.zip",
+      "blob": "5e96e79131e506d86f75d88b3918ded7b72a3854"
+    },
+    {
+      "id": "_react-native-aria_combobox-0.2.8",
+      "name": "@react-native-aria/combobox",
+      "from": "0.2.7",
+      "to": "0.2.8",
+      "zip": "samples/npm/compromised_lib/@react-native-aria@combobox/0.2.8/2025-06-07-@react-native-aria_combobox-v0.2.8.zip",
+      "blob": "99e6dd2f93030ad29bb55a502d495a090f18ac0d"
+    },
+    {
+      "id": "_react-native-aria_disclosure-0.2.9",
+      "name": "@react-native-aria/disclosure",
+      "from": "0.2.8",
+      "to": "0.2.9",
+      "zip": "samples/npm/compromised_lib/@react-native-aria@disclosure/0.2.9/2025-06-07-@react-native-aria_disclosure-v0.2.9.zip",
+      "blob": "2b41bf75993c39e4b0f169e421ad3f1b91c8d49d"
+    },
+    {
+      "id": "_react-native-aria_focus-0.2.10",
+      "name": "@react-native-aria/focus",
+      "from": "0.2.9",
+      "to": "0.2.10",
+      "zip": "samples/npm/compromised_lib/@react-native-aria@focus/0.2.10/2025-06-06-@react-native-aria_focus-v0.2.10.zip",
+      "blob": "9af91e687e13edfd1db386364b91747eda85c463"
+    },
+    {
+      "id": "_react-native-aria_interactions-0.2.17",
+      "name": "@react-native-aria/interactions",
+      "from": "0.2.16",
+      "to": "0.2.17",
+      "zip": "samples/npm/compromised_lib/@react-native-aria@interactions/0.2.17/2025-06-07-@react-native-aria_interactions-v0.2.17.zip",
+      "blob": "96b548fedda1f8c423b3cb0ae122305d0196f985"
+    },
+    {
+      "id": "_react-native-aria_listbox-0.2.10",
+      "name": "@react-native-aria/listbox",
+      "from": "0.2.9",
+      "to": "0.2.10",
+      "zip": "samples/npm/compromised_lib/@react-native-aria@listbox/0.2.10/2025-06-07-@react-native-aria_listbox-v0.2.10.zip",
+      "blob": "bcb2acd25f616915ff94561968dd4172bff5fed3"
+    },
+    {
+      "id": "_react-native-aria_menu-0.2.16",
+      "name": "@react-native-aria/menu",
+      "from": "0.2.15",
+      "to": "0.2.16",
+      "zip": "samples/npm/compromised_lib/@react-native-aria@menu/0.2.16/2025-06-07-@react-native-aria_menu-v0.2.16.zip",
+      "blob": "eefcc9827ee37c616a098b1a5d4aff3640c1601c"
+    },
+    {
+      "id": "_react-native-aria_overlays-0.3.16",
+      "name": "@react-native-aria/overlays",
+      "from": "0.3.15",
+      "to": "0.3.16",
+      "zip": "samples/npm/compromised_lib/@react-native-aria@overlays/0.3.16/2025-06-07-@react-native-aria_overlays-v0.3.16.zip",
+      "blob": "2618b9bc85b4a4e0185158bbaf137c5fee548aae"
+    },
+    {
+      "id": "_react-native-aria_radio-0.2.14",
+      "name": "@react-native-aria/radio",
+      "from": "0.2.13",
+      "to": "0.2.14",
+      "zip": "samples/npm/compromised_lib/@react-native-aria@radio/0.2.14/2025-06-07-@react-native-aria_radio-v0.2.14.zip",
+      "blob": "8800369d7637e58bc5419235fd7647d1ac6ee629"
+    },
+    {
+      "id": "_react-native-aria_separator-0.2.7",
+      "name": "@react-native-aria/separator",
+      "from": "0.2.6",
+      "to": "0.2.7",
+      "zip": "samples/npm/compromised_lib/@react-native-aria@separator/0.2.7/2025-06-07-@react-native-aria_separator-v0.2.7.zip",
+      "blob": "de759dc6b8c7e19b934a829fa6c671063a865fc9"
+    },
+    {
+      "id": "_react-native-aria_slider-0.2.13",
+      "name": "@react-native-aria/slider",
+      "from": "0.2.12",
+      "to": "0.2.13",
+      "zip": "samples/npm/compromised_lib/@react-native-aria@slider/0.2.13/2025-06-07-@react-native-aria_slider-v0.2.13.zip",
+      "blob": "b974189c7347944d8be1b7b772692dae2bee06cc"
+    },
+    {
+      "id": "_react-native-aria_switch-0.2.5",
+      "name": "@react-native-aria/switch",
+      "from": "0.2.4",
+      "to": "0.2.5",
+      "zip": "samples/npm/compromised_lib/@react-native-aria@switch/0.2.5/2025-06-07-@react-native-aria_switch-v0.2.5.zip",
+      "blob": "9d689e44e45e9d2d4ded707f80e800db81144c3d"
+    },
+    {
+      "id": "_react-native-aria_tabs-0.2.14",
+      "name": "@react-native-aria/tabs",
+      "from": "0.2.13",
+      "to": "0.2.14",
+      "zip": "samples/npm/compromised_lib/@react-native-aria@tabs/0.2.14/2025-06-07-@react-native-aria_tabs-v0.2.14.zip",
+      "blob": "5181be58423d41551197f3850114725981d585f6"
+    },
+    {
+      "id": "_react-native-aria_toggle-0.2.12",
+      "name": "@react-native-aria/toggle",
+      "from": "0.2.11",
+      "to": "0.2.12",
+      "zip": "samples/npm/compromised_lib/@react-native-aria@toggle/0.2.12/2025-06-07-@react-native-aria_toggle-v0.2.12.zip",
+      "blob": "231ec49c3de1a15c4a7531802a7e5f8be686a75a"
+    },
+    {
+      "id": "_react-native-aria_utils-0.2.13",
+      "name": "@react-native-aria/utils",
+      "from": "0.2.12",
+      "to": "0.2.13",
+      "zip": "samples/npm/compromised_lib/@react-native-aria@utils/0.2.13/2025-06-07-@react-native-aria_utils-v0.2.13.zip",
+      "blob": "38062ce3ecccffe8b4b205d32c7450d77187ce5a"
+    },
+    {
+      "id": "_rspack_cli-1.1.7",
+      "name": "@rspack/cli",
+      "from": "1.1.6",
+      "to": "1.1.7",
+      "zip": "samples/npm/compromised_lib/@rspack@cli/1.1.7/2024-12-20-@rspack_cli-v1.1.7.zip",
+      "blob": "88e10c7277103f8a003a07617a2de368b86d2a86"
+    },
+    {
+      "id": "_rspack_core-1.1.7",
+      "name": "@rspack/core",
+      "from": "1.1.6",
+      "to": "1.1.7",
+      "missed": false,
+      "zip": "samples/npm/compromised_lib/@rspack@core/1.1.7/2024-12-20-@rspack_core-v1.1.7.zip",
+      "blob": "d75e4a92cf2d7c7e979a3d1eee20aada487d05e6"
+    },
+    {
+      "id": "_rxap_ngx-bootstrap-19.0.4",
+      "name": "@rxap/ngx-bootstrap",
+      "from": "19.0.2",
+      "to": "19.0.4",
+      "zip": "samples/npm/compromised_lib/@rxap@ngx-bootstrap/19.0.4/2025-06-24-@rxap_ngx-bootstrap-v19.0.4.zip",
+      "blob": "9a3f120faaaf4b094854012dc4f171a9d3a0c56f"
+    },
+    {
+      "id": "_seezo_sdr-mcp-server-0.0.5",
+      "name": "@seezo/sdr-mcp-server",
+      "from": "0.0.4",
+      "to": "0.0.5",
+      "zip": "samples/npm/compromised_lib/@seezo@sdr-mcp-server/0.0.5/2025-11-24-@seezo_sdr-mcp-server-v0.0.5.zip",
+      "blob": "8b8a0037e8b0703ba697dca0227fbbd88a54b8f1"
+    },
+    {
+      "id": "_seung-ju_next-0.0.2",
+      "name": "@seung-ju/next",
+      "from": "0.0.1",
+      "to": "0.0.2",
+      "zip": "samples/npm/compromised_lib/@seung-ju@next/0.0.2/2025-11-24-@seung-ju_next-v0.0.2.zip",
+      "blob": "04b1aff232cb1f46976b89d20e961c9d2f602e2c"
+    },
+    {
+      "id": "_seung-ju_openapi-generator-0.0.4",
+      "name": "@seung-ju/openapi-generator",
+      "from": "0.0.3",
+      "to": "0.0.4",
+      "zip": "samples/npm/compromised_lib/@seung-ju@openapi-generator/0.0.4/2025-11-24-@seung-ju_openapi-generator-v0.0.4.zip",
+      "blob": "f7cfa1d5adde9ac4c043a4e8aa051d20b90ee153"
+    },
+    {
+      "id": "_seung-ju_react-hooks-0.0.2",
+      "name": "@seung-ju/react-hooks",
+      "from": "0.0.1",
+      "to": "0.0.2",
+      "zip": "samples/npm/compromised_lib/@seung-ju@react-hooks/0.0.2/2025-11-24-@seung-ju_react-hooks-v0.0.2.zip",
+      "blob": "f6546e0c286788742b235ac56316a66981dad946"
+    },
+    {
+      "id": "_seung-ju_react-native-action-sheet-0.2.1",
+      "name": "@seung-ju/react-native-action-sheet",
+      "from": "0.2.0",
+      "to": "0.2.1",
+      "zip": "samples/npm/compromised_lib/@seung-ju@react-native-action-sheet/0.2.1/2025-11-24-@seung-ju_react-native-action-sheet-v0.2.1.zip",
+      "blob": "3b1d55a068429c4b0d32484b31ba2e54501bbc2f"
+    },
+    {
+      "id": "_solana_web3.js-1.95.7",
+      "name": "@solana/web3.js",
+      "from": "1.95.5",
+      "to": "1.95.7",
+      "missed": true,
+      "zip": "samples/npm/compromised_lib/@solana@web3.js/1.95.7/2024-12-03-@solana_web3.js-v1.95.7.zip",
+      "blob": "fee554638593fdc881c446d34afae9fffb9a109a"
+    },
+    {
+      "id": "_strapbuild_react-native-date-time-picker-2.0.4",
+      "name": "@strapbuild/react-native-date-time-picker",
+      "from": "2.0.3",
+      "to": "2.0.4",
+      "zip": "samples/npm/compromised_lib/@strapbuild@react-native-date-time-picker/2.0.4/2025-11-24-@strapbuild_react-native-date-time-picker-v2.0.4.zip",
+      "blob": "96cb39ae3dc822b496f1af1b6dfc716904ee99d0"
+    },
+    {
+      "id": "_strapbuild_react-native-perspective-image-cropper-2-0.4.7",
+      "name": "@strapbuild/react-native-perspective-image-cropper-2",
+      "from": "0.4.6",
+      "to": "0.4.7",
+      "zip": "samples/npm/compromised_lib/@strapbuild@react-native-perspective-image-cropper-2/0.4.7/2025-11-24-@strapbuild_react-native-perspective-image-cropper-2-v0.4.7.zip",
+      "blob": "de02e98bcbb08337f8a309a3c36a27413939ceed"
+    },
+    {
+      "id": "_strapbuild_react-native-perspective-image-cropper-poojan31-0.4.6",
+      "name": "@strapbuild/react-native-perspective-image-cropper-poojan31",
+      "from": "0.4.5",
+      "to": "0.4.6",
+      "zip": "samples/npm/compromised_lib/@strapbuild@react-native-perspective-image-cropper-poojan31/0.4.6/2025-11-24-@strapbuild_react-native-perspective-image-cropper-poojan31-v0.4.6.zip",
+      "blob": "e45b161c246334e8f74989cfd677d1b6521b57c0"
+    },
+    {
+      "id": "_strapbuild_react-native-perspective-image-cropper-0.4.15",
+      "name": "@strapbuild/react-native-perspective-image-cropper",
+      "from": "0.4.14",
+      "to": "0.4.15",
+      "zip": "samples/npm/compromised_lib/@strapbuild@react-native-perspective-image-cropper/0.4.15/2025-11-24-@strapbuild_react-native-perspective-image-cropper-v0.4.15.zip",
+      "blob": "b52369f1a7d900a03914e20dbb231ad920e78eff"
+    },
+    {
+      "id": "_teale.io_eslint-config-1.8.15",
+      "name": "@teale.io/eslint-config",
+      "from": "1.8.8",
+      "to": "1.8.15",
+      "zip": "samples/npm/compromised_lib/@teale.io@eslint-config/1.8.15/2026-03-20-@teale.io_eslint-config-v1.8.15.zip",
+      "blob": "3627ccea0c7cdff6584e35aff420cde5cb6b1df6"
+    },
+    {
+      "id": "_teselagen_bio-parsers-0.4.29",
+      "name": "@teselagen/bio-parsers",
+      "from": "0.4.28",
+      "to": "0.4.29",
+      "zip": "samples/npm/compromised_lib/@teselagen@bio-parsers/0.4.29/2025-09-14-@teselagen_bio-parsers-v0.4.29.zip",
+      "blob": "6fe4ec43ed6ec3710578c0eba8f43434f96fc87d"
+    },
+    {
+      "id": "_teselagen_bounce-loader-0.3.17",
+      "name": "@teselagen/bounce-loader",
+      "from": "0.3.15",
+      "to": "0.3.17",
+      "zip": "samples/npm/compromised_lib/@teselagen@bounce-loader/0.3.17/2025-09-16-@teselagen_bounce-loader-v0.3.17.zip",
+      "blob": "812b45e592d9459508705421511962a64eb1b117"
+    },
+    {
+      "id": "_teselagen_file-utils-0.3.21",
+      "name": "@teselagen/file-utils",
+      "from": "0.3.20",
+      "to": "0.3.21",
+      "zip": "samples/npm/compromised_lib/@teselagen@file-utils/0.3.21/2025-09-14-@teselagen_file-utils-v0.3.21.zip",
+      "blob": "53d6a66aed4fb646a67063de8e55f3ab0bb39c8f"
+    },
+    {
+      "id": "_teselagen_liquibase-tools-0.4.1",
+      "name": "@teselagen/liquibase-tools",
+      "from": "0.4.0",
+      "to": "0.4.1",
+      "zip": "samples/npm/compromised_lib/@teselagen@liquibase-tools/0.4.1/2025-09-14-@teselagen_liquibase-tools-v0.4.1.zip",
+      "blob": "92c889eb55864413335a7a5a7236612f6dad6a46"
+    },
+    {
+      "id": "_teselagen_range-utils-0.3.14",
+      "name": "@teselagen/range-utils",
+      "from": "0.3.13",
+      "to": "0.3.14",
+      "zip": "samples/npm/compromised_lib/@teselagen@range-utils/0.3.14/2025-09-14-@teselagen_range-utils-v0.3.14.zip",
+      "blob": "ac1728b8d462fa4d043b94cf1e96f96cbc291997"
+    },
+    {
+      "id": "_teselagen_react-list-0.8.19",
+      "name": "@teselagen/react-list",
+      "from": "0.8.18",
+      "to": "0.8.19",
+      "zip": "samples/npm/compromised_lib/@teselagen@react-list/0.8.19/2025-09-14-@teselagen_react-list-v0.8.19.zip",
+      "blob": "3e3d762484ac98b9b756d9778ee3ff9d3b2384fa"
+    },
+    {
+      "id": "_teselagen_sequence-utils-0.3.33",
+      "name": "@teselagen/sequence-utils",
+      "from": "0.3.32",
+      "to": "0.3.33",
+      "zip": "samples/npm/compromised_lib/@teselagen@sequence-utils/0.3.33/2025-09-14-@teselagen_sequence-utils-v0.3.33.zip",
+      "blob": "282cc92c9ab9702ac2d9cd1313508298686393bc"
+    },
+    {
+      "id": "_thangved_callback-window-1.1.4",
+      "name": "@thangved/callback-window",
+      "from": "1.1.2",
+      "to": "1.1.4",
+      "zip": "samples/npm/compromised_lib/@thangved@callback-window/1.1.4/2025-09-14-@thangved_callback-window-v1.1.4.zip",
+      "blob": "4dd17de728f7b3b17c4fada7ee1b59480bb28683"
+    },
+    {
+      "id": "_things-factory_attachment-base-9.0.55",
+      "name": "@things-factory/attachment-base",
+      "from": "9.0.41",
+      "to": "9.0.55",
+      "zip": "samples/npm/compromised_lib/@things-factory@attachment-base/9.0.55/2025-09-16-@things-factory_attachment-base-v9.0.55.zip",
+      "blob": "ccae48a0e0ee239fa85369e8267894481ecbb7f4"
+    },
+    {
+      "id": "_things-factory_auth-base-9.0.45",
+      "name": "@things-factory/auth-base",
+      "from": "9.0.41",
+      "to": "9.0.45",
+      "zip": "samples/npm/compromised_lib/@things-factory@auth-base/9.0.45/2025-09-16-@things-factory_auth-base-v9.0.45.zip",
+      "blob": "087bad70e0fd84b22c62671697f3fefc9a0c964f"
+    },
+    {
+      "id": "_things-factory_email-base-9.0.59",
+      "name": "@things-factory/email-base",
+      "from": "9.0.41",
+      "to": "9.0.59",
+      "zip": "samples/npm/compromised_lib/@things-factory@email-base/9.0.59/2025-09-16-@things-factory_email-base-v9.0.59.zip",
+      "blob": "38aaeeba09fb5ba61db79abdce2960171dee9f64"
+    },
+    {
+      "id": "_things-factory_env-9.0.45",
+      "name": "@things-factory/env",
+      "from": "9.0.41",
+      "to": "9.0.45",
+      "zip": "samples/npm/compromised_lib/@things-factory@env/9.0.45/2025-09-16-@things-factory_env-v9.0.45.zip",
+      "blob": "98f5566f962a2df5bacd1ec1240b522f94c4d2eb"
+    },
+    {
+      "id": "_things-factory_integration-base-9.0.45",
+      "name": "@things-factory/integration-base",
+      "from": "9.0.41",
+      "to": "9.0.45",
+      "zip": "samples/npm/compromised_lib/@things-factory@integration-base/9.0.45/2025-09-16-@things-factory_integration-base-v9.0.45.zip",
+      "blob": "7bd935867a91be49c65cc36fec498a1ed50ff844"
+    },
+    {
+      "id": "_things-factory_integration-marketplace-9.0.45",
+      "name": "@things-factory/integration-marketplace",
+      "from": "9.0.41",
+      "to": "9.0.45",
+      "zip": "samples/npm/compromised_lib/@things-factory@integration-marketplace/9.0.45/2025-09-16-@things-factory_integration-marketplace-v9.0.45.zip",
+      "blob": "40738eff77fd6e39bfdde842170c2d3125b13136"
+    },
+    {
+      "id": "_things-factory_shell-9.0.45",
+      "name": "@things-factory/shell",
+      "from": "9.0.41",
+      "to": "9.0.45",
+      "zip": "samples/npm/compromised_lib/@things-factory@shell/9.0.45/2025-09-16-@things-factory_shell-v9.0.45.zip",
+      "blob": "b09e4be55ece8c3854b3f1a3afeb5504d76cbcaf"
+    },
+    {
+      "id": "_tnf-dev_api-1.0.8",
+      "name": "@tnf-dev/api",
+      "from": "1.0.7",
+      "to": "1.0.8",
+      "zip": "samples/npm/compromised_lib/@tnf-dev@api/1.0.8/2025-09-14-@tnf-dev_api-v1.0.8.zip",
+      "blob": "6472ad9e81e9a20377b1b827aa3bc996ffc710bc"
+    },
+    {
+      "id": "_tnf-dev_core-1.0.8",
+      "name": "@tnf-dev/core",
+      "from": "1.0.7",
+      "to": "1.0.8",
+      "zip": "samples/npm/compromised_lib/@tnf-dev@core/1.0.8/2025-09-14-@tnf-dev_core-v1.0.8.zip",
+      "blob": "c09e60d70cecdf8bc0b8d92109d1fbe4e1cc7364"
+    },
+    {
+      "id": "_tnf-dev_js-1.0.8",
+      "name": "@tnf-dev/js",
+      "from": "1.0.7",
+      "to": "1.0.8",
+      "zip": "samples/npm/compromised_lib/@tnf-dev@js/1.0.8/2025-09-14-@tnf-dev_js-v1.0.8.zip",
+      "blob": "9e64350e887c5492e86f5d79e8c249192265990a"
+    },
+    {
+      "id": "_tnf-dev_mui-1.0.8",
+      "name": "@tnf-dev/mui",
+      "from": "1.0.7",
+      "to": "1.0.8",
+      "zip": "samples/npm/compromised_lib/@tnf-dev@mui/1.0.8/2025-09-14-@tnf-dev_mui-v1.0.8.zip",
+      "blob": "ff735cca3ce8568e0eb28b335054f78525ff30a3"
+    },
+    {
+      "id": "_tnf-dev_react-1.0.8",
+      "name": "@tnf-dev/react",
+      "from": "1.0.7",
+      "to": "1.0.8",
+      "zip": "samples/npm/compromised_lib/@tnf-dev@react/1.0.8/2025-09-14-@tnf-dev_react-v1.0.8.zip",
+      "blob": "8de89de6f01761808b40e2aecf3383a8c6acb822"
+    },
+    {
+      "id": "_toptal_picasso-charts-59.1.4",
+      "name": "@toptal/picasso-charts",
+      "from": "59.0.4",
+      "to": "59.1.4",
+      "zip": "samples/npm/compromised_lib/@toptal@picasso-charts/59.1.4/2025-07-20-@toptal_picasso-charts-v59.1.4.zip",
+      "blob": "97e9b0e3d85cc7eaca93cd07c668b939758bdc0a"
+    },
+    {
+      "id": "_toptal_picasso-forms-73.3.2",
+      "name": "@toptal/picasso-forms",
+      "from": "73.2.2",
+      "to": "73.3.2",
+      "zip": "samples/npm/compromised_lib/@toptal@picasso-forms/73.3.2/2025-07-20-@toptal_picasso-forms-v73.3.2.zip",
+      "blob": "5e42f249e750b964c21c1f1380214fe5b6cceb4a"
+    },
+    {
+      "id": "_toptal_picasso-provider-5.1.1",
+      "name": "@toptal/picasso-provider",
+      "from": "5.0.1",
+      "to": "5.1.1",
+      "zip": "samples/npm/compromised_lib/@toptal@picasso-provider/5.1.1/2025-07-20-@toptal_picasso-provider-v5.1.1.zip",
+      "blob": "8c481a9461a8e504710f1e2683964dd5f4f237f4"
+    },
+    {
+      "id": "_toptal_picasso-quote-2.1.7",
+      "name": "@toptal/picasso-quote",
+      "from": "2.0.7",
+      "to": "2.1.7",
+      "zip": "samples/npm/compromised_lib/@toptal@picasso-quote/2.1.7/2025-07-20-@toptal_picasso-quote-v2.1.7.zip",
+      "blob": "47088fdc19211595d88f2b4689449ed2ce31b7bd"
+    },
+    {
+      "id": "_toptal_picasso-select-4.2.2",
+      "name": "@toptal/picasso-select",
+      "from": "4.1.2",
+      "to": "4.2.2",
+      "zip": "samples/npm/compromised_lib/@toptal@picasso-select/4.2.2/2025-07-20-@toptal_picasso-select-v4.2.2.zip",
+      "blob": "bce05a5b43bf8f663d2c33288347ee262f820784"
+    },
+    {
+      "id": "_toptal_picasso-shared-15.1.0",
+      "name": "@toptal/picasso-shared",
+      "from": "15.0.0",
+      "to": "15.1.0",
+      "zip": "samples/npm/compromised_lib/@toptal@picasso-shared/15.1.0/2025-07-20-@toptal_picasso-shared-v15.1.0.zip",
+      "blob": "b95b804f692b673cf8ce38ba30aa33331b82c69e"
+    },
+    {
+      "id": "_toptal_picasso-tailwind-3.1.0",
+      "name": "@toptal/picasso-tailwind",
+      "from": "3.0.0",
+      "to": "3.1.0",
+      "zip": "samples/npm/compromised_lib/@toptal@picasso-tailwind/3.1.0/2025-07-20-@toptal_picasso-tailwind-v3.1.0.zip",
+      "blob": "4251a00b9be562e94838f65858bc96c7bf439bcf"
+    },
+    {
+      "id": "_toptal_picasso-typography-4.1.4",
+      "name": "@toptal/picasso-typography",
+      "from": "4.0.4",
+      "to": "4.1.4",
+      "zip": "samples/npm/compromised_lib/@toptal@picasso-typography/4.1.4/2025-07-20-@toptal_picasso-typography-v4.1.4.zip",
+      "blob": "885fcb346899d9f33be53c6bf741bc062e8b261d"
+    },
+    {
+      "id": "_toptal_picasso-utils-3.2.0",
+      "name": "@toptal/picasso-utils",
+      "from": "3.1.0",
+      "to": "3.2.0",
+      "zip": "samples/npm/compromised_lib/@toptal@picasso-utils/3.2.0/2025-07-20-@toptal_picasso-utils-v3.2.0.zip",
+      "blob": "86170bfed1cd95fb240beec5ec253a501bf671ad"
+    },
+    {
+      "id": "_trpc-rate-limiter_cloudflare-0.1.4",
+      "name": "@trpc-rate-limiter/cloudflare",
+      "from": "0.1.3",
+      "to": "0.1.4",
+      "zip": "samples/npm/compromised_lib/@trpc-rate-limiter@cloudflare/0.1.4/2025-11-24-@trpc-rate-limiter_cloudflare-v0.1.4.zip",
+      "blob": "e85086dc229dfd4fd9867b8dda7d6bfc0a660406"
+    },
+    {
+      "id": "_trpc-rate-limiter_hono-0.1.4",
+      "name": "@trpc-rate-limiter/hono",
+      "from": "0.1.3",
+      "to": "0.1.4",
+      "zip": "samples/npm/compromised_lib/@trpc-rate-limiter@hono/0.1.4/2025-11-24-@trpc-rate-limiter_hono-v0.1.4.zip",
+      "blob": "04e078c43ba8358b165f6d56950716f18012dd05"
+    },
+    {
+      "id": "_velora-dex_sdk-9.4.1",
+      "name": "@velora-dex/sdk",
+      "from": "9.4.0",
+      "to": "9.4.1",
+      "zip": "samples/npm/compromised_lib/@velora-dex@sdk/9.4.1/2026-04-08-@velora-dex_sdk-v9.4.1.zip",
+      "blob": "50650ede065eb5c1a869c8ae21ffd1f2071091c1"
+    },
+    {
+      "id": "_vishadtyagi_full-year-calendar-0.1.11",
+      "name": "@vishadtyagi/full-year-calendar",
+      "from": "0.1.10",
+      "to": "0.1.11",
+      "zip": "samples/npm/compromised_lib/@vishadtyagi@full-year-calendar/0.1.11/2025-11-24-@vishadtyagi_full-year-calendar-v0.1.11.zip",
+      "blob": "573c1fc6eaf346160444ccbebf38b41b42705d69"
+    },
+    {
+      "id": "_voiceflow_alexa-types-2.15.61",
+      "name": "@voiceflow/alexa-types",
+      "from": "2.15.59",
+      "to": "2.15.61",
+      "zip": "samples/npm/compromised_lib/@voiceflow@alexa-types/2.15.61/2025-11-24-@voiceflow_alexa-types-v2.15.61.zip",
+      "blob": "f777998a19ee6e07eefcdbb68540edf0e24fc650"
+    },
+    {
+      "id": "_voiceflow_api-sdk-3.28.59",
+      "name": "@voiceflow/api-sdk",
+      "from": "3.28.57",
+      "to": "3.28.59",
+      "zip": "samples/npm/compromised_lib/@voiceflow@api-sdk/3.28.59/2025-11-24-@voiceflow_api-sdk-v3.28.59.zip",
+      "blob": "471f2ec35bb5201009b52a90595924e9cc35d4ff"
+    },
+    {
+      "id": "_voiceflow_backend-utils-5.0.2",
+      "name": "@voiceflow/backend-utils",
+      "from": "5.0.0",
+      "to": "5.0.2",
+      "zip": "samples/npm/compromised_lib/@voiceflow@backend-utils/5.0.2/2025-11-24-@voiceflow_backend-utils-v5.0.2.zip",
+      "blob": "e7a11777e503aff442ba9e0b739793335a01fe4b"
+    },
+    {
+      "id": "_voiceflow_base-types-2.136.3",
+      "name": "@voiceflow/base-types",
+      "from": "2.136.1",
+      "to": "2.136.3",
+      "zip": "samples/npm/compromised_lib/@voiceflow@base-types/2.136.3/2025-11-24-@voiceflow_base-types-v2.136.3.zip",
+      "blob": "6232900dff01d4bba693b2ebdd384071301b02ba"
+    },
+    {
+      "id": "_voiceflow_chat-types-2.14.59",
+      "name": "@voiceflow/chat-types",
+      "from": "2.14.57",
+      "to": "2.14.59",
+      "zip": "samples/npm/compromised_lib/@voiceflow@chat-types/2.14.59/2025-11-24-@voiceflow_chat-types-v2.14.59.zip",
+      "blob": "013caaac553ef7798d8c1428c7b479661d2121f6"
+    },
+    {
+      "id": "_voiceflow_common-8.9.2",
+      "name": "@voiceflow/common",
+      "from": "8.9.0",
+      "to": "8.9.2",
+      "zip": "samples/npm/compromised_lib/@voiceflow@common/8.9.2/2025-11-24-@voiceflow_common-v8.9.2.zip",
+      "blob": "3404e92bb59b6c50478975f3dec1e526076f7657"
+    },
+    {
+      "id": "_voiceflow_dependency-cruiser-config-1.8.12",
+      "name": "@voiceflow/dependency-cruiser-config",
+      "from": "1.8.10",
+      "to": "1.8.12",
+      "zip": "samples/npm/compromised_lib/@voiceflow@dependency-cruiser-config/1.8.12/2025-11-24-@voiceflow_dependency-cruiser-config-v1.8.12.zip",
+      "blob": "01f5d13cd43fc9e65518278ab1345e276fecd3a5"
+    },
+    {
+      "id": "_voiceflow_dtos-interact-1.40.2",
+      "name": "@voiceflow/dtos-interact",
+      "from": "1.40.0",
+      "to": "1.40.2",
+      "zip": "samples/npm/compromised_lib/@voiceflow@dtos-interact/1.40.2/2025-11-24-@voiceflow_dtos-interact-v1.40.2.zip",
+      "blob": "98c9405a2d4aa6f8d2143ef4ab8a8ab3dcaa6413"
+    },
+    {
+      "id": "_voiceflow_encryption-0.3.3",
+      "name": "@voiceflow/encryption",
+      "from": "0.3.1",
+      "to": "0.3.3",
+      "zip": "samples/npm/compromised_lib/@voiceflow@encryption/0.3.3/2025-11-24-@voiceflow_encryption-v0.3.3.zip",
+      "blob": "fb11be40137bad7e3488dc8c661716380a15c012"
+    },
+    {
+      "id": "_voiceflow_eslint-plugin-1.6.2",
+      "name": "@voiceflow/eslint-plugin",
+      "from": "1.6.0",
+      "to": "1.6.2",
+      "zip": "samples/npm/compromised_lib/@voiceflow@eslint-plugin/1.6.2/2025-11-24-@voiceflow_eslint-plugin-v1.6.2.zip",
+      "blob": "ef25e603e93821cfeca15d0af184f47b398526a1"
+    },
+    {
+      "id": "_voiceflow_exception-1.10.2",
+      "name": "@voiceflow/exception",
+      "from": "1.10.0",
+      "to": "1.10.2",
+      "zip": "samples/npm/compromised_lib/@voiceflow@exception/1.10.2/2025-11-24-@voiceflow_exception-v1.10.2.zip",
+      "blob": "ff9a5d4369d7b2e414b363c306afe0abf3a683e4"
+    },
+    {
+      "id": "_voiceflow_fetch-1.11.2",
+      "name": "@voiceflow/fetch",
+      "from": "1.11.0",
+      "to": "1.11.2",
+      "zip": "samples/npm/compromised_lib/@voiceflow@fetch/1.11.2/2025-11-24-@voiceflow_fetch-v1.11.2.zip",
+      "blob": "1c399e9f5d1a7c88517faec88109232c22629455"
+    },
+    {
+      "id": "_voiceflow_general-types-3.2.23",
+      "name": "@voiceflow/general-types",
+      "from": "3.2.21",
+      "to": "3.2.23",
+      "zip": "samples/npm/compromised_lib/@voiceflow@general-types/3.2.23/2025-11-24-@voiceflow_general-types-v3.2.23.zip",
+      "blob": "c22ce25650ee642b74fd87c1196f6dd39c57737b"
+    },
+    {
+      "id": "_voiceflow_google-dfes-types-2.17.13",
+      "name": "@voiceflow/google-dfes-types",
+      "from": "2.17.11",
+      "to": "2.17.13",
+      "zip": "samples/npm/compromised_lib/@voiceflow@google-dfes-types/2.17.13/2025-11-24-@voiceflow_google-dfes-types-v2.17.13.zip",
+      "blob": "f086e8463eab1a1b1053bf495ed23db886a2b57e"
+    },
+    {
+      "id": "_voiceflow_google-types-2.21.13",
+      "name": "@voiceflow/google-types",
+      "from": "2.21.11",
+      "to": "2.21.13",
+      "zip": "samples/npm/compromised_lib/@voiceflow@google-types/2.21.13/2025-11-24-@voiceflow_google-types-v2.21.13.zip",
+      "blob": "acee140e9d1ece7ced51f4aee6865a951052688c"
+    },
+    {
+      "id": "_voiceflow_logger-2.4.3",
+      "name": "@voiceflow/logger",
+      "from": "2.4.1",
+      "to": "2.4.3",
+      "zip": "samples/npm/compromised_lib/@voiceflow@logger/2.4.3/2025-11-24-@voiceflow_logger-v2.4.3.zip",
+      "blob": "229f63cb64c82c399166c3220e2b914548032e92"
+    },
+    {
+      "id": "_voiceflow_natural-language-commander-0.5.3",
+      "name": "@voiceflow/natural-language-commander",
+      "from": "0.5.1",
+      "to": "0.5.3",
+      "zip": "samples/npm/compromised_lib/@voiceflow@natural-language-commander/0.5.3/2025-11-24-@voiceflow_natural-language-commander-v0.5.3.zip",
+      "blob": "45d4127198dec533f78fe54dd8ee74d2004a5973"
+    },
+    {
+      "id": "_voiceflow_openai-3.2.3",
+      "name": "@voiceflow/openai",
+      "from": "3.2.1",
+      "to": "3.2.3",
+      "zip": "samples/npm/compromised_lib/@voiceflow@openai/3.2.3/2025-11-24-@voiceflow_openai-v3.2.3.zip",
+      "blob": "0274aa5aa944b0df371fc07710f2378b90699bb4"
+    },
+    {
+      "id": "_voiceflow_pino-pretty-4.4.2",
+      "name": "@voiceflow/pino-pretty",
+      "from": "4.4.0",
+      "to": "4.4.2",
+      "zip": "samples/npm/compromised_lib/@voiceflow@pino-pretty/4.4.2/2025-11-24-@voiceflow_pino-pretty-v4.4.2.zip",
+      "blob": "0069fe43b96ae6f4e44674ed0790fbca16e93067"
+    },
+    {
+      "id": "_voiceflow_pino-6.11.4",
+      "name": "@voiceflow/pino",
+      "from": "6.11.2",
+      "to": "6.11.4",
+      "zip": "samples/npm/compromised_lib/@voiceflow@pino/6.11.4/2025-11-24-@voiceflow_pino-v6.11.4.zip",
+      "blob": "2cf3e9e879a70c84b7f57faa90d9d0c4fca5e347"
+    },
+    {
+      "id": "_voiceflow_react-chat-1.65.4",
+      "name": "@voiceflow/react-chat",
+      "from": "1.65.2",
+      "to": "1.65.4",
+      "zip": "samples/npm/compromised_lib/@voiceflow@react-chat/1.65.4/2025-11-24-@voiceflow_react-chat-v1.65.4.zip",
+      "blob": "d7ba0e09d04343fadb84ad1ff28dbaabcf520e62"
+    },
+    {
+      "id": "_voiceflow_runtime-client-js-1.17.3",
+      "name": "@voiceflow/runtime-client-js",
+      "from": "1.17.1",
+      "to": "1.17.3",
+      "zip": "samples/npm/compromised_lib/@voiceflow@runtime-client-js/1.17.3/2025-11-24-@voiceflow_runtime-client-js-v1.17.3.zip",
+      "blob": "c7e4a91ceb2f124e266faa6289cca5da3ae731ed"
+    },
+    {
+      "id": "_voiceflow_runtime-1.29.2",
+      "name": "@voiceflow/runtime",
+      "from": "1.29.0",
+      "to": "1.29.2",
+      "zip": "samples/npm/compromised_lib/@voiceflow@runtime/1.29.2/2025-11-24-@voiceflow_runtime-v1.29.2.zip",
+      "blob": "cfd489cf42ad738bf0cc478b7180076ae0df25b3"
+    },
+    {
+      "id": "_voiceflow_sdk-runtime-1.43.2",
+      "name": "@voiceflow/sdk-runtime",
+      "from": "1.43.0",
+      "to": "1.43.2",
+      "zip": "samples/npm/compromised_lib/@voiceflow@sdk-runtime/1.43.2/2025-11-24-@voiceflow_sdk-runtime-v1.43.2.zip",
+      "blob": "41cba397ea34a863254f9fee51db843cfe76aef8"
+    },
+    {
+      "id": "_voiceflow_slate-serializer-1.7.4",
+      "name": "@voiceflow/slate-serializer",
+      "from": "1.7.2",
+      "to": "1.7.4",
+      "zip": "samples/npm/compromised_lib/@voiceflow@slate-serializer/1.7.4/2025-11-24-@voiceflow_slate-serializer-v1.7.4.zip",
+      "blob": "51cfde8d6d668f57da1302a551bc5825b456bb70"
+    },
+    {
+      "id": "_voiceflow_stitches-react-2.3.2",
+      "name": "@voiceflow/stitches-react",
+      "from": "2.3.1",
+      "to": "2.3.2",
+      "zip": "samples/npm/compromised_lib/@voiceflow@stitches-react/2.3.2/2025-11-24-@voiceflow_stitches-react-v2.3.2.zip",
+      "blob": "c6035b73bbc19f99711d081aa3490c779282ca2c"
+    },
+    {
+      "id": "_voiceflow_test-common-2.1.2",
+      "name": "@voiceflow/test-common",
+      "from": "2.1.0",
+      "to": "2.1.2",
+      "zip": "samples/npm/compromised_lib/@voiceflow@test-common/2.1.2/2025-11-24-@voiceflow_test-common-v2.1.2.zip",
+      "blob": "0155ad0b3d6baa88f59c9707e7402b5403447103"
+    },
+    {
+      "id": "_voiceflow_tsconfig-paths-1.1.5",
+      "name": "@voiceflow/tsconfig-paths",
+      "from": "1.1.3",
+      "to": "1.1.5",
+      "zip": "samples/npm/compromised_lib/@voiceflow@tsconfig-paths/1.1.5/2025-11-24-@voiceflow_tsconfig-paths-v1.1.5.zip",
+      "blob": "fb57dfd665dcf52e5c825ef58535e380bbc64b74"
+    },
+    {
+      "id": "_voiceflow_vite-config-2.6.3",
+      "name": "@voiceflow/vite-config",
+      "from": "2.6.1",
+      "to": "2.6.3",
+      "zip": "samples/npm/compromised_lib/@voiceflow@vite-config/2.6.3/2025-11-24-@voiceflow_vite-config-v2.6.3.zip",
+      "blob": "20d7a987fa35dfe191b0de431c2e34595718ec5d"
+    },
+    {
+      "id": "_voiceflow_voice-types-2.10.59",
+      "name": "@voiceflow/voice-types",
+      "from": "2.10.57",
+      "to": "2.10.59",
+      "zip": "samples/npm/compromised_lib/@voiceflow@voice-types/2.10.59/2025-11-24-@voiceflow_voice-types-v2.10.59.zip",
+      "blob": "2598374e225cd5fc5502ffe618095836521de6d3"
+    },
+    {
+      "id": "_voiceflow_voiceflow-types-3.32.46",
+      "name": "@voiceflow/voiceflow-types",
+      "from": "3.32.44",
+      "to": "3.32.46",
+      "zip": "samples/npm/compromised_lib/@voiceflow@voiceflow-types/3.32.46/2025-11-24-@voiceflow_voiceflow-types-v3.32.46.zip",
+      "blob": "d6660d8c867606b09bec39b44ad50c9c66029ea0"
+    },
+    {
+      "id": "_xene_core-0.4.1",
+      "name": "@xene/core",
+      "from": "0.3.1",
+      "to": "0.4.1",
+      "zip": "samples/npm/compromised_lib/@xene@core/0.4.1/2025-07-20-@xene_core-v0.4.1.zip",
+      "blob": "c03f16b786bad8f3d825b08c9393bbbf7ed0e795"
+    },
+    {
+      "id": "_zapier_ai-actions-react-0.1.13",
+      "name": "@zapier/ai-actions-react",
+      "from": "0.1.11",
+      "to": "0.1.13",
+      "zip": "samples/npm/compromised_lib/@zapier@ai-actions-react/0.1.13/2025-11-24-@zapier_ai-actions-react-v0.1.13.zip",
+      "blob": "297140f48e76925e181a6718799babbd5d1a2c80"
+    },
+    {
+      "id": "_zapier_ai-actions-0.1.19",
+      "name": "@zapier/ai-actions",
+      "from": "0.1.17",
+      "to": "0.1.19",
+      "zip": "samples/npm/compromised_lib/@zapier@ai-actions/0.1.19/2025-11-24-@zapier_ai-actions-v0.1.19.zip",
+      "blob": "d161b0a86e5c2511682fedf5c64c7fa6834c2e88"
+    },
+    {
+      "id": "_zapier_babel-preset-zapier-6.4.2",
+      "name": "@zapier/babel-preset-zapier",
+      "from": "6.4.0",
+      "to": "6.4.2",
+      "zip": "samples/npm/compromised_lib/@zapier@babel-preset-zapier/6.4.2/2025-11-24-@zapier_babel-preset-zapier-v6.4.2.zip",
+      "blob": "dcd4ee8a9e79bae3c563a1221b0b619693fb033b"
+    },
+    {
+      "id": "_zapier_browserslist-config-zapier-1.0.4",
+      "name": "@zapier/browserslist-config-zapier",
+      "from": "1.0.2",
+      "to": "1.0.4",
+      "zip": "samples/npm/compromised_lib/@zapier@browserslist-config-zapier/1.0.4/2025-11-24-@zapier_browserslist-config-zapier-v1.0.4.zip",
+      "blob": "50ed6099379fd6596d61c991b6c9909c9eb73290"
+    },
+    {
+      "id": "_zapier_eslint-plugin-zapier-11.0.4",
+      "name": "@zapier/eslint-plugin-zapier",
+      "from": "11.0.2",
+      "to": "11.0.4",
+      "zip": "samples/npm/compromised_lib/@zapier@eslint-plugin-zapier/11.0.4/2025-11-24-@zapier_eslint-plugin-zapier-v11.0.4.zip",
+      "blob": "afa38d632fb257d697b53a79f49a717b6835da2e"
+    },
+    {
+      "id": "_zapier_mcp-integration-3.0.2",
+      "name": "@zapier/mcp-integration",
+      "from": "3.0.0",
+      "to": "3.0.2",
+      "zip": "samples/npm/compromised_lib/@zapier@mcp-integration/3.0.2/2025-11-24-@zapier_mcp-integration-v3.0.2.zip",
+      "blob": "522cf54257fb9f344a3131c02457756c9fc1adfa"
+    },
+    {
+      "id": "_zapier_secret-scrubber-1.1.4",
+      "name": "@zapier/secret-scrubber",
+      "from": "1.1.2",
+      "to": "1.1.4",
+      "zip": "samples/npm/compromised_lib/@zapier@secret-scrubber/1.1.4/2025-11-24-@zapier_secret-scrubber-v1.1.4.zip",
+      "blob": "81571dbc392bb483b0a734c10a10b9888b7f32b7"
+    },
+    {
+      "id": "_zapier_spectral-api-ruleset-1.9.2",
+      "name": "@zapier/spectral-api-ruleset",
+      "from": "1.9.0",
+      "to": "1.9.2",
+      "zip": "samples/npm/compromised_lib/@zapier@spectral-api-ruleset/1.9.2/2025-11-24-@zapier_spectral-api-ruleset-v1.9.2.zip",
+      "blob": "4e74a6ae1af6f7b63b4b966c85723483a9f853fd"
+    },
+    {
+      "id": "_zapier_stubtree-0.1.3",
+      "name": "@zapier/stubtree",
+      "from": "0.1.1",
+      "to": "0.1.3",
+      "zip": "samples/npm/compromised_lib/@zapier@stubtree/0.1.3/2025-11-24-@zapier_stubtree-v0.1.3.zip",
+      "blob": "226c0e584ef4f78e003a35cb10f5626a540da982"
+    },
+    {
+      "id": "_zapier_zapier-sdk-0.15.6",
+      "name": "@zapier/zapier-sdk",
+      "from": "0.15.4",
+      "to": "0.15.6",
+      "zip": "samples/npm/compromised_lib/@zapier@zapier-sdk/0.15.6/2025-11-24-@zapier_zapier-sdk-v0.15.6.zip",
+      "blob": "362e350a780f41726aebcabe4f998b68bee920b4"
+    },
+    {
+      "id": "ansi-regex-6.2.1",
+      "name": "ansi-regex",
+      "from": "6.2.0",
+      "to": "6.2.1",
+      "zip": "samples/npm/compromised_lib/ansi-regex/6.2.1/2025-09-08-ansi-regex-v6.2.1.zip",
+      "blob": "af988a2142b6d86d899a53e7932be32925fd41e6"
+    },
+    {
+      "id": "ansi-styles-6.2.2",
+      "name": "ansi-styles",
+      "from": "6.2.1",
+      "to": "6.2.2",
+      "missed": true,
+      "zip": "samples/npm/compromised_lib/ansi-styles/6.2.2/2025-09-08-ansi-styles-v6.2.2.zip",
+      "blob": "20131febeb67688eee17f1857dc2a837ad8efe3a"
+    },
+    {
+      "id": "axios-1.14.1",
+      "name": "axios",
+      "from": "1.14.0",
+      "to": "1.14.1",
+      "zip": "samples/npm/compromised_lib/axios/1.14.1/2026-03-31-axios-v1.14.1.zip",
+      "blob": "c3fa0a93c0d8287f93074f5d45f9bd016a6dee76"
+    },
+    {
+      "id": "capacitor-plugin-ihealth-1.1.9",
+      "name": "capacitor-plugin-ihealth",
+      "from": "1.1.7",
+      "to": "1.1.9",
+      "zip": "samples/npm/compromised_lib/capacitor-plugin-ihealth/1.1.9/2025-09-16-capacitor-plugin-ihealth-v1.1.9.zip",
+      "blob": "d804c84e043a4b9237848ec639ab571d7a84d83d"
+    },
+    {
+      "id": "cit-playwright-tests-1.0.1",
+      "name": "cit-playwright-tests",
+      "from": "1.0.0",
+      "to": "1.0.1",
+      "zip": "samples/npm/compromised_lib/cit-playwright-tests/1.0.1/2026-03-21-cit-playwright-tests-v1.0.1.zip",
+      "blob": "f280261f3c4e72698a1579290f98e5561e5eb14f"
+    },
+    {
+      "id": "cline-2.3.0",
+      "name": "cline",
+      "from": "2.2.3",
+      "to": "2.3.0",
+      "zip": "samples/npm/compromised_lib/cline/2.3.0/2026-02-17-cline-v2.3.0.zip",
+      "blob": "3e7bbe6d442f9183e60d2e751d6ca3aa05146298"
+    },
+    {
+      "id": "coinmarketcap-api-3.1.3",
+      "name": "coinmarketcap-api",
+      "from": "3.1.1",
+      "to": "3.1.3",
+      "zip": "samples/npm/compromised_lib/coinmarketcap-api/3.1.3/2025-11-24-coinmarketcap-api-v3.1.3.zip",
+      "blob": "3a7dc954b99f8fb71eb839914a0e94d1cbc3b341"
+    },
+    {
+      "id": "create-hest-app-0.1.9",
+      "name": "create-hest-app",
+      "from": "0.1.8",
+      "to": "0.1.9",
+      "zip": "samples/npm/compromised_lib/create-hest-app/0.1.9/2025-09-14-create-hest-app-v0.1.9.zip",
+      "blob": "0ec562bb717b132253879fc7405b94a1e0889f14"
+    },
+    {
+      "id": "debug-4.4.2",
+      "name": "debug",
+      "from": "4.4.1",
+      "to": "4.4.2",
+      "missed": true,
+      "zip": "samples/npm/compromised_lib/debug/4.4.2/2025-09-08-debug-v4.4.2.zip",
+      "blob": "331cfe6e3f7390ebcacdcde982ca042701efd434"
+    },
+    {
+      "id": "duckdb-1.3.3",
+      "name": "duckdb",
+      "from": "1.3.2",
+      "to": "1.3.3",
+      "zip": "samples/npm/compromised_lib/duckdb/1.3.3/2025-09-09-duckdb-v1.3.3.zip",
+      "blob": "cf1f91f53f11f0b6a9f8c83622da0f4346ea1bc4"
+    },
+    {
+      "id": "eslint-config-prettier-8.10.1",
       "name": "eslint-config-prettier",
       "from": "8.10.0",
       "to": "8.10.1",
@@ -59,13 +3335,93 @@
       "blob": "26ec66897349d20f6af1b21a4960cdb35583b5e3"
     },
     {
-      "id": "rspack-core",
-      "name": "@rspack/core",
-      "from": "1.1.6",
-      "to": "1.1.7",
+      "id": "is-arrayish-0.3.3",
+      "name": "is-arrayish",
+      "from": "0.3.2",
+      "to": "0.3.3",
+      "zip": "samples/npm/compromised_lib/is-arrayish/0.3.3/2025-09-08-is-arrayish-v0.3.3.zip",
+      "blob": "e6a0cb7632e419bf54f197dfbd0f6c7c44521619"
+    },
+    {
+      "id": "is-5.0.0",
+      "name": "is",
+      "from": "3.3.0",
+      "to": "5.0.0",
+      "zip": "samples/npm/compromised_lib/is/5.0.0/2025-07-19-is-v5.0.0.zip",
+      "blob": "7caf2c5288cbad3d670d210e73f0229d41ea319c"
+    },
+    {
+      "id": "napi-postinstall-0.3.1",
+      "name": "napi-postinstall",
+      "from": "0.3.0",
+      "to": "0.3.1",
+      "zip": "samples/npm/compromised_lib/napi-postinstall/0.3.1/2025-07-18-napi-postinstall-v0.3.1.zip",
+      "blob": "f8c5607a98d8de656ad73c2bf36eb55168a43dd5"
+    },
+    {
+      "id": "ngx-bootstrap-20.0.5",
+      "name": "ngx-bootstrap",
+      "from": "20.0.2",
+      "to": "20.0.5",
       "missed": false,
-      "zip": "samples/npm/compromised_lib/@rspack@core/1.1.7/2024-12-20-@rspack_core-v1.1.7.zip",
-      "blob": "d75e4a92cf2d7c7e979a3d1eee20aada487d05e6"
+      "zip": "samples/npm/compromised_lib/ngx-bootstrap/20.0.5/2025-09-15-ngx-bootstrap-v20.0.5.zip",
+      "blob": "3e201ba8dab07d4c6e79ce1db7472cde23374308"
+    },
+    {
+      "id": "ngx-toastr-19.0.2",
+      "name": "ngx-toastr",
+      "from": "19.0.0",
+      "to": "19.0.2",
+      "zip": "samples/npm/compromised_lib/ngx-toastr/19.0.2/2025-09-15-ngx-toastr-v19.0.2.zip",
+      "blob": "052d9582f9e224a07cac3f8bb24f9793bbc6a97e"
+    },
+    {
+      "id": "react-jsonschema-form-extras-1.0.3",
+      "name": "react-jsonschema-form-extras",
+      "from": "1.0.0",
+      "to": "1.0.3",
+      "zip": "samples/npm/compromised_lib/react-jsonschema-form-extras/1.0.3/2025-09-14-react-jsonschema-form-extras-v1.0.3.zip",
+      "blob": "f6fec7cf4c9dd52853179c268b3c87bc4f2a62bb"
+    },
+    {
+      "id": "react-jsonschema-rxnt-extras-0.4.8",
+      "name": "react-jsonschema-rxnt-extras",
+      "from": "0.4.5",
+      "to": "0.4.8",
+      "zip": "samples/npm/compromised_lib/react-jsonschema-rxnt-extras/0.4.8/2025-09-14-react-jsonschema-rxnt-extras-v0.4.8.zip",
+      "blob": "dda693e2449c2380ed055f1a82b8da79c3aaf25e"
+    },
+    {
+      "id": "react-native-country-select-0.3.91",
+      "name": "react-native-country-select",
+      "from": "0.3.9",
+      "to": "0.3.91",
+      "zip": "samples/npm/compromised_lib/react-native-country-select/0.3.91/2026-03-16-react-native-country-select-v0.3.91.zip",
+      "blob": "4a4388fc69a20bfc7a000abeaa5af9e2963dfa20"
+    },
+    {
+      "id": "swc-plugin-component-annotate-1.9.2",
+      "name": "swc-plugin-component-annotate",
+      "from": "1.9.0",
+      "to": "1.9.2",
+      "zip": "samples/npm/compromised_lib/swc-plugin-component-annotate/1.9.2/2025-09-15-swc-plugin-component-annotate-v1.9.2.zip",
+      "blob": "723b64e3964b9e5491e64f682a4ffb73f875cbd8"
+    },
+    {
+      "id": "vant-4.9.14",
+      "name": "vant",
+      "from": "4.9.13",
+      "to": "4.9.14",
+      "zip": "samples/npm/compromised_lib/vant/4.9.14/2024-12-20-vant-v4.9.14.zip",
+      "blob": "476f8feb410154dd2592489f94980645479da19a"
+    },
+    {
+      "id": "xrpl-4.3.0",
+      "name": "xrpl",
+      "from": "4.2.5",
+      "to": "4.3.0",
+      "zip": "samples/npm/compromised_lib/xrpl/4.3.0/2025-06-09-xrpl-v4.3.0.zip",
+      "blob": "27f017f079d39bd08ae227a97c0fa3e79c6faf17"
     }
   ]
 }

@@ -101,8 +101,12 @@ upgrades from. Before any is added, two counts say which kinds are worth it:
 - **Malicious:** the [Evaluate content](../.github/workflows/eval-content.yml)
   workflow, run by hand, does the same for real malicious releases from the
   [Datadog malicious packages dataset](https://github.com/DataDog/malicious-software-packages-dataset),
-  listed with their hashes in [samples.json](samples.json). They are unzipped
-  and read only inside a container without network, never run, and never
-  downloaded outside GitHub Actions.
+  listed with their hashes in [samples.json](samples.json): the hijacked
+  releases of existing npm packages that GuardDog's evaluation picked, one per
+  cluster of similar code, and the dataset's incidents from
+  [test/incidents.test.ts](../test/incidents.test.ts).
+  [samples-build.ts](samples-build.ts) writes the list from metadata alone.
+  The samples are unzipped and read one at a time, only inside a container
+  without network, never run, and never downloaded outside GitHub Actions.
 
 Both print the kinds of code found, never the code.
