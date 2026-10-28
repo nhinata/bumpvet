@@ -17,6 +17,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "eval": "tsc -p tsconfig.json && node dist-eval/eval/run.js",
+    "eval:content": "tsc -p tsconfig.json && node dist-eval/eval/content-benign.js",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint": "eslint ."

@@ -40,6 +40,7 @@ Read its comment before changing it.
 | `npm run format:check` | check formatting without changing files              |
 | `npm run build`        | compile to `dist/`                                   |
 | `npm run eval`         | measure false positives on popular packages (online) |
+| `npm run eval:content` | count kinds of code that benign updates add (online) |
 
 CI runs `format:check`, `lint`, `typecheck`, `test` and `build` on Node.js 22,
 24 and 26, then starts the built CLI (`node dist/cli.js --help`) and the CLI

@@ -1,0 +1,71 @@
+{
+  "dataset": {
+    "repo": "DataDog/malicious-software-packages-dataset",
+    "commit": "e51c2b57744d23453f6ba7be9812f81b55c26eb6"
+  },
+  "samples": [
+    {
+      "id": "debug",
+      "name": "debug",
+      "from": "4.4.1",
+      "to": "4.4.2",
+      "missed": true,
+      "zip": "samples/npm/compromised_lib/debug/4.4.2/2025-09-08-debug-v4.4.2.zip",
+      "blob": "331cfe6e3f7390ebcacdcde982ca042701efd434"
+    },
+    {
+      "id": "ansi-styles",
+      "name": "ansi-styles",
+      "from": "6.2.1",
+      "to": "6.2.2",
+      "missed": true,
+      "zip": "samples/npm/compromised_lib/ansi-styles/6.2.2/2025-09-08-ansi-styles-v6.2.2.zip",
+      "blob": "20131febeb67688eee17f1857dc2a837ad8efe3a"
+    },
+    {
+      "id": "solana-web3",
+      "name": "@solana/web3.js",
+      "from": "1.95.5",
+      "to": "1.95.7",
+      "missed": true,
+      "zip": "samples/npm/compromised_lib/@solana@web3.js/1.95.7/2024-12-03-@solana_web3.js-v1.95.7.zip",
+      "blob": "fee554638593fdc881c446d34afae9fffb9a109a"
+    },
+    {
+      "id": "tinycolor",
+      "name": "@ctrl/tinycolor",
+      "from": "4.1.0",
+      "to": "4.1.1",
+      "missed": false,
+      "zip": "samples/npm/compromised_lib/@ctrl@tinycolor/4.1.1/2025-09-15-@ctrl_tinycolor-v4.1.1.zip",
+      "blob": "880551a6fe3b44d92422d87a5f84c0be2346a184"
+    },
+    {
+      "id": "ngx-bootstrap",
+      "name": "ngx-bootstrap",
+      "from": "20.0.2",
+      "to": "20.0.5",
+      "missed": false,
+      "zip": "samples/npm/compromised_lib/ngx-bootstrap/20.0.5/2025-09-15-ngx-bootstrap-v20.0.5.zip",
+      "blob": "3e201ba8dab07d4c6e79ce1db7472cde23374308"
+    },
+    {
+      "id": "eslint-config-prettier",
+      "name": "eslint-config-prettier",
+      "from": "8.10.0",
+      "to": "8.10.1",
+      "missed": false,
+      "zip": "samples/npm/compromised_lib/eslint-config-prettier/8.10.1/2025-07-18-eslint-config-prettier-v8.10.1.zip",
+      "blob": "26ec66897349d20f6af1b21a4960cdb35583b5e3"
+    },
+    {
+      "id": "rspack-core",
+      "name": "@rspack/core",
+      "from": "1.1.6",
+      "to": "1.1.7",
+      "missed": false,
+      "zip": "samples/npm/compromised_lib/@rspack@core/1.1.7/2024-12-20-@rspack_core-v1.1.7.zip",
+      "blob": "d75e4a92cf2d7c7e979a3d1eee20aada487d05e6"
+    }
+  ]
+}
