@@ -16,7 +16,8 @@
 import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { INSTALL_HOOKS } from '../src/signals.js';
+import { slim } from '../src/registry.js';
+import { computeSignals } from '../src/signals.js';
 import {
   added,
   fetchTarball,
@@ -33,8 +34,8 @@ interface Sample {
   name: string;
   from: string;
   to: string;
-  /** Set for the incidents of test/incidents.test.ts: whether bumpvet missed it 1h after publish. */
-  missed?: boolean;
+  /** A sample of an incident in test/incidents.test.ts, where its verdict is. */
+  incident?: boolean;
   zip: string;
   blob: string;
 }
@@ -51,18 +52,26 @@ const { dataset, samples } = JSON.parse(
 ) as { dataset: { repo: string; commit: string }; samples: Sample[] };
 const INSTALL_SCRIPTS = 'install-scripts';
 
-/** The install scripts of the package.json nearest the root, as JSON text. */
-function hooks(files: Map<string, Buffer>): Record<string, string> {
+/** The package.json nearest the root. */
+function manifest(files: Map<string, Buffer>): unknown {
   const path = [...files.keys()]
     .filter((f) => f === 'package.json' || f.endsWith('/package.json'))
     .sort((a, b) => a.split('/').length - b.split('/').length)[0];
   if (!path) throw new Error('no package.json');
-  const { scripts = {} } = JSON.parse(files.get(path)!.toString('utf8')) as {
-    scripts?: Record<string, unknown>;
-  };
-  // As JSON, so a value that is not a string still compares.
-  return Object.fromEntries(
-    INSTALL_HOOKS.flatMap((h) => (scripts[h] ? [[h, JSON.stringify(scripts[h])]] : [])),
+  return JSON.parse(files.get(path)!.toString('utf8'));
+}
+
+/**
+ * Whether bumpvet's install-scripts signal fires from one package.json to the
+ * other, by its own code. bumpvet reads the registry's manifest, which for a
+ * removed release is gone; the tarball's package.json stands in for it.
+ */
+function installScripts(s: Sample, prev: unknown, next: unknown): boolean {
+  const time = { [s.from]: '2000-01-01T00:00:00Z', [s.to]: '2000-01-02T00:00:00Z' };
+  const p = slim({ name: s.name, time, versions: { [s.from]: prev, [s.to]: next } }, s.name);
+  const change = { name: s.name, from: s.from, to: s.to };
+  return computeSignals(change, p, { now: new Date(time[s.to]!) }).some(
+    (signal) => signal.id === 'install-scripts',
   );
 }
 
@@ -75,7 +84,11 @@ async function fetchAll(dir: string): Promise<void> {
       `https://raw.githubusercontent.com/${dataset.repo}/${dataset.commit}/${s.zip}`,
       { signal: AbortSignal.timeout(300_000) },
     );
-    if (!res.ok) throw new Error(`${s.zip}: ${res.status}`);
+    if (!res.ok) {
+      // Reported by scan as not measured; a hash that does not match stops the run.
+      console.error(`${s.zip}: ${res.status}`);
+      return;
+    }
     const zip = Buffer.from(await res.arrayBuffer());
     // The hash git gives the file at that commit, as samples-build.ts listed it.
     const blob = createHash('sha1').update(`blob ${zip.length}\0`).update(zip).digest('hex');
@@ -108,11 +121,11 @@ function scanOne(dir: string, work: string, id: string): Result {
   const next = scan(files);
   // Reading no code would look like adding nothing.
   if (!next.files) return { id, error: 'no code read' };
-  const [before, after] = [hooks(prevFiles), hooks(files)];
+  const sample = samples.find((x) => x.id === id)!;
   return {
     id,
     kinds: added(prev, next),
-    installScripts: Object.entries(after).some(([h, cmd]) => before[h] !== cmd),
+    installScripts: installScripts(sample, manifest(prevFiles), manifest(files)),
     files: `${prev.files} -> ${next.files}${next.tooLarge ? ` (${next.tooLarge} too large)` : ''}`,
   };
 }
@@ -160,17 +173,15 @@ function report(resultsPath: string): void {
   }
 
   console.log('\n### Incidents from test/incidents.test.ts\n');
-  console.log('| Release | Missed 1h after publish | Kinds added | Code files read |');
-  console.log('| --- | --- | --- | --- |');
-  for (const s of samples.filter((x) => x.missed !== undefined)) {
+  console.log('| Release | Kinds added | Code files read |');
+  console.log('| --- | --- | --- |');
+  for (const s of samples.filter((x) => x.incident)) {
     const r = byId.get(s.id);
     const m = measured.find((x) => x.s === s);
     const kinds = m
       ? m.kinds.map((k) => `\`${k}\``).join(', ') || 'none'
       : `**${r?.error ?? 'not scanned'}**`;
-    console.log(
-      `| ${s.name} ${s.from} -> ${s.to} | ${s.missed ? 'yes' : 'no'} | ${kinds} | ${r?.files ?? ''} |`,
-    );
+    console.log(`| ${s.name} ${s.from} -> ${s.to} | ${kinds} | ${r?.files ?? ''} |`);
   }
 
   if (notMeasured.length) {

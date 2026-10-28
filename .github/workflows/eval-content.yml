@@ -15,6 +15,11 @@ on:
 permissions:
   contents: read
 
+# Explicit bash adds pipefail, so a failing command piped into tee fails the step.
+defaults:
+  run:
+    shell: bash
+
 concurrency:
   group: ${{ github.workflow }}
   cancel-in-progress: false
@@ -42,15 +47,20 @@ jobs:
             --read-only --user 1000:1000 --tmpfs /work:rw,noexec,nosuid,nodev,size=2g \
             -v "$PWD:/app:ro" -v "$RUNNER_TEMP/samples:/in:ro" -w /app \
             node:24-bookworm@sha256:6449e19d8184d84062525b6a7524def03146c2cb04a7f08b076680d0e8e4240a \
-            sh -ec '
+            sh -c '
+              # No -e: a sample that fails is one error line, not the end of the run.
               for zip in /in/zips/*.zip; do
                 id=$(basename "$zip" .zip)
                 mkdir "/work/$id"
-                if unzip -q -P infected "$zip" -d "/work/$id"; then
-                  node dist-eval/eval/content-malicious.js scan /in "/work/$id" "$id"
+                # unzip names archive members in its messages; they stay out of the results and the log.
+                if unzip -q -P infected "$zip" -d "/work/$id" >/dev/null 2>&1; then
+                  node dist-eval/eval/content-malicious.js scan /in "/work/$id" "$id" ||
+                    echo "{\"id\":\"$id\",\"error\":\"scan failed\"}"
                 else
                   echo "{\"id\":\"$id\",\"error\":\"unzip failed\"}"
                 fi
+                # A sample can hold read-only directories.
+                chmod -R u+rwx "/work/$id" 2>/dev/null
                 rm -rf "/work/$id"
               done
             ' > "$RUNNER_TEMP/results.jsonl"

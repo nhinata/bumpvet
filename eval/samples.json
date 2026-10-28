@@ -797,7 +797,7 @@
       "name": "@ctrl/tinycolor",
       "from": "4.1.0",
       "to": "4.1.1",
-      "missed": false,
+      "incident": true,
       "zip": "samples/npm/compromised_lib/@ctrl@tinycolor/4.1.1/2025-09-15-@ctrl_tinycolor-v4.1.1.zip",
       "blob": "880551a6fe3b44d92422d87a5f84c0be2346a184"
     },
@@ -2542,7 +2542,7 @@
       "name": "@rspack/core",
       "from": "1.1.6",
       "to": "1.1.7",
-      "missed": false,
+      "incident": true,
       "zip": "samples/npm/compromised_lib/@rspack@core/1.1.7/2024-12-20-@rspack_core-v1.1.7.zip",
       "blob": "d75e4a92cf2d7c7e979a3d1eee20aada487d05e6"
     },
@@ -2599,7 +2599,7 @@
       "name": "@solana/web3.js",
       "from": "1.95.5",
       "to": "1.95.7",
-      "missed": true,
+      "incident": true,
       "zip": "samples/npm/compromised_lib/@solana@web3.js/1.95.7/2024-12-03-@solana_web3.js-v1.95.7.zip",
       "blob": "fee554638593fdc881c446d34afae9fffb9a109a"
     },
@@ -3156,14 +3156,6 @@
       "blob": "d6660d8c867606b09bec39b44ad50c9c66029ea0"
     },
     {
-      "id": "_xene_core-0.4.1",
-      "name": "@xene/core",
-      "from": "0.3.1",
-      "to": "0.4.1",
-      "zip": "samples/npm/compromised_lib/@xene@core/0.4.1/2025-07-20-@xene_core-v0.4.1.zip",
-      "blob": "c03f16b786bad8f3d825b08c9393bbbf7ed0e795"
-    },
-    {
       "id": "_zapier_ai-actions-react-0.1.13",
       "name": "@zapier/ai-actions-react",
       "from": "0.1.11",
@@ -3256,7 +3248,7 @@
       "name": "ansi-styles",
       "from": "6.2.1",
       "to": "6.2.2",
-      "missed": true,
+      "incident": true,
       "zip": "samples/npm/compromised_lib/ansi-styles/6.2.2/2025-09-08-ansi-styles-v6.2.2.zip",
       "blob": "20131febeb67688eee17f1857dc2a837ad8efe3a"
     },
@@ -3265,6 +3257,7 @@
       "name": "axios",
       "from": "1.14.0",
       "to": "1.14.1",
+      "incident": true,
       "zip": "samples/npm/compromised_lib/axios/1.14.1/2026-03-31-axios-v1.14.1.zip",
       "blob": "c3fa0a93c0d8287f93074f5d45f9bd016a6dee76"
     },
@@ -3313,7 +3306,7 @@
       "name": "debug",
       "from": "4.4.1",
       "to": "4.4.2",
-      "missed": true,
+      "incident": true,
       "zip": "samples/npm/compromised_lib/debug/4.4.2/2025-09-08-debug-v4.4.2.zip",
       "blob": "331cfe6e3f7390ebcacdcde982ca042701efd434"
     },
@@ -3330,7 +3323,7 @@
       "name": "eslint-config-prettier",
       "from": "8.10.0",
       "to": "8.10.1",
-      "missed": false,
+      "incident": true,
       "zip": "samples/npm/compromised_lib/eslint-config-prettier/8.10.1/2025-07-18-eslint-config-prettier-v8.10.1.zip",
       "blob": "26ec66897349d20f6af1b21a4960cdb35583b5e3"
     },
@@ -3341,14 +3334,6 @@
       "to": "0.3.3",
       "zip": "samples/npm/compromised_lib/is-arrayish/0.3.3/2025-09-08-is-arrayish-v0.3.3.zip",
       "blob": "e6a0cb7632e419bf54f197dfbd0f6c7c44521619"
-    },
-    {
-      "id": "is-5.0.0",
-      "name": "is",
-      "from": "3.3.0",
-      "to": "5.0.0",
-      "zip": "samples/npm/compromised_lib/is/5.0.0/2025-07-19-is-v5.0.0.zip",
-      "blob": "7caf2c5288cbad3d670d210e73f0229d41ea319c"
     },
     {
       "id": "napi-postinstall-0.3.1",
@@ -3363,7 +3348,7 @@
       "name": "ngx-bootstrap",
       "from": "20.0.2",
       "to": "20.0.5",
-      "missed": false,
+      "incident": true,
       "zip": "samples/npm/compromised_lib/ngx-bootstrap/20.0.5/2025-09-15-ngx-bootstrap-v20.0.5.zip",
       "blob": "3e201ba8dab07d4c6e79ce1db7472cde23374308"
     },

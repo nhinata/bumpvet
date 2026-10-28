@@ -3,8 +3,9 @@
  * reads. They are the npm `compromised_lib` samples GuardDog's evaluation
  * picked from the Datadog dataset (one per cluster of similar code), plus the
  * incidents of test/incidents.test.ts that the dataset has. Each is paired
- * with the version it would upgrade from: the highest earlier version still
- * on npm. Reads metadata only; no sample is downloaded.
+ * with the version a caret range would upgrade from: the highest earlier
+ * version still on npm in the same major (the same minor below 1.0.0).
+ * Reads metadata only; no sample is downloaded.
  *
  *   tsc -p tsconfig.json && node dist-eval/eval/samples-build.js
  */
@@ -13,16 +14,21 @@ import { load } from './updates.js';
 
 const GUARDDOG = { repo: 'DataDog/guarddog', commit: 'a46949ddd7e164defe1a2ad78f7c8f6586c6667a' };
 const PREFIX = 'samples/npm/compromised_lib/';
-/** Incidents from test/incidents.test.ts in the dataset, with whether bumpvet missed them 1h after publish. */
-const INCIDENTS: Record<string, boolean> = {
-  'debug/4.4.2': true,
-  'ansi-styles/6.2.2': true,
-  '@solana@web3.js/1.95.7': true,
-  '@ctrl@tinycolor/4.1.1': false,
-  'ngx-bootstrap/20.0.5': false,
-  'eslint-config-prettier/8.10.1': false,
-  '@rspack@core/1.1.7': false,
-};
+/**
+ * Samples of the incidents in test/incidents.test.ts: the same release, or
+ * one from the same attack where the dataset lacks it (ngx-bootstrap 20.0.5,
+ * @solana/web3.js 1.95.7). Their verdicts are in that test, not here.
+ */
+const INCIDENTS = [
+  'debug/4.4.2',
+  'ansi-styles/6.2.2',
+  '@solana@web3.js/1.95.7',
+  '@ctrl@tinycolor/4.1.1',
+  'ngx-bootstrap/20.0.5',
+  'eslint-config-prettier/8.10.1',
+  '@rspack@core/1.1.7',
+  'axios/1.14.1',
+];
 
 async function json<T>(url: string): Promise<T> {
   const res = await fetch(url, { signal: AbortSignal.timeout(120_000) });
@@ -56,7 +62,7 @@ const zips = new Set<string>(
     .filter((s) => s.ecosystem === 'npm' && s.category === 'compromised_lib')
     .map((s) => s.zip_path),
 );
-for (const key of Object.keys(INCIDENTS)) {
+for (const key of INCIDENTS) {
   const zip = [...blobs.keys()].find((p) => p.startsWith(PREFIX + key + '/'));
   if (!zip) throw new Error(`${key}: not in the dataset at ${dataset.commit}`);
   zips.add(zip);
@@ -78,8 +84,11 @@ for (const zip of [...zips].sort()) {
   try {
     const p = await load(name);
     const cutoff = p.time[to!];
+    const [major, minor] = num(to!);
+    // A caret range: across a major the code changes for reasons of its own.
+    const inRange = (v: string) => num(v)[0] === major && (major !== 0 || num(v)[1] === minor);
     from = Object.keys(p.versions)
-      .filter((v) => /^\d+\.\d+\.\d+$/.test(v) && below(v, to!) < 0)
+      .filter((v) => /^\d+\.\d+\.\d+$/.test(v) && below(v, to!) < 0 && inRange(v))
       .filter((v) => !cutoff || (p.time[v] ?? '') < cutoff)
       .sort(below)
       .at(-1);
@@ -88,7 +97,7 @@ for (const zip of [...zips].sort()) {
     continue;
   }
   if (!from) {
-    skipped.push(`${name}@${to}: no earlier version on npm`);
+    skipped.push(`${name}@${to}: no earlier version on npm in its range`);
     continue;
   }
   const key = `${dir}/${to}`;
@@ -97,7 +106,7 @@ for (const zip of [...zips].sort()) {
     name,
     from,
     to,
-    ...(key in INCIDENTS ? { missed: INCIDENTS[key] } : {}),
+    ...(INCIDENTS.includes(key) ? { incident: true } : {}),
     zip,
     blob: blobs.get(zip),
   });
