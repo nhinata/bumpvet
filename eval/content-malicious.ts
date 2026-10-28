@@ -80,16 +80,19 @@ async function fetchAll(dir: string): Promise<void> {
   mkdirSync(join(dir, 'prev'), { recursive: true });
   const queue = [...samples];
   const one = async (s: Sample) => {
-    const res = await fetch(
-      `https://raw.githubusercontent.com/${dataset.repo}/${dataset.commit}/${s.zip}`,
-      { signal: AbortSignal.timeout(300_000) },
-    );
-    if (!res.ok) {
+    let zip: Buffer;
+    try {
+      const res = await fetch(
+        `https://raw.githubusercontent.com/${dataset.repo}/${dataset.commit}/${s.zip}`,
+        { signal: AbortSignal.timeout(300_000) },
+      );
+      if (!res.ok) throw new Error(String(res.status));
+      zip = Buffer.from(await res.arrayBuffer());
+    } catch (err) {
       // Reported by scan as not measured; a hash that does not match stops the run.
-      console.error(`${s.zip}: ${res.status}`);
+      console.error(`${s.zip}: ${(err as Error).message}`);
       return;
     }
-    const zip = Buffer.from(await res.arrayBuffer());
     // The hash git gives the file at that commit, as samples-build.ts listed it.
     const blob = createHash('sha1').update(`blob ${zip.length}\0`).update(zip).digest('hex');
     if (blob !== s.blob) throw new Error(`${s.zip}: hash does not match samples.json`);

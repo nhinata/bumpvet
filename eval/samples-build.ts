@@ -52,9 +52,11 @@ const npm = await json<Entry[]>(
 );
 const folder = npm.find((e) => e.name === 'compromised_lib');
 if (!folder) throw new Error('no compromised_lib folder');
-const tree = await json<{ tree: Entry[] }>(
+const tree = await json<{ tree: Entry[]; truncated: boolean }>(
   `https://api.github.com/repos/${dataset.repo}/git/trees/${folder.sha}?recursive=1`,
 );
+// A truncated listing would leave samples without a hash.
+if (tree.truncated) throw new Error('the dataset listing is truncated');
 const blobs = new Map<string, string>(tree.tree.map((e) => [PREFIX + e.path, e.sha]));
 
 const zips = new Set<string>(
@@ -100,6 +102,8 @@ for (const zip of [...zips].sort()) {
     skipped.push(`${name}@${to}: no earlier version on npm in its range`);
     continue;
   }
+  const blob = blobs.get(zip);
+  if (!blob) throw new Error(`${zip}: not in the dataset at ${dataset.commit}`);
   const key = `${dir}/${to}`;
   samples.push({
     id: `${dir}-${to}`.replace(/[@/]/g, '_'),
@@ -108,7 +112,7 @@ for (const zip of [...zips].sort()) {
     to,
     ...(INCIDENTS.includes(key) ? { incident: true } : {}),
     zip,
-    blob: blobs.get(zip),
+    blob,
   });
 }
 
