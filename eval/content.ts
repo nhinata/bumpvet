@@ -53,7 +53,8 @@ export const caught = (kinds: string[], set: string[]) => set.some((k) => kinds.
 
 /**
  * Which files are read: code files only (`.js`, `.cjs`, `.mjs`), or every
- * file, since Node runs a required file whatever its extension.
+ * file, since Node runs a required file whatever its extension. No file is
+ * skipped as binary: a NUL byte in a comment leaves JavaScript runnable.
  */
 export const SCOPES = ['code', 'all'] as const;
 export type Scope = (typeof SCOPES)[number];
@@ -79,9 +80,6 @@ export function scan(files: Map<string, Buffer>): Scan {
       for (const f of into) f.tooLarge++;
       continue;
     }
-    // A file with a NUL byte is binary (an image, a font, a native addon): Node
-    // cannot run it as JavaScript, and its bytes would only match by chance.
-    if (data.subarray(0, 8192).includes(0)) continue;
     for (const f of into) f.read++;
     const text = data.toString('utf8');
     for (const [kind, re] of Object.entries(PATTERNS))
