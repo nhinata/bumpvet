@@ -240,7 +240,12 @@ before the same checks are trusted for it.
   no install script; these two caught 39 of them, and none of 597 benign
   updates. `child_process` and `XMLHttpRequest` would have caught one more
   and flagged two benign updates, so they are left out. The 17 releases
-  caught only by code after spaces come from one attack (June 2025).
+  caught only by code after spaces come from one attack (June 2025). The
+  evaluation left files over 20 MB unread: none in the benign updates; the
+  malicious report did not count them, so its figures may include releases
+  read only in part. (A release bumpvet cannot read whole will get
+  `content-not-checked`, below; the evaluation that replaces these scripts
+  counts it.)
 
   How a release's files are read:
   - the tarball named by the registry's `dist.tarball`, checked against the
