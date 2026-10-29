@@ -214,11 +214,52 @@ before the same checks are trusted for it.
 - **Many lockfile formats at once.** npm `package-lock.json` v2/v3 first; pnpm
   and yarn come when the core is right.
 - **Running package code.** bumpvet never executes anything it downloads.
+- **Deciding whether code is malicious.** bumpvet reports how an update
+  changed, compared with the version it replaces. It keeps no list of known
+  malware and no marks of one attack (host names, hashes, payload strings,
+  one campaign's way of hiding code). An attack that no general change
+  reveals is recorded as a known miss, not answered with a rule for it.
 
 ## Planned
 
-- Content signals: new use of `child_process`, network, environment
-  variables, or `eval` compared with the previous version, including in the
-  dependencies a package bundles.
+- **Content signals** (issue #44): a kind of code the new version has and the
+  version it replaces has in none of its files. A kind becomes a signal only
+  if it
+  1. is a general change in what the code can do or how hard it is to read,
+     stated as before -> after;
+  2. is not specific to one attack (see [Not doing](#not-doing-and-why));
+  3. meets principle 6: measured on benign updates and on real malicious
+     releases (`npm run eval:content` and the Evaluate content workflow);
+  4. needs no package code run and no service besides the registry.
+
+  The measurement of 2026-10-29
+  ([run](https://github.com/nhinata/bumpvet/actions/runs/40793276464)) chose
+  two signals. `hidden-code`: obfuscated names (`_0x...`), long runs of `\x`
+  escapes or of base64, code after 200 spaces or tabs. `new-capability`:
+  `eval`, Node's network modules. Of the 424 malicious releases, 46 changed
+  no install script; these two caught 39 of them, and none of 597 benign
+  updates. `child_process` and `XMLHttpRequest` would have caught one more
+  and flagged two benign updates, so they are left out. The 17 releases
+  caught only by code after spaces come from one attack (June 2025).
+
+  How a release's files are read:
+  - the tarball named by the registry's `dist.tarball`, checked against the
+    registry's sha512 integrity before anything is read;
+  - in memory, never written to disk, never run;
+  - every file, whatever its name or content: Node runs a required file
+    whatever its extension, and a NUL byte in a comment leaves JavaScript
+    runnable, so a file left unread would be a way past the check;
+  - within limits on download size, unpacked size and number of files. A
+    release over a limit, or in a form the reader does not understand, gets
+    `content-not-checked` (`REVIEW`), never silence;
+  - not at all when the verdict is already `BLOCK`, and the version replaced
+    only when the new one has a kind to compare.
+
+  _Trade-off:_ code written to avoid these patterns passes them, and an
+  injected change that adds no new kind (`@solana/web3.js@1.95.7` and four
+  more in the measurement) is missed. The sixth release no signal caught,
+  `axios@1.14.1`, changed only its dependencies, and its new dependency adds
+  an install script. Source match, below, is what would see the others.
+
 - Source match: whether the published files match the repository at the
   commit the release came from.
