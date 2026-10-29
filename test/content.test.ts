@@ -49,6 +49,13 @@ describe('kindsIn', () => {
     expect([...kindsIn([['index.js', Buffer.from(text)]]).keys()]).toEqual([kind]);
   });
 
+  it('takes linear time on a long run of spaces after import', () => {
+    const start = performance.now();
+    expect(kindsIn([['a.js', Buffer.from(`import${' '.repeat(100_000)}\n`)]]).size).toBe(0);
+    // The pattern this replaced took about 15 s here.
+    expect(performance.now() - start).toBeLessThan(1000);
+  });
+
   // Each of these is in benign code that eval:content measured.
   it.each([
     ['a method named eval', 'parser.eval(x)'],
@@ -163,6 +170,13 @@ describe('registryContent', () => {
       expect(content).toEqual({ found: new Map([['eval', 'index.js']]) });
     }
     expect(calls).toHaveLength(1);
+  });
+
+  it('checks each manifest against its own hash, even for a URL already read', async () => {
+    const read = registryContent(serving(file).fetchImpl);
+    await read(manifest({ integrity: sha512 }));
+    const other = `sha512-${createHash('sha512').update('other').digest('base64')}`;
+    await expect(read(manifest({ integrity: other }))).rejects.toThrow(/does not match/);
   });
 
   it('checks a version from before sha512 against its sha1', async () => {

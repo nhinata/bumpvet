@@ -21,7 +21,8 @@ export const KINDS = {
   'new-capability': {
     eval: /(?<![.\w$])eval\s*\(/,
     'node-network':
-      /\b(?:require\s*\(\s*|from\s*|import\s*\(?\s*)['"](?:node:)?(?:https?|http2|net|tls|dgram|dns)['"]/,
+      // One run of spaces per branch: `\s*\(?\s*` would try every split of a long run.
+      /\b(?:require\s*\(\s*|from\s*|import\s*(?:\(\s*)?)['"](?:node:)?(?:https?|http2|net|tls|dgram|dns)['"]/,
   },
 } as const;
 
@@ -176,7 +177,9 @@ export function registryContent(
   return (m, signal) => {
     const url = m.dist?.tarball;
     if (!url) return Promise.resolve({ unread: 'no tarball URL in the registry' });
-    let p = cache.get(url);
+    // With the hashes: a manifest that shares the URL but not the hash is checked on its own.
+    const key = `${url} ${m.dist?.integrity} ${m.dist?.shasum}`;
+    let p = cache.get(key);
     if (!p) {
       p = (async () => {
         // Declared by whoever published it, so only a reason to skip the download;
@@ -198,7 +201,7 @@ export function registryContent(
           done();
         }
       })();
-      cache.set(url, p);
+      cache.set(key, p);
     }
     return p;
   };

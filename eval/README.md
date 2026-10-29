@@ -75,8 +75,8 @@ strictest among the packages it brings in.
 is caught by `hidden-code`, from the code its report shows. The three misses
 carried their payload in the package code and came from an account that
 publishes the package. `@solana/web3.js@1.95.7`, from the same attack as
-1.95.6, added no kind the content signals look for in the content
-measurement below; for `node-ipc` and `colors` the test has no code from
+1.95.6, added no kind the content signals look for in the measurement
+behind them (DESIGN.md, "Content signals"); for `node-ipc` and `colors` the test has no code from
 their reports. Source match (planned) is what would see code-only changes
 like these.
 
@@ -96,9 +96,10 @@ disputed).
 
 ## Content: groundwork for content signals
 
-Content signals (issue #44) would report a kind of code a release adds, such
-as running commands or a new network host, compared with the version it
-upgrades from. Before any is added, two counts say which kinds are worth it:
+Content signals (issue #44) report a kind of code a release adds, compared
+with the version it upgrades from. These two counts chose which kinds became
+signals (DESIGN.md, "Content signals"), from candidates such as running
+commands or a new network host:
 
 - **Benign:** `npm run eval:content` reads the tarballs of the updates above
   and counts how often each kind is added. Tarballs are checked against the
