@@ -167,6 +167,12 @@ Detection is measured by `npm test`: `test/incidents.test.ts` fixes the
 verdict of each incident. If a change moves one, update the table and the
 totals in eval/README.md, "Detection: incidents", in the same pull request.
 
+Kinds of code that releases add (groundwork for content signals, issue #44)
+are counted by `npm run eval:content` on the same benign updates, and by the
+Evaluate content workflow on real malicious releases, run by hand (see
+[eval/README.md](eval/README.md)). Figures taken from the workflow name the
+run they come from.
+
 ## Review findings
 
 Review findings, from people or tools, are sorted before anything is changed.

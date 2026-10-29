@@ -243,7 +243,7 @@ before the same checks are trusted for it.
   caught only by code after spaces come from one attack (June 2025). The
   evaluation left files over 20 MB unread: none in the benign updates; the
   malicious report did not count them, so its figures may include releases
-  read only in part. (A release bumpvet cannot read whole will get
+  read only in part. (A release that bumpvet cannot read in full will get
   `content-not-checked`, below; the evaluation that replaces these scripts
   counts it.)
 

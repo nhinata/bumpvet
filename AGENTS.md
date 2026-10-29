@@ -12,7 +12,9 @@ tend to get wrong.
    can alter a verdict, also run `npm run eval` and report the numbers before
    and after.
 3. **Do not edit numbers by hand.** Figures in `eval/README.md` and
-   `DESIGN.md` come from `npm run eval`; change them only after running it.
+   `DESIGN.md` come from the evaluations in
+   [CONTRIBUTING.md](CONTRIBUTING.md#evaluation); change them only after
+   running the one they come from.
 4. **Do not fill incident data with guesses.** In `test/incidents.test.ts`,
    every value needs a source (the live registry or a named public report). If
    something is unknown, say so in a comment.
