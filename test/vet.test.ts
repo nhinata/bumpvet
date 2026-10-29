@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { vetChanges, vetLockfiles } from '../src/vet.js';
-import { fakeRegistry, lockfile, packument } from './helpers.js';
+import { fakeContent, fakeRegistry, lockfile, packument } from './helpers.js';
 
 describe('vetChanges', () => {
   it('starts no more fetches after one fails', async () => {
@@ -13,10 +13,56 @@ describe('vetChanges', () => {
     // Only the first fetch fails; without the stop, the other workers would go on through all 20.
     const firstFails = () =>
       ++calls === 1 ? Promise.reject(new Error('registry returned 503')) : Promise.resolve(null);
-    await expect(vetChanges(changes, firstFails, { now: new Date() }, 8)).rejects.toThrow(/503/);
+    await expect(
+      vetChanges(changes, firstFails, fakeContent(), { now: new Date() }, 8),
+    ).rejects.toThrow(/503/);
     await new Promise((resolve) => setTimeout(resolve, 0)); // let any leftover work run
     // The 8 workers each start one fetch before the failure is seen; none starts another.
     expect(calls).toBe(8);
+  });
+});
+
+describe('vetChanges: content', () => {
+  const now = new Date('2026-01-10T00:00:00Z');
+  const registry = fakeRegistry(
+    packument('a', [
+      { version: '1.0.0', time: '2025-01-01T00:00:00Z' },
+      { version: '1.1.0', time: '2025-06-01T00:00:00Z' },
+    ]),
+  );
+  const change = { name: 'a', from: '1.0.0', to: '1.1.0' };
+
+  it('reads no files when the verdict is already BLOCK', async () => {
+    const asked: string[] = [];
+    const read = (m: { version: string }) => (asked.push(m.version), fakeContent()(m));
+    const tampered = { ...change, integrity: 'sha512-other' };
+    const [r] = await vetChanges([tampered], registry, read, { now });
+    expect(r?.verdict).toBe('block');
+    expect(asked).toEqual([]);
+  });
+
+  it('stops the tarball reads under way when the run fails', async () => {
+    let signal: AbortSignal | undefined;
+    // Reads until stopped, as a long download would.
+    const hanging = (_: unknown, s?: AbortSignal) => {
+      signal = s;
+      return new Promise<never>((_, reject) =>
+        s?.addEventListener('abort', () => reject(new Error('aborted'))),
+      );
+    };
+    let fetches = 0;
+    // The first package is fetched and read; the second package's fetch fails.
+    const failsSecond = (name: string) =>
+      ++fetches === 1 ? registry(name) : Promise.reject(new Error('registry returned 503'));
+    await expect(
+      vetChanges([change, { ...change, name: 'b' }], failsSecond, hanging, { now }),
+    ).rejects.toThrow(/503/);
+    expect(signal?.aborted).toBe(true);
+  });
+
+  it('fails the run when a tarball cannot be fetched', async () => {
+    const down = () => Promise.reject(new Error('fetching the tarball of 1.1.0 failed'));
+    await expect(vetChanges([change], registry, down, { now })).rejects.toThrow(/tarball/);
   });
 });
 
@@ -42,7 +88,7 @@ describe('vetLockfiles: what a change is compared with', () => {
     ]),
   );
   const vet = async (before: string, after: string) =>
-    (await vetLockfiles(before, after, registry, { now })).map((r) => ({
+    (await vetLockfiles(before, after, registry, fakeContent(), { now })).map((r) => ({
       name: r.name,
       from: r.from,
       to: r.to,
@@ -120,7 +166,7 @@ describe('vetLockfiles: what a change is compared with', () => {
       'node_modules/a': { version: '2.0.0' },
       'node_modules/b/node_modules/a': { version: '2.0.0' },
     });
-    const results = await vetLockfiles(before, after, pkgs, { now });
+    const results = await vetLockfiles(before, after, pkgs, fakeContent(), { now });
     expect(results.map((r) => [r.from, r.verdict])).toEqual([
       ['1.0.0', 'ok'],
       ['0.9.0', 'block'],

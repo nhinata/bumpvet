@@ -26,10 +26,14 @@ export type SignalId =
   | 'tarball-mismatch'
   | 'source-changed'
   | 'integrity-mismatch'
-  | 'not-in-registry';
+  | 'not-in-registry'
+  | 'hidden-code'
+  | 'new-capability'
+  | 'content-not-checked'
+  | 'previous-not-checked';
 
 /** Which side of the verdict table a signal belongs to (see DESIGN.md). */
-export type SignalGroup = 'origin' | 'timing' | 'content' | 'tamper';
+export type SignalGroup = 'origin' | 'timing' | 'content' | 'tamper' | 'unchecked';
 
 /**
  * Every signal has the same shape: what the recent versions looked like
@@ -63,5 +67,13 @@ export interface VersionManifest {
   version: string;
   _npmUser?: { name?: string };
   scripts?: Record<string, string>;
-  dist?: { integrity?: string; shasum?: string; tarball?: string; attestations?: unknown };
+  dist?: {
+    integrity?: string;
+    shasum?: string;
+    tarball?: string;
+    attestations?: unknown;
+    /** As the publisher declared them. */
+    unpackedSize?: number;
+    fileCount?: number;
+  };
 }

@@ -6,7 +6,7 @@ import { afterEach, beforeAll, describe, expect, it } from 'vitest';
 import type { FetchPackument } from '../src/registry.js';
 import { runCli, type CliEnv } from '../src/run.js';
 import type { PackageResult } from '../src/types.js';
-import { fakeRegistry, lockfile, packument } from './helpers.js';
+import { fakeContent, fakeRegistry, lockfile, packument } from './helpers.js';
 
 const now = new Date('2026-01-10T00:00:00Z');
 const registry = fakeRegistry(
@@ -73,6 +73,7 @@ async function run(argv: string[], cwd: string, fetchPackument: FetchPackument =
     stdout: (t) => (stdout += t),
     stderr: (t) => (stderr += t),
     fetchPackument,
+    readContent: fakeContent(),
     now,
   };
   const code = await runCli(argv, env);

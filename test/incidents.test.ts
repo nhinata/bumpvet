@@ -23,7 +23,7 @@
 import { describe, expect, it } from 'vitest';
 import { vetChanges } from '../src/vet.js';
 import type { Change, Packument } from '../src/types.js';
-import { fakeRegistry, packument } from './helpers.js';
+import { fakeContent, fakeRegistry, packument } from './helpers.js';
 
 interface Incident {
   title: string;
@@ -31,9 +31,18 @@ interface Incident {
   published: string;
   changes: Change[];
   packuments: Packument[];
+  /** Files by `name@version`, as far as the report shows them; other releases have none. */
+  content?: Record<string, Record<string, string>>;
   /** Package name -> "verdict: signal ids", as vetted. */
   expected: Record<string, string>;
 }
+
+// https://www.aikido.dev/blog/npm-debug-and-chalk-packages-compromised: in
+// each package of the September 2025 campaign below, index.js was changed to
+// obfuscated code, which keeps names like this one even deobfuscated.
+const SEPTEMBER_2025 = {
+  'index.js': "const _0x124ed3 = await window.ethereum.request({ method: 'eth_accounts' });",
+};
 
 const incidents: Incident[] = [
   // https://github.com/chalk/chalk/issues/656 (2025-09-08): the account of
@@ -49,10 +58,11 @@ const incidents: Incident[] = [
         { version: '5.6.1', time: '2025-09-08T13:13:05Z', publisher: 'qix' },
       ]),
     ],
-    expected: { chalk: 'review: publisher-changed, fresh-publish' },
+    content: { 'chalk@5.6.1': SEPTEMBER_2025 },
+    expected: { chalk: 'block: publisher-changed, fresh-publish, hidden-code' },
   },
   // https://github.com/advisories/GHSA-4x49-vf9v-38px: same campaign. debug is
-  // usually published by qix, so only freshness shows.
+  // usually published by qix, so only freshness and the code show.
   {
     title: 'debug 4.4.2',
     published: '2025-09-08T13:12:39Z',
@@ -63,7 +73,8 @@ const incidents: Incident[] = [
         { version: '4.4.2', time: '2025-09-08T13:12:39Z', publisher: 'qix' },
       ]),
     ],
-    expected: { debug: 'ok: fresh-publish' },
+    content: { 'debug@4.4.2': SEPTEMBER_2025 },
+    expected: { debug: 'block: fresh-publish, hidden-code' },
   },
   // Same campaign (chalk issue above). qix published 2 of the last 20 versions.
   {
@@ -78,7 +89,8 @@ const incidents: Incident[] = [
         { version: '6.2.2', time: '2025-09-08T13:12:10Z', publisher: 'qix' },
       ]),
     ],
-    expected: { 'ansi-styles': 'ok: fresh-publish' },
+    content: { 'ansi-styles@6.2.2': SEPTEMBER_2025 },
+    expected: { 'ansi-styles': 'block: fresh-publish, hidden-code' },
   },
   // Same campaign (chalk issue above). qix is not among the last 20 publishers.
   {
@@ -92,7 +104,8 @@ const incidents: Incident[] = [
         { version: '7.1.1', time: '2025-09-08T13:13:50Z', publisher: 'qix' },
       ]),
     ],
-    expected: { 'strip-ansi': 'review: publisher-changed, fresh-publish' },
+    content: { 'strip-ansi@7.1.1': SEPTEMBER_2025 },
+    expected: { 'strip-ansi': 'block: publisher-changed, fresh-publish, hidden-code' },
   },
   // https://snyk.io/blog/embedded-malicious-code-in-tinycolor-and-ngx-bootstrap-releases-on-npm/
   // (2025-09-15): the Shai-Hulud worm republished packages with their owners'
@@ -399,9 +412,12 @@ const incidents: Incident[] = [
 describe('incidents', () => {
   for (const c of incidents) {
     it(c.title, async () => {
-      const results = await vetChanges(c.changes, fakeRegistry(...c.packuments), {
-        now: new Date(Date.parse(c.published) + 3_600_000),
-      });
+      const results = await vetChanges(
+        c.changes,
+        fakeRegistry(...c.packuments),
+        fakeContent(c.content),
+        { now: new Date(Date.parse(c.published) + 3_600_000) },
+      );
       const got = Object.fromEntries(
         results.map((r) => [r.name, `${r.verdict}: ${r.signals.map((s) => s.id).join(', ')}`]),
       );
@@ -419,6 +435,7 @@ describe('incidents', () => {
     const [r] = await vetChanges(
       [{ name: '@ctrl/tinycolor', from: '4.1.0', to: '4.1.1' }],
       fakeRegistry(p),
+      fakeContent(),
       { now: new Date('2026-10-24T00:00:00Z') },
     );
     expect(r?.verdict).toBe('block');

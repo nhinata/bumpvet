@@ -107,17 +107,21 @@ before the same checks are trusted for it.
 
 ## Signals
 
-| Signal               | Group   | Fires when                                                                                                                                                                       |
-| -------------------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `publisher-changed`  | origin  | the account that published the new version published none of the 20 versions before it, and the new version has no provenance                                                    |
-| `provenance-lost`    | origin  | the version being replaced had npm provenance and the new one does not                                                                                                           |
-| `fresh-publish`      | timing  | the new version is less than 72 hours old                                                                                                                                        |
-| `install-scripts`    | content | a `preinstall`, `install` or `postinstall` script was added or changed                                                                                                           |
-| `not-from-registry`  | origin  | the package comes from git, a `file:` path, another registry, or its entry has no version, an invalid name, or a field of the wrong type, so there is nothing to compare it with |
-| `source-changed`     | tamper  | a package that came from the public registry now comes from somewhere else (how lockfile injection looks)                                                                        |
-| `integrity-mismatch` | tamper  | the lockfile's integrity hash changed for the same version, or differs from the registry's                                                                                       |
-| `tarball-mismatch`   | tamper  | the lockfile has no integrity the registry's can be compared with, and its `resolved` is not exactly the registry's tarball URL for that version                                 |
-| `not-in-registry`    | tamper  | the registry does not serve the version (npm removes malicious releases)                                                                                                         |
+| Signal                 | Group     | Fires when                                                                                                                                                                                                                                            |
+| ---------------------- | --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `publisher-changed`    | origin    | the account that published the new version published none of the 20 versions before it, and the new version has no provenance                                                                                                                         |
+| `provenance-lost`      | origin    | the version being replaced had npm provenance and the new one does not                                                                                                                                                                                |
+| `fresh-publish`        | timing    | the new version is less than 72 hours old                                                                                                                                                                                                             |
+| `install-scripts`      | content   | a `preinstall`, `install` or `postinstall` script was added or changed                                                                                                                                                                                |
+| `not-from-registry`    | origin    | the package comes from git, a `file:` path, another registry, or its entry has no version, an invalid name, or a field of the wrong type, so there is nothing to compare it with                                                                      |
+| `source-changed`       | tamper    | a package that came from the public registry now comes from somewhere else (how lockfile injection looks)                                                                                                                                             |
+| `integrity-mismatch`   | tamper    | the lockfile's integrity hash changed for the same version, or differs from the registry's                                                                                                                                                            |
+| `tarball-mismatch`     | tamper    | the lockfile has no integrity the registry's can be compared with, and its `resolved` is not exactly the registry's tarball URL for that version                                                                                                      |
+| `not-in-registry`      | tamper    | the registry does not serve the version (npm removes malicious releases)                                                                                                                                                                              |
+| `hidden-code`          | content   | a file of the new version has a kind of hard-to-read code that no file of the version it replaces has: obfuscated names (`_0x` and 4 or more hex digits), 16 `\x` escapes in a row, 1000 base64 characters in a row, or code after 200 spaces or tabs |
+| `new-capability`       | content   | a file of the new version calls `eval` or loads one of Node's network modules (`http`, `https`, `http2`, `net`, `tls`, `dgram`, `dns`), and no file of the version it replaces does                                                                   |
+| `content-not-checked`  | content   | the files of the new version were not read: over a limit, or in a form bumpvet does not read (see [Content signals](#content-signals))                                                                                                                |
+| `previous-not-checked` | unchecked | the new version has a kind to compare, and the files of the version it replaces were not read, for the same reasons                                                                                                                                   |
 
 ## Verdict table
 
@@ -125,8 +129,62 @@ before the same checks are trusted for it.
 | --------------------------------------- | ------- |
 | any tamper signal                       | BLOCK   |
 | content, together with origin or timing | BLOCK   |
-| origin or content                       | REVIEW  |
+| origin, content or unchecked            | REVIEW  |
 | nothing, or timing only                 | OK      |
+
+## Content signals
+
+The content signals compare the files of the new version with the files of
+the version it replaces (for a new package, the latest version before it, as
+`install-scripts` does): a kind of code the new version has that the other has
+in none of its files. A kind becomes a signal only if it
+
+1. is a general change in what the code can do or how hard it is to read,
+   stated as before -> after;
+2. is not specific to one attack (see [Not doing](#not-doing-and-why));
+3. meets principle 6: measured on benign updates and on real malicious
+   releases (`npm run eval:content` and the Evaluate content workflow);
+4. needs no package code run and no service besides the registry.
+
+The measurement of 2026-10-29
+([run](https://github.com/nhinata/bumpvet/actions/runs/40793276464)) chose
+the kinds of `hidden-code` and `new-capability`. Of the 424 malicious
+releases, 46 changed no install script; these two caught 39 of them, and none
+of 597 benign updates. `child_process` and `XMLHttpRequest` would have caught
+one more and flagged two benign updates, so they are left out. The 17 releases
+caught only by code after spaces come from one attack (June 2025). The
+evaluation left files over 20 MB unread: none in the benign updates; the
+malicious report did not count them, so its figures may include releases read
+only in part.
+
+How a release's files are read:
+
+- the tarball named by the registry's `dist.tarball`, checked against the
+  registry's sha512 integrity (sha1 `shasum` for versions from before sha512)
+  before anything is read. A tarball that does not match, or cannot be
+  fetched, fails the run, as a packument does;
+- in memory, never written to disk, never run;
+- every file, whatever its name or content: Node runs a required file
+  whatever its extension, and a NUL byte in a comment leaves JavaScript
+  runnable, so a file left unread would be a way past the check. Links are
+  left out, as npm leaves them out when it installs;
+- within limits: 256 MB to download, 512 MB unpacked, 100,000 files, 128 MB
+  for one file. A release over a limit, or in a form the reader does not
+  understand, is never passed in silence: the new version gets
+  `content-not-checked`, the version replaced `previous-not-checked`. When the registry
+  declares a size or file count over a limit, the tarball is not downloaded;
+  the declared figures come from the publisher, so the limits are checked
+  again while reading;
+- not at all when the verdict is already `BLOCK` or the version does not
+  come from the registry, and the version replaced only when the new one has
+  a kind to compare. Each tarball is read once per run.
+
+_Trade-off:_ code written to avoid these patterns passes them, and an
+injected change that adds no new kind (`@solana/web3.js@1.95.7` and four
+more in the measurement) is missed. The sixth release no signal caught,
+`axios@1.14.1`, changed only its dependencies, and its new dependency adds
+an install script. Source match (see [Planned](#planned)) is what would see
+the others.
 
 ## Decisions and the numbers behind them
 
@@ -182,15 +240,35 @@ before the same checks are trusted for it.
   in a separate "not vetted" section, outside the verdict table; that broke
   principle 2 and let them pass with exit code 0. They now go through the
   table like everything else.
+- **The limits fit large packages.** `next` is 192 MB unpacked (44 MB to
+  download), `@next/swc-linux-x64-gnu` holds one file of about 100 MB,
+  `@mui/icons-material` has 43,010 files (2026-10-29). Lower limits would
+  make each update of them `REVIEW`, and a verdict that shows up on every
+  update is one people stop reading. The patterns take under a second on
+  100 MB. No release among the 597 benign updates declares a size or file
+  count over a limit; the largest is `date-fns`, 22.6 MB and 6,600 files.
+  _Trade-off:_ an update of `next` downloads `next` and each platform's
+  `@next/swc` package, about 330 MB.
+- **A new version that cannot be read is a content change.** Going over a
+  limit costs an attacker little: the declared size is the publisher's to
+  write, and a run of zeros compresses about a thousand times. As anything
+  less than a content signal, `content-not-checked` would let a release with
+  obfuscated code turn its `BLOCK` into a `REVIEW` that way. A version the
+  update replaces was published before it, so `previous-not-checked` is only
+  a reason to look: `unchecked`, never more than `REVIEW`. Comparing the
+  growth from the version replaced was considered for releases that are
+  large in earnest; it would only matter above 256 MB unpacked, where no
+  measured release is, and it adds a threshold no measurement could set.
+  _Trade-off:_ a release over a limit in earnest is `BLOCK` while it is fresh.
 
 ## Known misses
 
-- A malicious release with its payload in the package code, of a package
-  whose releases had no provenance, published from an account that usually
-  publishes it, shows only freshness and is `OK` (`debug@4.4.2`; the rest
-  are in eval/README.md, "Detection: incidents"). From an unusual account it
-  is `REVIEW`, not `BLOCK` (`chalk@5.6.1`). Content analysis (planned) is
-  what would catch it.
+- A malicious release whose code adds none of the kinds the content signals
+  look for (see [Content signals](#content-signals)), of a package whose
+  releases had no provenance, published from an account that usually
+  publishes it, shows only freshness and is `OK` (`@solana/web3.js@1.95.6`;
+  the rest are in eval/README.md, "Detection: incidents"). Source match
+  (planned) is what would catch it.
 
 ## Known limitations
 
@@ -221,50 +299,6 @@ before the same checks are trusted for it.
   reveals is recorded as a known miss, not answered with a rule for it.
 
 ## Planned
-
-- **Content signals** (issue #44): a kind of code the new version has and the
-  version it replaces has in none of its files. A kind becomes a signal only
-  if it
-  1. is a general change in what the code can do or how hard it is to read,
-     stated as before -> after;
-  2. is not specific to one attack (see [Not doing](#not-doing-and-why));
-  3. meets principle 6: measured on benign updates and on real malicious
-     releases (`npm run eval:content` and the Evaluate content workflow);
-  4. needs no package code run and no service besides the registry.
-
-  The measurement of 2026-10-29
-  ([run](https://github.com/nhinata/bumpvet/actions/runs/40793276464)) chose
-  two signals. `hidden-code`: obfuscated names (`_0x...`), long runs of `\x`
-  escapes or of base64, code after 200 spaces or tabs. `new-capability`:
-  `eval`, Node's network modules. Of the 424 malicious releases, 46 changed
-  no install script; these two caught 39 of them, and none of 597 benign
-  updates. `child_process` and `XMLHttpRequest` would have caught one more
-  and flagged two benign updates, so they are left out. The 17 releases
-  caught only by code after spaces come from one attack (June 2025). The
-  evaluation left files over 20 MB unread: none in the benign updates; the
-  malicious report did not count them, so its figures may include releases
-  read only in part. (A release that bumpvet cannot read in full will get
-  `content-not-checked`, below; the evaluation that replaces these scripts
-  counts it.)
-
-  How a release's files are read:
-  - the tarball named by the registry's `dist.tarball`, checked against the
-    registry's sha512 integrity before anything is read;
-  - in memory, never written to disk, never run;
-  - every file, whatever its name or content: Node runs a required file
-    whatever its extension, and a NUL byte in a comment leaves JavaScript
-    runnable, so a file left unread would be a way past the check;
-  - within limits on download size, unpacked size and number of files. A
-    release over a limit, or in a form the reader does not understand, gets
-    `content-not-checked` (`REVIEW`), never silence;
-  - not at all when the verdict is already `BLOCK`, and the version replaced
-    only when the new one has a kind to compare.
-
-  _Trade-off:_ code written to avoid these patterns passes them, and an
-  injected change that adds no new kind (`@solana/web3.js@1.95.7` and four
-  more in the measurement) is missed. The sixth release no signal caught,
-  `axios@1.14.1`, changed only its dependencies, and its new dependency adds
-  an install script. Source match, below, is what would see the others.
 
 - Source match: whether the published files match the repository at the
   commit the release came from.

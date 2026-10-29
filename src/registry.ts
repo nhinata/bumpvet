@@ -91,9 +91,14 @@ export function slim(raw: unknown, name: string): Packument {
           shasum: str(dist.shasum),
           tarball: str(dist.tarball),
           attestations: dist.attestations ? true : undefined,
+          unpackedSize: count(dist.unpackedSize),
+          fileCount: count(dist.fileCount),
         },
       };
     }
   }
   return { name: str(raw.name) || name, time, versions };
 }
+
+const count = (v: unknown) =>
+  typeof v === 'number' && Number.isSafeInteger(v) && v >= 0 ? v : undefined;

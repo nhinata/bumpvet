@@ -1,3 +1,4 @@
+import { KINDS, type Content } from './content.js';
 import type { Change, Packument, Signal, VersionManifest } from './types.js';
 
 export interface SignalOptions {
@@ -96,8 +97,7 @@ export function computeSignals(
   }
 
   const earlier = versionsBefore(packument, change.to);
-  const reference =
-    (change.from !== null ? own(packument.versions, change.from) : undefined) ?? earlier.at(-1);
+  const reference = referenceOf(change, packument, earlier);
 
   const publisher = next._npmUser?.name;
   const usual = new Set(
@@ -155,6 +155,83 @@ export function computeSignals(
   }
 
   return signals;
+}
+
+/** The versions the content signals compare; none for a version not from the registry. */
+export interface ContentVersions {
+  next: VersionManifest;
+  /** The version replaced, as `referenceOf` picks it; none for a first release. */
+  reference?: VersionManifest;
+}
+
+export function contentVersions(change: Change, packument: Packument): ContentVersions | undefined {
+  const next = own(packument.versions, change.to);
+  if (change.source || !next) return undefined;
+  return { next, reference: referenceOf(change, packument, versionsBefore(packument, change.to)) };
+}
+
+/** Whether the version replaced has to be read: only when the new one has a kind to compare. */
+export const hasKinds = (content: Content): boolean => 'found' in content && content.found.size > 0;
+
+/**
+ * Kinds of code the new version has and the version replaced has in none of
+ * its files (DESIGN.md, Content signals). `before` is the version replaced,
+ * read when `hasKinds(after)`.
+ */
+export function contentSignals(
+  versions: ContentVersions,
+  after: Content,
+  before: Content | undefined,
+): Signal[] {
+  const { reference } = versions;
+  // A new version that keeps its files from being read is a content change:
+  // otherwise going over a limit would turn a BLOCK into a REVIEW. The version
+  // replaced was published before; not reading it is only a reason to look.
+  if ('unread' in after)
+    return [
+      { id: 'content-not-checked', group: 'content', before: 'files read', after: after.unread },
+    ];
+  if (!after.found.size) return [];
+  let had = new Map<string, string>();
+  if (reference) {
+    if (!before) throw new Error(`${reference.version} was not read`);
+    if ('unread' in before)
+      return [
+        {
+          id: 'previous-not-checked',
+          group: 'unchecked',
+          before: `${reference.version}: ${before.unread}`,
+          after: 'not compared',
+        },
+      ];
+    had = before.found;
+  }
+  const signals: Signal[] = [];
+  for (const [id, patterns] of Object.entries(KINDS) as [keyof typeof KINDS, object][]) {
+    const added = Object.keys(patterns).filter((k) => after.found.has(k) && !had.has(k));
+    if (!added.length) continue;
+    signals.push({
+      id,
+      group: 'content',
+      before: reference ? `none in ${reference.version}` : 'no earlier version',
+      after: added.map((k) => `${k} in ${after.found.get(k)}`).join('; '),
+    });
+  }
+  return signals;
+}
+
+/**
+ * The version a change is compared with: the one it replaces, or for a new
+ * package or a replaced version the registry no longer has, the latest before it.
+ */
+function referenceOf(
+  change: Change,
+  packument: Packument,
+  earlier: VersionManifest[],
+): VersionManifest | undefined {
+  return (
+    (change.from !== null ? own(packument.versions, change.from) : undefined) ?? earlier.at(-1)
+  );
 }
 
 /** Versions published before `version`, oldest first. */

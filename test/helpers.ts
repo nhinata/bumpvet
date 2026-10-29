@@ -1,3 +1,4 @@
+import { kindsIn, type ReadContent } from '../src/content.js';
 import type { FetchPackument } from '../src/registry.js';
 import type { Packument, VersionManifest } from '../src/types.js';
 
@@ -27,7 +28,7 @@ export function packument(name: string, versions: FakeVersion[]): Packument {
       scripts: v.scripts,
       dist: {
         integrity: v.integrity ?? `sha512-${name}-${v.version}`,
-        tarball: `https://registry.npmjs.org/${name}/-/x-${v.version}.tgz`,
+        tarball: tarballUrl(name, v.version),
         attestations: v.provenance ? { url: 'x' } : undefined,
       },
     };
@@ -59,4 +60,31 @@ export function lockfile(
     };
   }
   return JSON.stringify({ name: 'app', lockfileVersion: 3, packages: entries });
+}
+
+const tarballUrl = (name: string, version: string) =>
+  `https://registry.npmjs.org/${name}/-/x-${version}.tgz`;
+
+/**
+ * Releases' files by `name@version`, as text, read as bumpvet reads a
+ * tarball's; or, as a string, why one is not read. Any other release has no files.
+ */
+export function fakeContent(
+  releases: Record<string, Record<string, string> | string> = {},
+): ReadContent {
+  const byUrl = new Map(
+    Object.entries(releases).map(([key, files]) => {
+      const at = key.lastIndexOf('@');
+      return [tarballUrl(key.slice(0, at), key.slice(at + 1)), files];
+    }),
+  );
+  return (m) => {
+    const files = byUrl.get(m.dist?.tarball ?? '') ?? {};
+    if (typeof files === 'string') return Promise.resolve({ unread: files });
+    const entries = Object.entries(files).map(([path, text]): [string, Buffer] => [
+      path,
+      Buffer.from(text),
+    ]);
+    return Promise.resolve({ found: kindsIn(entries) });
+  };
 }

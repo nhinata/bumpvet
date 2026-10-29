@@ -45,17 +45,17 @@ cites its report. Every one is a malicious new version of an existing package,
 published from a hijacked account or token or by the maintainer on purpose:
 the registry shows bumpvet the same thing either way.
 
-### Results (2026-10-27, v0.2.1)
+### Results (2026-10-29, with content signals)
 
 Vetted 1 hour after the malicious publish. An incident's verdict is the
 strictest among the packages it brings in.
 
 | Incident                                       | Verdict         | Signals                                                                                                                        |
 | ---------------------------------------------- | --------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| `chalk@5.6.1` (2025-09)                        | REVIEW          | publisher-changed, fresh-publish                                                                                               |
-| `debug@4.4.2` (same campaign)                  | OK — **missed** | fresh-publish                                                                                                                  |
-| `ansi-styles@6.2.2` (same campaign)            | OK — **missed** | fresh-publish                                                                                                                  |
-| `strip-ansi@7.1.1` (same campaign)             | REVIEW          | publisher-changed, fresh-publish                                                                                               |
+| `chalk@5.6.1` (2025-09)                        | BLOCK           | publisher-changed, fresh-publish, hidden-code                                                                                  |
+| `debug@4.4.2` (same campaign)                  | BLOCK           | fresh-publish, hidden-code                                                                                                     |
+| `ansi-styles@6.2.2` (same campaign)            | BLOCK           | fresh-publish, hidden-code                                                                                                     |
+| `strip-ansi@7.1.1` (same campaign)             | BLOCK           | publisher-changed, fresh-publish, hidden-code                                                                                  |
 | `@ctrl/tinycolor@4.1.1` (2025-09)              | BLOCK           | fresh-publish, install-scripts                                                                                                 |
 | `ngx-bootstrap@20.0.4` (same worm)             | BLOCK           | fresh-publish, install-scripts                                                                                                 |
 | `eslint-scope@3.7.2` (2018-07)                 | BLOCK           | fresh-publish, install-scripts                                                                                                 |
@@ -71,9 +71,14 @@ strictest among the packages it brings in.
 | `node-ipc@10.1.1` (2022-03, by the maintainer) | OK — **missed** | fresh-publish                                                                                                                  |
 | `colors@1.4.1` (2022-01, by the maintainer)    | OK — **missed** | fresh-publish                                                                                                                  |
 
-13 of 18 caught (72%): 10 `BLOCK`, 3 `REVIEW`. All five misses carried their
-payload in the package code and came from an account that publishes the
-package; content analysis (planned) is what would see them.
+15 of 18 caught (83%): 14 `BLOCK`, 1 `REVIEW`. The September 2025 campaign
+is caught by `hidden-code`, from the code its report shows. The three misses
+carried their payload in the package code and came from an account that
+publishes the package. `@solana/web3.js@1.95.7`, from the same attack as
+1.95.6, added no kind the content signals look for in the content
+measurement below; for `node-ipc` and `colors` the test has no code from
+their reports. Source match (planned) is what would see code-only changes
+like these.
 
 Where a report does not name the publisher or mention provenance, the test
 fills in a value (see its header). One verdict depends on it: no report names

@@ -85,7 +85,8 @@ Development dependencies are fine.
 
 **Decisions are pure; I/O stays at the edges.** `signals.ts`, `verdict.ts` and
 `lockfile.ts` take values and return values. Network access is in
-`registry.ts`, and git, files, arguments and exit codes are in `run.ts` (`cli.ts`
+`registry.ts` and `content.ts` (which also reads tarballs), the order of
+fetching and reading is in `vet.ts`, and git, files, arguments and exit codes are in `run.ts` (`cli.ts`
 only starts it). A new
 signal should not need a new kind of I/O; if it does, that is a design
 discussion first.

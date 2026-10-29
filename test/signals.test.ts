@@ -391,6 +391,12 @@ describe('decide', () => {
     timing: { id: 'fresh-publish', group: 'timing', before: '>= 72h old', after: '1h old' },
     content: { id: 'install-scripts', group: 'content', before: 'none', after: 'node x.js' },
     tamper: { id: 'integrity-mismatch', group: 'tamper', before: 'sha512-a', after: 'sha512-b' },
+    unchecked: {
+      id: 'previous-not-checked',
+      group: 'unchecked',
+      before: '1.0.0: over 512 MB unpacked',
+      after: 'not compared',
+    },
   };
   it.each([
     [[], 'ok'],
@@ -402,6 +408,10 @@ describe('decide', () => {
     [['content', 'timing'], 'block'],
     [['origin', 'content'], 'block'],
     [['tamper'], 'block'],
+    // Files left unread are a reason to look, not evidence: never more than REVIEW.
+    [['unchecked'], 'review'],
+    [['unchecked', 'timing'], 'review'],
+    [['unchecked', 'origin', 'timing'], 'review'],
   ] as const)('%j -> %s', (groups, verdict) => {
     expect(decide(groups.map((g) => of[g]))).toBe(verdict);
   });

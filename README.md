@@ -91,8 +91,8 @@ jobs:
 | Signals                                                                                                                                                                                                                                                  | Verdict |
 | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
 | the lockfile installs something other than the registry's release: its integrity differs from the registry's, or it has none and `resolved` is not the registry's tarball, or the entry moved off the registry, or the version is gone from the registry | BLOCK   |
-| a content change (new or changed install script) together with an unusual origin or a fresh release                                                                                                                                                      | BLOCK   |
-| an unusual origin (new publisher, lost provenance, not from the registry) or a content change                                                                                                                                                            | REVIEW  |
+| a content change (a new or changed install script, hard-to-read code, `eval` or network access the version replaced did not have, or files bumpvet could not read) together with an unusual origin or a fresh release                                    | BLOCK   |
+| an unusual origin (new publisher, lost provenance, not from the registry), a content change, or files bumpvet could not read                                                                                                                             | REVIEW  |
 | nothing, or only a fresh release                                                                                                                                                                                                                         | OK      |
 
 The signals, the thresholds and the measurements behind them are in
@@ -120,10 +120,12 @@ so one of these happened:
 | a bumpvet bug                                                               | neither of the above                                                                                        | open an issue with the two lockfiles                                                    |
 
 **BLOCK because a content change meets an origin or timing signal** (for
-example `install-scripts` with `publisher-changed` or `fresh-publish`): the
-shape of a worm release.
+example `install-scripts`, `hidden-code` or `new-capability` with
+`publisher-changed` or `fresh-publish`): the shape of a worm release.
 
-1. Read the install script change: `npm diff --diff=<pkg>@<old> --diff=<pkg>@<new>`.
+1. Read the change: `npm diff --diff=<pkg>@<old> --diff=<pkg>@<new>`. For
+   `hidden-code` and `new-capability`, start with the file the signal names,
+   and look for what the code does once decoded or where it connects.
 2. Check that the new publisher is a maintainer of the project, against its
    repository and release notes.
 3. Merge only once the change is explained, and say why in the pull request.
@@ -136,12 +138,13 @@ shape of a worm release.
 **REVIEW**: something unusual, but nothing that blocks on its own. Before
 merging, check each signal listed:
 
-| Signal              | Check                                                                                                                                                                          |
-| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `install-scripts`   | step 1 above                                                                                                                                                                   |
-| `publisher-changed` | step 2 above                                                                                                                                                                   |
-| `provenance-lost`   | the project's release notes or workflow: did it stop publishing from CI on purpose?                                                                                            |
-| `not-from-registry` | the `resolved` URL is the git repository, file or registry you meant to use; "no version in the lockfile" or "invalid ..." means the entry was edited: regenerate the lockfile |
+| Signal                                             | Check                                                                                                                                                                                                                                                |
+| -------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `install-scripts`, `hidden-code`, `new-capability` | step 1 above                                                                                                                                                                                                                                         |
+| `content-not-checked`, `previous-not-checked`      | bumpvet did not read the files of that version, for the reason given: a release far larger than the package's earlier ones, or a tarball npm would not write, needs the same reading as step 1; a release the same size as the earlier ones does not |
+| `publisher-changed`                                | step 2 above                                                                                                                                                                                                                                         |
+| `provenance-lost`                                  | the project's release notes or workflow: did it stop publishing from CI on purpose?                                                                                                                                                                  |
+| `not-from-registry`                                | the `resolved` URL is the git repository, file or registry you meant to use; "no version in the lockfile" or "invalid ..." means the entry was edited: regenerate the lockfile                                                                       |
 
 When a BLOCK or REVIEW turns out to be wrong, open an issue: false positives
 are what decides whether a check can be made required.
