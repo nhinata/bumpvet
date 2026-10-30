@@ -1,7 +1,8 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { computeSignals } from '../src/signals.js';
 import { decide } from '../src/verdict.js';
-import type { Signal } from '../src/types.js';
+import { SIGNALS, type Signal } from '../src/types.js';
 import { packument } from './helpers.js';
 
 const now = new Date('2026-01-10T00:00:00Z');
@@ -415,4 +416,14 @@ describe('decide', () => {
   ] as const)('%j -> %s', (groups, verdict) => {
     expect(decide(groups.map((g) => of[g]))).toBe(verdict);
   });
+});
+
+// Users read the groups in DESIGN.md's table of signals; SIGNALS is what decides.
+it('DESIGN.md lists the signals of SIGNALS, in its order and with its groups', () => {
+  const design = readFileSync(new URL('../DESIGN.md', import.meta.url), 'utf8');
+  const start = design.indexOf('\n## Signals\n');
+  expect(start, 'the "## Signals" heading of DESIGN.md').toBeGreaterThan(-1);
+  const section = design.slice(start, design.indexOf('\n## ', start + 1));
+  const rows = [...section.matchAll(/^\| `([^`]+)` +\| (\w+) +\|/gm)].map((m) => [m[1], m[2]]);
+  expect(rows).toEqual(Object.entries(SIGNALS));
 });

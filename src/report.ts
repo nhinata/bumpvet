@@ -1,6 +1,5 @@
-import type { PackageResult, Verdict } from './types.js';
+import { VERDICTS, type PackageResult, type Verdict } from './types.js';
 
-const ORDER: Verdict[] = ['block', 'review', 'ok'];
 const LABEL: Record<Verdict, string> = { block: 'BLOCK ', review: 'REVIEW', ok: 'OK    ' };
 
 /** A lockfile entry without a version has '' (see LockPackage). */
@@ -24,7 +23,7 @@ export const printable = (text: string): string =>
 export function formatText(results: PackageResult[]): string {
   if (results.length === 0) return 'No dependency versions changed.\n';
   const lines: string[] = [];
-  for (const verdict of ORDER) {
+  for (const verdict of VERDICTS) {
     const group = results.filter((r) => r.verdict === verdict);
     if (verdict === 'ok') {
       if (group.length)
@@ -50,7 +49,7 @@ export function formatJson(results: PackageResult[]): string {
   return (
     JSON.stringify(
       {
-        summary: { block: count('block'), review: count('review'), ok: count('ok') },
+        summary: Object.fromEntries(VERDICTS.map((v) => [v, count(v)])),
         packages: results,
       },
       null,

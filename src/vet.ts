@@ -2,9 +2,9 @@ import { diffLockfiles } from './lockfile.js';
 import type { FetchPackument } from './registry.js';
 import type { ReadContent } from './content.js';
 import {
+  comparedVersions,
   computeSignals,
   contentSignals,
-  contentVersions,
   hasKinds,
   type SignalOptions,
 } from './signals.js';
@@ -35,7 +35,9 @@ export async function vetChanges(
         signals = computeSignals(change, packument, opts);
         // A BLOCK stands whatever the files hold: they are not read.
         const versions =
-          packument && decide(signals) !== 'block' ? contentVersions(change, packument) : undefined;
+          packument && decide(signals) !== 'block'
+            ? comparedVersions(change, packument)
+            : undefined;
         if (versions) {
           const after = await readContent(versions.next, stop.signal);
           const before =

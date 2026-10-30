@@ -17,36 +17,40 @@ export interface Change {
   fromIntegrity?: string;
 }
 
-export type SignalId =
-  | 'publisher-changed'
-  | 'provenance-lost'
-  | 'fresh-publish'
-  | 'install-scripts'
-  | 'not-from-registry'
-  | 'tarball-mismatch'
-  | 'source-changed'
-  | 'integrity-mismatch'
-  | 'not-in-registry'
-  | 'hidden-code'
-  | 'new-capability'
-  | 'content-not-checked'
-  | 'previous-not-checked';
-
 /** Which side of the verdict table a signal belongs to (see DESIGN.md). */
 export type SignalGroup = 'origin' | 'timing' | 'content' | 'tamper' | 'unchecked';
+
+/** Every signal, in the order of DESIGN.md's table, with its group: the only place a group is set. */
+export const SIGNALS = {
+  'publisher-changed': 'origin',
+  'provenance-lost': 'origin',
+  'fresh-publish': 'timing',
+  'install-scripts': 'content',
+  'not-from-registry': 'origin',
+  'source-changed': 'tamper',
+  'integrity-mismatch': 'tamper',
+  'tarball-mismatch': 'tamper',
+  'not-in-registry': 'tamper',
+  'hidden-code': 'content',
+  'new-capability': 'content',
+  'content-not-checked': 'content',
+  'previous-not-checked': 'unchecked',
+} as const satisfies Record<string, SignalGroup>;
+
+export type SignalId = keyof typeof SIGNALS;
 
 /**
  * Every signal has the same shape: what the recent versions looked like
  * (`before`) and what the new version looks like (`after`).
  */
-export interface Signal {
-  id: SignalId;
-  group: SignalGroup;
-  before: string;
-  after: string;
-}
+export type Signal = {
+  // Each id with its own group, so no signal can carry another group.
+  [K in SignalId]: { id: K; group: (typeof SIGNALS)[K]; before: string; after: string };
+}[SignalId];
 
-export type Verdict = 'ok' | 'review' | 'block';
+/** Every verdict, the most severe first: the order reports list them in. */
+export const VERDICTS = ['block', 'review', 'ok'] as const;
+export type Verdict = (typeof VERDICTS)[number];
 
 export interface PackageResult {
   name: string;
