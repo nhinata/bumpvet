@@ -101,10 +101,10 @@ with the version it upgrades from. These two counts chose which kinds became
 signals (DESIGN.md, "Content signals"), from candidates such as running
 commands or a new network host:
 
-- **Benign:** `npm run eval:content` reads the tarballs of the updates above
-  and counts how often each kind is added. Tarballs are checked against the
-  registry's integrity and read in memory; nothing is kept.
-- **Malicious:** the [Evaluate content](../.github/workflows/eval-content.yml)
+- **Benign:** `npm run eval` (above) reads the tarballs of the updates as the
+  CLI does: checked against the registry's hash and read in memory; nothing
+  is kept.
+- **Malicious:** the [Evaluate malicious samples](../.github/workflows/eval-malicious.yml)
   workflow, run by hand, does the same for real malicious releases from the
   [Datadog malicious packages dataset](https://github.com/DataDog/malicious-software-packages-dataset),
   listed with their hashes in [samples.json](samples.json): the hijacked

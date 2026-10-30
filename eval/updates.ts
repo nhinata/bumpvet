@@ -1,6 +1,8 @@
 /**
- * The benign updates both evaluations replay: the last few stable releases of
- * each package in packages.txt, each paired with the version it upgrades from.
+ * The benign updates the false-positive check replays: the last few stable
+ * releases of each package in packages.txt, each paired with the version it
+ * upgrades from. Also what both evaluations share: loading a packument, and
+ * running at most a few at a time.
  */
 import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -15,6 +17,15 @@ export const PACKAGES = readFileSync(new URL('../../eval/packages.txt', import.m
 /** A numeric command-line option, as `--flag 5`. */
 export const arg = (flag: string) =>
   Number(process.argv[process.argv.indexOf(flag) + 1]) || undefined;
+/** Runs `each` on every item, at most `size` at a time. */
+export async function pool<T>(items: T[], size: number, each: (item: T) => Promise<void>) {
+  const queue = [...items];
+  await Promise.all(
+    Array.from({ length: size }, async () => {
+      for (let item = queue.shift(); item !== undefined; item = queue.shift()) await each(item);
+    }),
+  );
+}
 const perPackage = arg('--per-package') ?? 10;
 const CACHE = fileURLToPath(new URL('../../eval/.cache/', import.meta.url));
 
