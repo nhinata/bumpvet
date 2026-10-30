@@ -67,6 +67,24 @@ of the packed tarball. Run them before pushing.
   and the branch must be up to date with `main` ("Update branch" is fine; the
   merge commit disappears in the squash).
 
+### Review findings
+
+Review findings, from people or tools, are sorted before anything is changed.
+
+First check that the finding really happens, with real lockfiles and registry
+data or by running the tool it is about (npm, the registry), not by reading the
+code alone. Also check what the current behavior protects. A finding that does
+not happen is speculative in the table below.
+
+| Finding                                                                                   | What to do                                          |
+| ----------------------------------------------------------------------------------------- | --------------------------------------------------- |
+| a malicious update comes out `OK`, or a check is skipped (fails open)                     | fix in this pull request                            |
+| a regression this pull request introduced                                                 | fix in this pull request                            |
+| an error within this pull request's topic                                                 | fix in this pull request                            |
+| anything else: other topics, older problems, unlikely false positives, messages, cleanups | open an issue                                       |
+| against a principle in DESIGN.md, or speculative with no realistic case                   | reply with the reason and leave it                  |
+| fixing it needs a new concept or mechanism                                                | stop and rethink the design; do not patch around it |
+
 ## Writing code
 
 Formatting and the mechanical rules are enforced by Prettier and ESLint. The
@@ -83,24 +101,21 @@ keeps each field only if it has the expected type). Look entries up with
 supply-chain tool that pulls in a supply chain of its own defeats the point.
 Development dependencies are fine.
 
-**Decisions are pure; I/O stays at the edges.** `signals.ts`, `verdict.ts` and
-`lockfile.ts` take values and return values. Network access is in
-`registry.ts` and `content.ts` (which also reads tarballs), the order of
-fetching and reading is in `vet.ts`, and git, files, arguments and exit codes are in `run.ts` (`cli.ts`
-only starts it). A new
-signal should not need a new kind of I/O; if it does, that is a design
-discussion first.
+**Decisions are pure; I/O stays at the edges.** Code that decides a signal or
+a verdict takes values and returns values; the network, git, files and the
+command line are kept out of it. A new signal should not need a new kind of
+I/O; if it does, that is a design discussion first.
 
-**Every signal has the same shape.** A signal is `{ id, group, before, after }`
-and reaches the verdict only through the table in `verdict.ts`. Do not add a
-side channel (an extra list, a special exit code) for one kind of finding.
+**Every signal has the same shape** ([principle 2](DESIGN.md#principles)) and
+reaches the verdict only through the verdict table. Do not add a side channel
+(an extra list, a special exit code) for one kind of finding.
 
 **Errors.** Throw `Error` with a message a user can act on, and pass
 `{ cause }` when rethrowing. The CLI maps failures to exit code 2; exit code 1
 means at least one `BLOCK` and nothing else.
 
-**Never run package code.** bumpvet reads metadata (and, later, files). It does
-not execute anything it downloads, in the tool or in tests.
+**Never run package code.** bumpvet reads metadata and files. It does not
+execute anything it downloads, in the tool or in tests.
 
 **Comments say why.** The code says what it does. A comment explains a choice
 that is not obvious from the code: a threshold, a registry quirk, a trade-off.
@@ -148,8 +163,7 @@ its tests go with it.
   fields), or a registry response a broken registry or network could produce.
 - Check that a new or changed test can fail: break the code it covers, see it
   fail, restore the code.
-- Tests never touch the network. Use the fakes in `test/helpers.ts`
-  (`packument`, `fakeRegistry`, `lockfile`).
+- Tests never touch the network. Use the fakes in `test/helpers.ts`.
 - `test/incidents.test.ts` replays real incidents. Say where each value comes
   from: the live registry, or a named public report. If a value is a guess,
   say so in the comment.
@@ -173,34 +187,6 @@ are counted by `npm run eval:content` on the same benign updates, and by the
 Evaluate content workflow on real malicious releases, run by hand (see
 [eval/README.md](eval/README.md)). Figures taken from the workflow name the
 run they come from.
-
-## Review findings
-
-Review findings, from people or tools, are sorted before anything is changed.
-
-First check that the finding really happens, with real lockfiles and registry
-data or by running the tool it is about (npm, the registry), not by reading the
-code alone. Also check what the current behavior protects. A finding that does
-not happen is speculative in the table below.
-
-| Finding                                                                                   | What to do                                          |
-| ----------------------------------------------------------------------------------------- | --------------------------------------------------- |
-| a malicious update comes out `OK`, or a check is skipped (fails open)                     | fix in this pull request                            |
-| a regression this pull request introduced                                                 | fix in this pull request                            |
-| an error within this pull request's topic                                                 | fix in this pull request                            |
-| anything else: other topics, older problems, unlikely false positives, messages, cleanups | open an issue                                       |
-| against a principle in DESIGN.md, or speculative with no realistic case                   | reply with the reason and leave it                  |
-| fixing it needs a new concept or mechanism                                                | stop and rethink the design; do not patch around it |
-
-When fixing one, do not change only the line it points at:
-
-1. **Find the cause**: the rule or assumption behind the line, not just the line.
-2. **Find every place that uses that rule or assumption**, and fix them
-   together, after moving the rule into one place if it is in several.
-3. **Check the fix against DESIGN.md and earlier decisions.** A fix that
-   contradicts them is the wrong fix.
-4. **Check the effect**: the tests and behavior of every place that uses the
-   rule. Say in the pull request what was checked.
 
 ## Security issues
 

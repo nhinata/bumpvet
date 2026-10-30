@@ -26,9 +26,10 @@ tend to get wrong.
    what was done in the pull request description. Documentation-only changes
    need their facts checked against the code instead.
 7. **Never fix only the line a finding points at.** Find the rule behind it,
-   every place that uses that rule, and what the fix changes elsewhere
-   ([Review findings](CONTRIBUTING.md#review-findings)). Patching spot by spot
-   is how one fix opens the next hole.
+   every place that uses that rule, and fix them together; check the fix
+   against DESIGN.md and earlier decisions, and check what it changes in every
+   place that uses the rule, saying in the pull request what was checked.
+   Patching spot by spot is how one fix opens the next hole.
 8. **Keep one rule in one place** ([Writing code](CONTRIBUTING.md#writing-code)).
    If you are about to write "as in X" in a comment, merge the two instead.
 9. **Check what an installer or platform really does before relying on it**:

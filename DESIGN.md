@@ -25,16 +25,16 @@ what it deliberately does not do, and why.
 
 ## Terms
 
-| Term             | Where                | What it is                                                                                                                         |
-| ---------------- | -------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| registry         | `registry.npmjs.org` | the server npm downloads packages from                                                                                             |
-| packument        | registry             | the registry's document for one package: every version's publisher, publish time and `dist` fields                                 |
-| tarball          | registry             | a version's content, the `.tgz` npm downloads                                                                                      |
-| `resolved`       | lockfile             | the URL npm downloads the tarball from                                                                                             |
-| `integrity`      | lockfile             | a hash of the tarball; npm checks the download against it                                                                          |
-| `dist.tarball`   | registry             | the version's own tarball URL                                                                                                      |
-| `dist.integrity` | registry             | a hash of the version's tarball: sha512 for 13,728 of the 13,730 versions of the 60 packages in `eval/packages.txt`, missing for 2 |
-| `dist.shasum`    | registry             | the version's sha1 hash, the older field; present for all 13,730                                                                   |
+| Term             | Where                | What it is                                                                                         |
+| ---------------- | -------------------- | -------------------------------------------------------------------------------------------------- |
+| registry         | `registry.npmjs.org` | the server npm downloads packages from                                                             |
+| packument        | registry             | the registry's document for one package: every version's publisher, publish time and `dist` fields |
+| tarball          | registry             | a version's content, the `.tgz` npm downloads                                                      |
+| `resolved`       | lockfile             | the URL npm downloads the tarball from                                                             |
+| `integrity`      | lockfile             | a hash of the tarball; npm checks the download against it                                          |
+| `dist.tarball`   | registry             | the version's own tarball URL                                                                      |
+| `dist.integrity` | registry             | a hash of the version's tarball, sha512 for all but some old versions                              |
+| `dist.shasum`    | registry             | the version's sha1 hash, the older field                                                           |
 
 A hash has an algorithm (sha1, sha512) and a notation. `integrity` fields use
 SRI notation, the algorithm and the base64 hash (`sha1-q47ODEBi2l9tL6HQf8TNtfi5sls=`);
@@ -146,21 +146,13 @@ in none of its files. A kind becomes a signal only if it
    releases (`npm run eval:content` and the Evaluate content workflow);
 4. needs no package code run and no service besides the registry.
 
-The measurement of 2026-10-29
-([run](https://github.com/nhinata/bumpvet/actions/runs/40793276464)) chose
-the kinds of `hidden-code` and `new-capability`. Of the 424 malicious
-releases, 46 changed no install script; these two caught 39 of them, and none
-of 597 benign updates. `child_process` and `XMLHttpRequest` would have caught
-one more and flagged two benign updates, so they are left out. The 17 releases
-caught only by code after spaces come from one attack (June 2025). The
-evaluation left files over 20 MB unread: none in the benign updates; the
-malicious report did not count them, so its figures may include releases read
-only in part.
+The kinds of `hidden-code` and `new-capability` were chosen this way: of the
+malicious releases measured that changed no install script, they catch 39 of
+46, and they flag none of 597 benign updates (eval/README.md, "Content").
 
 How a release's files are read:
 
-- the tarball named by the registry's `dist.tarball`, checked against the
-  registry's sha512 integrity (sha1 `shasum` for versions from before sha512)
+- the registry's tarball for the version, checked against the registry's hash
   before anything is read. A tarball that does not match, or cannot be
   fetched, fails the run, as a packument does;
 - in memory, never written to disk, never run;
@@ -171,20 +163,11 @@ How a release's files are read:
 - within limits: 256 MB to download, 512 MB unpacked, 100,000 files, 128 MB
   for one file. A release over a limit, or in a form the reader does not
   understand, is never passed in silence: the new version gets
-  `content-not-checked`, the version replaced `previous-not-checked`. When the registry
-  declares a size or file count over a limit, the tarball is not downloaded;
-  the declared figures come from the publisher, so the limits are checked
-  again while reading;
-- not at all when the verdict is already `BLOCK` or the version does not
-  come from the registry, and the version replaced only when the new one has
-  a kind to compare. Each tarball is read once per run.
+  `content-not-checked`, the version replaced `previous-not-checked`.
 
 _Trade-off:_ code written to avoid these patterns passes them, and an
-injected change that adds no new kind (`@solana/web3.js@1.95.7` and four
-more in the measurement) is missed. The sixth release no signal caught,
-`axios@1.14.1`, changed only its dependencies, and its new dependency adds
-an install script. Source match (see [Planned](#planned)) is what would see
-the others.
+injected change that adds no new kind is missed (see
+[Known misses](#known-misses)).
 
 ## Decisions and the numbers behind them
 
@@ -208,9 +191,9 @@ the others.
 - **A registry URL is compared with the registry, not with a pattern.** Given
   what npm verifies (see [Threat model](#threat-model)), only an entry
   without a comparable integrity has to be checked by URL, and then against
-  the registry's own `dist.tarball`, exactly. An earlier version matched URLs
-  against `/<name>/-/*.tgz` instead; review found a new way past it in each
-  round (`..`, `%2e%2e`, backslashes, `%2f`, another version's file). On 857
+  the registry's own `dist.tarball`, exactly. Matching URLs against
+  `/<name>/-/*.tgz` was bypassed in each round of review (`..`, `%2e%2e`,
+  backslashes, `%2f`, another version's file). On 857
   entries from npm-generated lockfiles, every `resolved` equals the
   registry's `dist.tarball` and every integrity equals the registry's, so the
   exact comparison raises no false positives there.
@@ -224,41 +207,29 @@ the others.
 - **Bundled dependencies are vetted like any other entry.** Which entries npm
   takes from a tarball depends on more than the lockfile (see
   [Threat model](#threat-model)), so a rule that reads only the lockfile can
-  be steered into leaving out what npm downloads. Earlier versions skipped
-  entries flagged `inBundle`; a copy of npm's own rule (arborist's
-  `Node#getBundler`) applied to the lockfile was steered in review through a
-  workspace's `bundleDependencies`. Bundled entries are vetted as registry
-  packages by name and version; the pull request that made this change
-  measured what that costs on updates of `npm`, which bundles its
-  dependencies. _Trade-off:_ a bundled version that is not on the registry is
-  `not-in-registry` (`BLOCK`).
+  be steered into leaving out what npm downloads: skipping entries flagged
+  `inBundle`, or applying npm's own rule (arborist's `Node#getBundler`) to the
+  lockfile, was steered through a workspace's `bundleDependencies`. Bundled
+  entries are vetted as registry packages by name and version. _Trade-off:_ a
+  bundled version that is not on the registry is `not-in-registry` (`BLOCK`).
 - **An entry without `resolved` is vetted as a registry package.** npm
   fetches it from the registry by name and version (see
-  [Threat model](#threat-model)), so that version is what is vetted. This was
-  `not-from-registry` before.
-- **Packages bumpvet cannot vet are signals too.** An early version listed them
-  in a separate "not vetted" section, outside the verdict table; that broke
-  principle 2 and let them pass with exit code 0. They now go through the
-  table like everything else.
-- **The limits fit large packages.** `next` is 192 MB unpacked (44 MB to
-  download), `@next/swc-linux-x64-gnu` holds one file of about 100 MB,
-  `@mui/icons-material` has 43,010 files (2026-10-29). Lower limits would
-  make each update of them `REVIEW`, and a verdict that shows up on every
-  update is one people stop reading. The patterns take under a second on
-  100 MB. No release among the 597 benign updates declares a size or file
-  count over a limit; the largest is `date-fns`, 22.6 MB and 6,600 files.
-  _Trade-off:_ an update of `next` downloads `next` and each platform's
-  `@next/swc` package, about 330 MB.
+  [Threat model](#threat-model)), so that version is what is vetted.
+- **Packages bumpvet cannot vet are signals too.** A separate "not vetted"
+  list outside the verdict table would break principle 2 and let them pass
+  with exit code 0.
+- **The limits fit large packages.** `next` is 192 MB unpacked,
+  `@next/swc-linux-x64-gnu` holds one file of about 100 MB, and
+  `@mui/icons-material` has 43,010 files. Lower limits would make each update
+  of them `REVIEW`, and a verdict that shows up on every update is one people
+  stop reading.
 - **A new version that cannot be read is a content change.** Going over a
   limit costs an attacker little: the declared size is the publisher's to
   write, and a run of zeros compresses about a thousand times. As anything
   less than a content signal, `content-not-checked` would let a release with
   obfuscated code turn its `BLOCK` into a `REVIEW` that way. A version the
   update replaces was published before it, so `previous-not-checked` is only
-  a reason to look: `unchecked`, never more than `REVIEW`. Comparing the
-  growth from the version replaced was considered for releases that are
-  large in earnest; it would only matter above 256 MB unpacked, where no
-  measured release is, and it adds a threshold no measurement could set.
+  a reason to look: `unchecked`, never more than `REVIEW`.
   _Trade-off:_ a release over a limit in earnest is `BLOCK` while it is fresh.
 
 ## Known misses

@@ -71,14 +71,14 @@ strictest among the packages it brings in.
 | `node-ipc@10.1.1` (2022-03, by the maintainer) | OK — **missed** | fresh-publish                                                                                                                  |
 | `colors@1.4.1` (2022-01, by the maintainer)    | OK — **missed** | fresh-publish                                                                                                                  |
 
-15 of 18 caught (83%): 14 `BLOCK`, 1 `REVIEW`. The September 2025 campaign
-is caught by `hidden-code`, from the code its report shows. The three misses
+15 of 18 caught (83%): 14 `BLOCK`, 1 `REVIEW`. The September 2025 campaign is
+caught by `hidden-code`, from the code its report shows. The three misses
 carried their payload in the package code and came from an account that
 publishes the package. `@solana/web3.js@1.95.7`, from the same attack as
-1.95.6, added no kind the content signals look for in the measurement
-behind them (DESIGN.md, "Content signals"); for `node-ipc` and `colors` the test has no code from
-their reports. Source match (planned) is what would see code-only changes
-like these.
+1.95.6, added no kind the content signals look for in the measurement behind
+them (see [Content](#content-groundwork-for-content-signals)); for `node-ipc`
+and `colors` the test has no code from their reports. Source match (planned)
+is what would see code-only changes like these.
 
 Where a report does not name the publisher or mention provenance, the test
 fills in a value (see its header). One verdict depends on it: no report names
@@ -116,3 +116,18 @@ commands or a new network host:
   without network, never run, and never downloaded outside GitHub Actions.
 
 Both print the kinds of code found, never the code.
+
+### Results (2026-10-29)
+
+From [this run](https://github.com/nhinata/bumpvet/actions/runs/40793276464)
+and `npm run eval:content` on the same day. Of the 424 malicious releases, 46
+changed no install script; the kinds of `hidden-code` and `new-capability`
+caught 39 of them, and none of the 597 benign updates. `child_process` and
+`XMLHttpRequest` would have caught one more and flagged two benign updates, so
+they are left out. The 17 releases caught only by code after spaces come from
+one attack (June 2025). Five injected changes add no new kind
+(`@solana/web3.js@1.95.7` and four more); `axios@1.14.1` changed only its
+dependencies (bumpvet blocks it through the new dependency's install script).
+The evaluation left files over 20 MB unread: none in the benign updates; the
+malicious report did not count them, so its figures may include releases read
+only in part.

@@ -20,8 +20,9 @@ OK      41 packages with no signals
 have seen them one hour after they were published.)
 
 It looks at **how a release was published** (by whom, how recently, with or
-without provenance) and **what changed in it** (install scripts), and combines
-the two with a small table. Nothing from a package is ever executed.
+without provenance) and **what changed in it** (install scripts, and kinds of
+code in its files), and combines the two with a small table. Nothing from a
+package is ever executed.
 
 ## Usage
 
@@ -48,6 +49,11 @@ change verdicts without a change in your repository. To run it from source,
 see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 Exit codes: `0` nothing to block, `1` at least one `BLOCK`, `2` error.
+
+bumpvet reads from registry.npmjs.org: each changed package's metadata, and
+the tarball of its new version (and of the version it replaces, when there is
+something to compare). Large packages take time: an update of `next` downloads
+`next` and each platform's `@next/swc` package, about 330 MB.
 
 ### GitHub Actions
 
@@ -152,9 +158,8 @@ are what decides whether a check can be made required.
 ## Status
 
 Supports npm `package-lock.json` (lockfileVersion 2 and 3) and the
-public npm registry. Content analysis of the package code and matching
-releases against their source repository are planned; see
-[DESIGN.md](DESIGN.md#planned).
+public npm registry. Matching releases against their source repository is
+planned; see [DESIGN.md](DESIGN.md#planned).
 
 ## Contributing
 
