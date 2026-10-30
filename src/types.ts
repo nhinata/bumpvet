@@ -69,6 +69,7 @@ export interface VersionManifest {
   scripts?: Record<string, string>;
   dist?: {
     integrity?: string;
+    /** The sha1 in lowercase hex; dropped when it is not one. */
     shasum?: string;
     tarball?: string;
     attestations?: unknown;

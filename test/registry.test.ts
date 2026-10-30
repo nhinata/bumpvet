@@ -41,6 +41,18 @@ describe('slim', () => {
     });
   });
 
+  it('keeps a shasum only when it is a sha1, in lowercase', () => {
+    const shasum = (v: unknown) =>
+      slim({ versions: { '1.0.0': { dist: { shasum: v } } } }, 'pkg').versions['1.0.0']!.dist!
+        .shasum;
+    expect(shasum('AB8ECE0C4062DA5F6D2FA1D07FC4CDB5F8B9B25B')).toBe(
+      'ab8ece0c4062da5f6d2fa1d07fc4cdb5f8b9b25b',
+    );
+    expect(shasum('ab8ece0c')).toBeUndefined();
+    expect(shasum('zz'.repeat(20))).toBeUndefined();
+    expect(shasum(42)).toBeUndefined();
+  });
+
   it('tolerates missing fields, using the requested name', () => {
     expect(slim({ name: '', versions: {} }, 'pkg')).toEqual({
       name: 'pkg',

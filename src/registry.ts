@@ -88,7 +88,7 @@ export function slim(raw: unknown, name: string): Packument {
           ),
         dist: {
           integrity: str(dist.integrity),
-          shasum: str(dist.shasum),
+          shasum: sha1Hex(dist.shasum),
           tarball: str(dist.tarball),
           attestations: dist.attestations ? true : undefined,
           unpackedSize: count(dist.unpackedSize),
@@ -99,6 +99,9 @@ export function slim(raw: unknown, name: string): Packument {
   }
   return { name: str(raw.name) || name, time, versions };
 }
+
+const sha1Hex = (v: unknown) =>
+  typeof v === 'string' && /^[0-9a-f]{40}$/i.test(v) ? v.toLowerCase() : undefined;
 
 const count = (v: unknown) =>
   typeof v === 'number' && Number.isSafeInteger(v) && v >= 0 ? v : undefined;

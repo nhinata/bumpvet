@@ -218,7 +218,7 @@ async function download(
   const name = `${m.version} (${url})`;
   // sha512 where the registry has it; versions from before 2017 have only sha1.
   const sha512 = m.dist?.integrity?.split(/\s+/).find((h) => h.startsWith('sha512-'));
-  const sha1 = m.dist?.shasum && /^[0-9a-f]{40}$/i.test(m.dist.shasum) ? m.dist.shasum : undefined;
+  const sha1 = m.dist?.shasum;
   if (!sha512 && !sha1) throw new Unreadable('no sha512 or sha1 hash in the registry');
   let res: Response;
   try {
@@ -247,7 +247,7 @@ async function download(
   const data = Buffer.concat(chunks);
   const ok = sha512
     ? sha512 === `sha512-${createHash('sha512').update(data).digest('base64')}`
-    : sha1!.toLowerCase() === createHash('sha1').update(data).digest('hex');
+    : sha1 === createHash('sha1').update(data).digest('hex');
   if (!ok) throw new Error(`the tarball of ${name} does not match the registry's hash`);
   return data;
 }

@@ -266,7 +266,5 @@ function own<T>(map: Record<string, T>, key: string): T | undefined {
 
 /** The registry's hex `shasum` as an integrity string (`sha1-<base64>`). */
 function sha1Integrity(shasum: string | undefined): string | undefined {
-  return shasum && /^[0-9a-f]{40}$/i.test(shasum)
-    ? `sha1-${Buffer.from(shasum, 'hex').toString('base64')}`
-    : undefined;
+  return shasum && `sha1-${Buffer.from(shasum, 'hex').toString('base64')}`;
 }
