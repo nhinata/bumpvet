@@ -163,7 +163,8 @@ How a release's files are read:
 - within limits: 256 MB to download, 512 MB unpacked, 100,000 files, 128 MB
   for one file. A release over a limit, or in a form the reader does not
   understand, is never passed in silence: the new version gets
-  `content-not-checked`, the version replaced `previous-not-checked`.
+  `content-not-checked`; the version replaced, read only when the new version
+  has a kind to compare, gets `previous-not-checked`.
 
 _Trade-off:_ code written to avoid these patterns passes them, and an
 injected change that adds no new kind is missed (see

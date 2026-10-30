@@ -50,10 +50,10 @@ see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 Exit codes: `0` nothing to block, `1` at least one `BLOCK`, `2` error.
 
-bumpvet reads from registry.npmjs.org: each changed package's metadata, and
-the tarball of its new version (and of the version it replaces, when there is
-something to compare). Large packages take time: an update of `next` downloads
-`next` and each platform's `@next/swc` package, about 330 MB.
+bumpvet reads from registry.npmjs.org: the metadata of each changed registry
+package and, to compare files, the tarball of the new version and, when
+needed, of the version it replaces. Large packages take time: an update of
+`next` downloads `next` and each platform's `@next/swc` package, about 330 MB.
 
 ### GitHub Actions
 
