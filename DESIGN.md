@@ -198,7 +198,8 @@ injected change that adds no new kind is missed (see
   _Trade-off:_ a package that stops publishing with provenance, or publishes
   an old line by hand beside a line built in CI, is `REVIEW` when upgraded
   from a version with provenance, and otherwise until 20 versions without it
-  have been published.
+  have been published. In the benign evaluation this added 3 `REVIEW`s, all
+  on an old line: `mongoose@6.13.12` and `@7.8.13`, `uuid@13.0.1`.
 - **Removing an install script is not a signal.** It takes power away.
 - **A registry URL is compared with the registry, not with a pattern.** Given
   what npm verifies (see [Threat model](#threat-model)), only an entry

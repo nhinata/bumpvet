@@ -18,23 +18,22 @@ slightly as packages publish new versions.
 
 ### Results (2026-10-31, with content signals)
 
-From [this run](https://github.com/nhinata/bumpvet/actions/runs/41152027138).
+From [this run](https://github.com/nhinata/bumpvet/actions/runs/41199730181).
 The files of every release were read, none left unread; `hidden-code` and
-`new-capability` fired on none. The figures are the same as before content
-signals (2026-10-24).
+`new-capability` fired on none.
 
 | Vetted           | Updates | OK    | REVIEW | BLOCK |
 | ---------------- | ------- | ----- | ------ | ----- |
-| 1h after publish | 597     | 97.5% | 2.2%   | 0.3%  |
-| 7d after publish | 597     | 97.5% | 2.5%   | 0.0%  |
+| 1h after publish | 597     | 97.0% | 2.7%   | 0.3%  |
+| 7d after publish | 597     | 97.0% | 3.0%   | 0.0%  |
 
 What the non-OK cases were (7 days after publish):
 
-| Signal              | Count | What it was                                                               |
-| ------------------- | ----- | ------------------------------------------------------------------------- |
-| `publisher-changed` | 12    | a maintainer publishing the package for the first time in 20 versions     |
-| `install-scripts`   | 2     | `sharp` changing its install script                                       |
-| `provenance-lost`   | 1     | `pino@9.14.0`, a release on the old 9.x line published without provenance |
+| Signal              | Count | What it was                                                                                                                                    |
+| ------------------- | ----- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `publisher-changed` | 12    | a maintainer publishing the package for the first time in 20 versions                                                                          |
+| `install-scripts`   | 2     | `sharp` changing its install script                                                                                                            |
+| `provenance-lost`   | 4     | releases on an old line published without provenance after a newer line had it: `pino@9.14.0`, `mongoose@6.13.12` and `@7.8.13`, `uuid@13.0.1` |
 
 The 2 BLOCKs at one hour are the same `sharp` releases: a changed install
 script on a fresh release. That is exactly the pattern of a worm release, so

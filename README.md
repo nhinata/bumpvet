@@ -104,7 +104,7 @@ jobs:
 The signals, the thresholds and the measurements behind them are in
 [DESIGN.md](DESIGN.md). How often bumpvet speaks up on ordinary updates is
 measured in [eval/](eval/README.md): on 597 recent releases of 60 popular
-packages, **97.5% were OK**.
+packages, **97.0% were OK**.
 
 ## When bumpvet says BLOCK or REVIEW
 
