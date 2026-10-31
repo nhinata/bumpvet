@@ -1,5 +1,5 @@
 import { isObject, str, type JsonObject } from './json.js';
-import type { Change } from './types.js';
+import type { Change } from './types/lockfile.js';
 
 const REGISTRY = 'https://registry.npmjs.org/';
 

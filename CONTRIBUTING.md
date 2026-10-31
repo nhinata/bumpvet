@@ -132,6 +132,14 @@ Before writing a rule, look for code that already encodes it; before changing
 one, find every place that uses it. If you are about to write a comment such
 as "as in X" or "keep in sync with Y", move the rule into one place instead.
 
+**Shared definitions go in `src/types/`.** Types and constants that several
+modules use as common terms of a domain live in `src/types/<domain>.ts`, not
+in one of the modules that use them. The types of one function's parameters
+or result, and values chosen by measurement, stay with the code that uses
+them. Files in `src/types/` import only each other, so any module can import
+them without pulling in other code or making an import cycle; lint enforces
+this.
+
 **Checks on outside data start from the threat model.** Before writing a check
 that decides whether to trust a lockfile entry or a registry response, write
 down in DESIGN.md ([Threat model](DESIGN.md#threat-model)) what an attacker

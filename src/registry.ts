@@ -1,9 +1,11 @@
 import { messageWithCause } from './errors.js';
 import { isObject, str } from './json.js';
-import { INSTALL_HOOKS } from './signals.js';
-import type { Packument, VersionManifest } from './types.js';
-
-export type FetchPackument = (name: string) => Promise<Packument | null>;
+import {
+  INSTALL_HOOKS,
+  type FetchPackument,
+  type Packument,
+  type VersionManifest,
+} from './types/registry.js';
 
 /** Fetches full packuments from the public registry. Returns null for a package the registry does not have. */
 export function registryFetcher(

@@ -9,8 +9,9 @@
  */
 import { computeSignals } from '../src/signals.js';
 import { decide } from '../src/verdict.js';
-import type { SignalId, Verdict } from '../src/types.js';
 import { PACKAGES, arg, load, updates } from './updates.js';
+import type { SignalId } from '../src/types/signals.js';
+import type { Verdict } from '../src/types/verdicts.js';
 
 const baselineSize = arg('--baseline');
 const DELAYS = [

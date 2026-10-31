@@ -6,7 +6,7 @@ import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from '
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { slim } from '../src/registry.js';
-import type { Packument } from '../src/types.js';
+import type { Packument } from '../src/types/registry.js';
 
 export const PACKAGES = readFileSync(new URL('../../eval/packages.txt', import.meta.url), 'utf8')
   .split('\n')

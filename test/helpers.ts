@@ -1,6 +1,6 @@
-import { kindsIn, type ReadContent } from '../src/content.js';
-import type { FetchPackument } from '../src/registry.js';
-import type { Packument, VersionManifest } from '../src/types.js';
+import { kindsIn } from '../src/content.js';
+import type { ReadContent } from '../src/types/content.js';
+import type { FetchPackument, Packument, VersionManifest } from '../src/types/registry.js';
 
 export interface FakeVersion {
   version: string;

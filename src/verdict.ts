@@ -1,4 +1,5 @@
-import type { Signal, Verdict } from './types.js';
+import type { Signal } from './types/signals.js';
+import type { Verdict } from './types/verdicts.js';
 
 /**
  * The verdict table of DESIGN.md. Timing alone does not count: almost every

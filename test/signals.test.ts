@@ -2,8 +2,8 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { computeSignals } from '../src/signals.js';
 import { decide } from '../src/verdict.js';
-import { SIGNALS, type Signal } from '../src/types.js';
 import { packument } from './helpers.js';
+import { SIGNALS, type Signal } from '../src/types/signals.js';
 
 const now = new Date('2026-01-10T00:00:00Z');
 const ids = (signals: Signal[]) => signals.map((s) => s.id);

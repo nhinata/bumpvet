@@ -1,10 +1,12 @@
 import { createHash } from 'node:crypto';
 import { gzipSync } from 'node:zlib';
 import { describe, expect, it } from 'vitest';
-import { kindsIn, LIMITS, readTarball, registryContent, type ReadContent } from '../src/content.js';
-import type { Change, VersionManifest } from '../src/types.js';
+import { kindsIn, LIMITS, readTarball, registryContent } from '../src/content.js';
 import { vetChanges } from '../src/vet.js';
 import { fakeContent, fakeRegistry, packument } from './helpers.js';
+import type { ReadContent } from '../src/types/content.js';
+import type { Change } from '../src/types/lockfile.js';
+import type { VersionManifest } from '../src/types/registry.js';
 
 /** One tar entry: a ustar header with its checksum, then the body padded to 512 bytes. */
 function entry(name: string, body: string | Buffer = '', type = '0', size?: number): Buffer {

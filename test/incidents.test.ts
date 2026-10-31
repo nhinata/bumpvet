@@ -22,8 +22,9 @@
  */
 import { describe, expect, it } from 'vitest';
 import { vetChanges } from '../src/vet.js';
-import type { Change, Packument } from '../src/types.js';
 import { fakeContent, fakeRegistry, packument } from './helpers.js';
+import type { Change } from '../src/types/lockfile.js';
+import type { Packument } from '../src/types/registry.js';
 
 interface Incident {
   title: string;

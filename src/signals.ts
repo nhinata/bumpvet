@@ -1,28 +1,13 @@
-import { KINDS, type Content } from './content.js';
-import {
-  SIGNALS,
-  type Change,
-  type Packument,
-  type Signal,
-  type SignalId,
-  type VersionManifest,
-} from './types.js';
-
-export interface SignalOptions {
-  /** The moment the update is being vetted. */
-  now: Date;
-  /** How many earlier versions count as "the usual" publishers. */
-  baselineSize?: number;
-  /** A version younger than this is a fresh publish. */
-  freshHours?: number;
-}
+import { KINDS } from './content.js';
+import type { Content } from './types/content.js';
+import type { Change } from './types/lockfile.js';
+import { INSTALL_HOOKS, type Packument, type VersionManifest } from './types/registry.js';
+import { SIGNALS, type Signal, type SignalId, type SignalOptions } from './types/signals.js';
 
 /** A signal, with the group SIGNALS gives it. */
 const signal = <K extends SignalId>(id: K, before: string, after: string): Signal =>
   // TypeScript does not tie SIGNALS[id] to id's own member of Signal; the group is that id's.
   ({ id, group: SIGNALS[id], before, after }) as Signal;
-
-export const INSTALL_HOOKS = ['preinstall', 'install', 'postinstall'] as const;
 
 /** Compares the new version with the versions before it and returns what changed. */
 export function computeSignals(

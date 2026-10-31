@@ -1,4 +1,4 @@
-import { VERDICTS, type PackageResult, type Verdict } from './types.js';
+import { VERDICTS, type PackageResult, type Verdict } from './types/verdicts.js';
 
 const LABEL: Record<Verdict, string> = { block: 'BLOCK ', review: 'REVIEW', ok: 'OK    ' };
 

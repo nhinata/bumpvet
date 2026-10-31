@@ -3,10 +3,10 @@ import { chmodSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:f
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { afterEach, beforeAll, describe, expect, it } from 'vitest';
-import type { FetchPackument } from '../src/registry.js';
 import { runCli, type CliEnv } from '../src/run.js';
-import type { PackageResult } from '../src/types.js';
 import { fakeContent, fakeRegistry, lockfile, packument } from './helpers.js';
+import type { FetchPackument } from '../src/types/registry.js';
+import type { PackageResult } from '../src/types/verdicts.js';
 
 const now = new Date('2026-01-10T00:00:00Z');
 const registry = fakeRegistry(

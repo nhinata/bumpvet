@@ -1,11 +1,13 @@
 import { execFileSync } from 'node:child_process';
 import { readFileSync, statSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { registryContent, type ReadContent } from './content.js';
+import { registryContent } from './content.js';
 import { messageOf } from './errors.js';
-import { registryFetcher, type FetchPackument } from './registry.js';
+import { registryFetcher } from './registry.js';
 import { formatJson, formatText, printable } from './report.js';
 import { vetLockfiles } from './vet.js';
+import type { ReadContent } from './types/content.js';
+import type { FetchPackument } from './types/registry.js';
 
 const USAGE = `Usage:
   bumpvet [--base <git-ref>] [--json]     compare ./package-lock.json with the one at <git-ref> (default HEAD)

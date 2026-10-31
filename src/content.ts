@@ -1,7 +1,8 @@
 import { createHash } from 'node:crypto';
 import { gunzipSync } from 'node:zlib';
 import { messageWithCause } from './errors.js';
-import type { VersionManifest } from './types.js';
+import type { Content, ReadContent } from './types/content.js';
+import type { VersionManifest } from './types/registry.js';
 
 /**
  * Kinds of code each content signal looks for, each found by a pattern in a
@@ -34,15 +35,6 @@ export const LIMITS = {
   fileBytes: 128_000_000,
 };
 const MB = (n: number) => `${n / 1_000_000} MB`;
-
-/**
- * Each kind found in a release, with the first file it was found in; or why
- * the files were not read.
- */
-export type Content = { found: Map<string, string> } | { unread: string };
-
-/** Reads a version's files. Throws only when the registry cannot be reached. */
-export type ReadContent = (version: VersionManifest, signal?: AbortSignal) => Promise<Content>;
 
 /** A release bumpvet does not read: over a limit, or in a form it does not understand. */
 class Unreadable extends Error {}

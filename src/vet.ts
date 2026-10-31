@@ -1,15 +1,11 @@
 import { diffLockfiles } from './lockfile.js';
-import type { FetchPackument } from './registry.js';
-import type { ReadContent } from './content.js';
-import {
-  comparedVersions,
-  computeSignals,
-  contentSignals,
-  hasKinds,
-  type SignalOptions,
-} from './signals.js';
-import type { Change, PackageResult } from './types.js';
+import { comparedVersions, computeSignals, contentSignals, hasKinds } from './signals.js';
 import { decide } from './verdict.js';
+import type { ReadContent } from './types/content.js';
+import type { Change } from './types/lockfile.js';
+import type { FetchPackument } from './types/registry.js';
+import type { SignalOptions } from './types/signals.js';
+import type { PackageResult } from './types/verdicts.js';
 
 export async function vetChanges(
   changes: Change[],
