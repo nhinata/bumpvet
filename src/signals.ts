@@ -73,20 +73,24 @@ export function computeSignals(
     signals.push(signal('tarball-mismatch', tarball ?? NO_TARBALL, change.resolved));
   }
 
-  // How the new version was published is compared with these.
-  const recent = earlier.slice(-baselineSize);
   const publisher = next._npmUser?.name;
-  const usual = new Set(recent.map((v) => v._npmUser?.name).filter((n): n is string => !!n));
+  const usual = new Set(
+    earlier
+      .slice(-baselineSize)
+      .map((v) => v._npmUser?.name)
+      .filter((n): n is string => !!n),
+  );
   // A release with provenance was built by the repository's CI, which a stolen
   // token alone cannot do. Moving to trusted publishing is not an anomaly.
   if (publisher && usual.size > 0 && !usual.has(publisher) && !next.dist?.attestations) {
     signals.push(signal('publisher-changed', [...usual].join(', '), publisher));
   }
 
-  // The version replaced may predate provenance, and the one just before may
-  // be an attacker's (DESIGN.md, Decisions): any of them counts.
+  // Any version of the same major counts, since the version replaced may
+  // predate provenance; an old line is not held to a newer one's (DESIGN.md, Decisions).
+  const major = (v: string) => v.split('.', 1)[0];
   const attested =
-    recent.filter((v) => v.dist?.attestations).at(-1) ??
+    earlier.filter((v) => major(v.version) === major(change.to) && v.dist?.attestations).at(-1) ??
     (reference?.dist?.attestations ? reference : undefined);
   if (attested && !next.dist?.attestations) {
     signals.push(signal('provenance-lost', `provenance (${attested.version})`, 'none'));

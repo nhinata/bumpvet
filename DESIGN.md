@@ -110,7 +110,7 @@ before the same checks are trusted for it.
 | Signal                 | Group     | Fires when                                                                                                                                                                                                                                            |
 | ---------------------- | --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `publisher-changed`    | origin    | the account that published the new version published none of the 20 versions before it, and the new version has no provenance                                                                                                                         |
-| `provenance-lost`      | origin    | the version being replaced or one of the 20 versions before the new one had npm provenance, and the new one does not                                                                                                                                  |
+| `provenance-lost`      | origin    | the version being replaced, or an earlier version of the same major, had npm provenance, and the new one does not                                                                                                                                     |
 | `fresh-publish`        | timing    | the new version is less than 72 hours old                                                                                                                                                                                                             |
 | `install-scripts`      | content   | a `preinstall`, `install` or `postinstall` script was added or changed                                                                                                                                                                                |
 | `not-from-registry`    | origin    | the package comes from git, a `file:` path, another registry, or its entry has no version, an invalid name, or a field of the wrong type, so there is nothing to compare it with                                                                      |
@@ -188,18 +188,19 @@ injected change that adds no new kind is missed (see
   _Trade-off:_ someone with write access to the repository can publish with
   valid provenance; bumpvet does not defend against that case through this
   signal.
-- **Lost provenance is looked for in the same 20 versions, and in the version
-  replaced.** Compared with the version replaced alone, it was missed when
-  that version predates the package's move to provenance: vetted from older
-  versions, `@rspack/core` 1.1.7 (from 0.4.3) and `axios` 1.14.1 (from
-  0.30.3) lost it. Compared with the version published just before alone, a
-  stolen token can hide it by publishing another release first, as
-  `eslint-config-prettier` 9.1.1 came 18 minutes before 8.10.1.
-  _Trade-off:_ a package that stops publishing with provenance, or publishes
-  an old line by hand beside a line built in CI, is `REVIEW` when upgraded
-  from a version with provenance, and otherwise until 20 versions without it
-  have been published. In the benign evaluation this added 3 `REVIEW`s, all
-  on an old line: `mongoose@6.13.12` and `@7.8.13`, `uuid@13.0.1`.
+- **Lost provenance is looked for in the version replaced and in every
+  earlier version of the same major.** Compared with the version replaced
+  alone, it was missed when that version predates the package's move to
+  provenance: of 34 incident updates vetted from older versions, it fired on
+  3, and on 6 this way ([run](https://github.com/nhinata/bumpvet/actions/runs/41202607750)).
+  Looking back 5, 10 or 20 versions, or the whole history, gave the same
+  counts; what changed them was taking in other majors. That flagged old
+  lines published by hand beside a newer line built in CI: 4 of 597 benign
+  updates instead of 1 (`mongoose@6.13.12` and `@7.8.13`, `uuid@13.0.1`).
+  _Trade-off:_ an attack on an old line that never had provenance gets no
+  `provenance-lost` (`eslint-config-prettier@8.10.1`, `BLOCK` by its install
+  script), and a package that stops publishing with provenance within a major
+  is `REVIEW` until its next major. How often that happens is not measured.
 - **Removing an install script is not a signal.** It takes power away.
 - **A registry URL is compared with the registry, not with a pattern.** Given
   what npm verifies (see [Threat model](#threat-model)), only an entry

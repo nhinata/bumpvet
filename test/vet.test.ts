@@ -166,9 +166,7 @@ describe('vetLockfiles: what a change is compared with', () => {
       'node_modules/a': { version: '2.0.0' },
       'node_modules/b/node_modules/a': { version: '2.0.0' },
     });
-    // 0.9.0 is outside the baseline: only the comparison with it finds its provenance.
-    const opts = { now, baselineSize: 1 };
-    const results = await vetLockfiles(before, after, pkgs, fakeContent(), opts);
+    const results = await vetLockfiles(before, after, pkgs, fakeContent(), { now });
     expect(results.map((r) => [r.from, r.verdict])).toEqual([
       ['1.0.0', 'ok'],
       ['0.9.0', 'block'],

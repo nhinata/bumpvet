@@ -248,14 +248,6 @@ const incidents: Incident[] = [
           publisher: 'jounqin',
           provenance: true,
         },
-        // Published by the same token 18 minutes earlier (the advisory lists it):
-        // it hides nothing, since 10.1.5 had provenance.
-        {
-          version: '9.1.1',
-          time: '2025-07-18T15:51:53Z',
-          publisher: 'jounqin',
-          scripts: { postinstall: 'node install.js' },
-        },
         {
           version: '8.10.1',
           time: '2025-07-18T16:09:40Z',
@@ -264,9 +256,7 @@ const incidents: Incident[] = [
         },
       ]),
     ],
-    expected: {
-      'eslint-config-prettier': 'block: provenance-lost, fresh-publish, install-scripts',
-    },
+    expected: { 'eslint-config-prettier': 'block: fresh-publish, install-scripts' },
   },
   // https://www.stepsecurity.io/blog/supply-chain-security-alert-popular-nx-build-system-package-compromised-with-data-stealing-malware
   // (2025-08-26): published directly to npm without provenance, with a
