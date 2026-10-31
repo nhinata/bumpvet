@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { registryFetcher, slim } from '../src/registry.js';
+import { REGISTRY } from '../src/types/registry.js';
 
 const raw = {
   name: 'pkg',
@@ -146,23 +147,21 @@ describe('registryFetcher', () => {
       urls.push(url);
       return respond(200, raw)();
     }) as unknown as typeof fetch;
-    const get = registryFetcher('https://r/', fetchImpl);
+    const get = registryFetcher(fetchImpl);
     await get('@scope/pkg');
     await get('@scope/pkg');
-    expect(urls).toEqual(['https://r/@scope%2fpkg']);
+    expect(urls).toEqual([`${REGISTRY}@scope%2fpkg`]);
   });
 
   it('returns null for a package the registry does not have', async () => {
-    expect(
-      await registryFetcher('https://r/', respond(404) as unknown as typeof fetch)('nope'),
-    ).toBeNull();
+    expect(await registryFetcher(respond(404) as unknown as typeof fetch)('nope')).toBeNull();
   });
 
   it('names the package when the body is not JSON', async () => {
     const html = () => Promise.resolve(new Response('<!DOCTYPE html>', { status: 200 }));
-    await expect(
-      registryFetcher('https://r/', html as unknown as typeof fetch)('pkg'),
-    ).rejects.toThrow('registry sent invalid JSON for pkg');
+    await expect(registryFetcher(html as unknown as typeof fetch)('pkg')).rejects.toThrow(
+      'registry sent invalid JSON for pkg',
+    );
   });
 
   it('names the package and the reason when the request itself fails', async () => {
@@ -170,9 +169,7 @@ describe('registryFetcher', () => {
       Promise.reject(
         new TypeError('fetch failed', { cause: new Error('getaddrinfo ENOTFOUND r') }),
       );
-    await expect(
-      registryFetcher('https://r/', down as unknown as typeof fetch)('pkg'),
-    ).rejects.toThrow(
+    await expect(registryFetcher(down as unknown as typeof fetch)('pkg')).rejects.toThrow(
       'fetching pkg from the registry failed: fetch failed (getaddrinfo ENOTFOUND r)',
     );
   });
@@ -190,9 +187,7 @@ describe('registryFetcher', () => {
       { code: 'ECONNREFUSED' },
     );
     const down = () => Promise.reject(new TypeError('fetch failed', { cause: refused }));
-    await expect(
-      registryFetcher('https://r/', down as unknown as typeof fetch)('pkg'),
-    ).rejects.toThrow(
+    await expect(registryFetcher(down as unknown as typeof fetch)('pkg')).rejects.toThrow(
       'fetching pkg from the registry failed: fetch failed (connect ECONNREFUSED ::1:443; connect ECONNREFUSED 127.0.0.1:443)',
     );
   });
@@ -205,16 +200,14 @@ describe('registryFetcher', () => {
       },
     });
     const reset = () => Promise.resolve(new Response(body, { status: 200 }));
-    await expect(
-      registryFetcher('https://r/', reset as unknown as typeof fetch)('pkg'),
-    ).rejects.toThrow(
+    await expect(registryFetcher(reset as unknown as typeof fetch)('pkg')).rejects.toThrow(
       'reading the registry response for pkg failed: terminated (other side closed)',
     );
   });
 
   it('fails on other errors', async () => {
-    await expect(
-      registryFetcher('https://r/', respond(503) as unknown as typeof fetch)('pkg'),
-    ).rejects.toThrow(/503/);
+    await expect(registryFetcher(respond(503) as unknown as typeof fetch)('pkg')).rejects.toThrow(
+      /503/,
+    );
   });
 });

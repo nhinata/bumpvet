@@ -1,7 +1,12 @@
 import { KINDS } from './content.js';
 import type { Content } from './types/content.js';
 import type { Change } from './types/lockfile.js';
-import { INSTALL_HOOKS, type Packument, type VersionManifest } from './types/registry.js';
+import {
+  INSTALL_HOOKS,
+  NO_TARBALL,
+  type Packument,
+  type VersionManifest,
+} from './types/registry.js';
 import { SIGNALS, type Signal, type SignalId, type SignalOptions } from './types/signals.js';
 
 /** A signal, with the group SIGNALS gives it. */
@@ -65,9 +70,7 @@ export function computeSignals(
   // (DESIGN.md, threat model). With no tarball URL from the registry, that fails too.
   const tarball = next.dist?.tarball;
   if (!comparable && change.resolved !== undefined && change.resolved !== tarball) {
-    signals.push(
-      signal('tarball-mismatch', tarball ?? 'no tarball URL in the registry', change.resolved),
-    );
+    signals.push(signal('tarball-mismatch', tarball ?? NO_TARBALL, change.resolved));
   }
 
   const publisher = next._npmUser?.name;

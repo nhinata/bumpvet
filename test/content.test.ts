@@ -225,6 +225,15 @@ describe('registryContent', () => {
       unread: 'no sha512 or sha1 hash in the registry',
     });
   });
+
+  it('does not download a release whose manifest names no tarball', async () => {
+    const { calls, fetchImpl } = serving(file);
+    const noTarball = { version: '1.0.0', dist: { integrity: sha512 } };
+    expect(await registryContent(fetchImpl)(noTarball)).toEqual({
+      unread: 'no tarball URL in the registry',
+    });
+    expect(calls).toHaveLength(0);
+  });
   it('reads at most `concurrency` tarballs at a time', async () => {
     let open = 0;
     let most = 0;

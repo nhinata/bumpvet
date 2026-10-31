@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 import { gunzipSync } from 'node:zlib';
 import { messageWithCause } from './utils/errors.js';
 import type { Content, ReadContent } from './types/content.js';
-import type { VersionManifest } from './types/registry.js';
+import { NO_TARBALL, type VersionManifest } from './types/registry.js';
 
 /**
  * Kinds of code each content signal looks for, each found by a pattern in a
@@ -168,7 +168,7 @@ export function registryContent(
 
   return (m, signal) => {
     const url = m.dist?.tarball;
-    if (!url) return Promise.resolve({ unread: 'no tarball URL in the registry' });
+    if (!url) return Promise.resolve({ unread: NO_TARBALL });
     // With the hashes: a manifest that shares the URL but not the hash is checked on its own.
     const key = `${url} ${m.dist?.integrity} ${m.dist?.shasum}`;
     let p = cache.get(key);

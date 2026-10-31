@@ -23,6 +23,12 @@ export interface VersionManifest {
   };
 }
 
+/** The public registry: where bumpvet fetches from, and where a lockfile entry must come from. */
+export const REGISTRY = 'https://registry.npmjs.org/';
+
+/** Said when the registry's manifest of a version names no tarball. */
+export const NO_TARBALL = 'no tarball URL in the registry';
+
 export type FetchPackument = (name: string) => Promise<Packument | null>;
 
 /** The scripts npm runs when it installs a package. */

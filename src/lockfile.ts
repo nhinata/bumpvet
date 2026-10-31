@@ -1,13 +1,12 @@
 import { isObject, str, type JsonObject } from './utils/json.js';
 import type { Change } from './types/lockfile.js';
-
-const REGISTRY = 'https://registry.npmjs.org/';
+import { REGISTRY } from './types/registry.js';
 
 /**
  * A package name bumpvet can look up: an optional `@scope/` and a name, each
  * a segment that URL encoding leaves alone (so no `%`, `#`, `?`, `\\` or `/`)
- * and that does not start with "." (no path tricks). The name goes into the
- * registry URL as it is.
+ * and that does not start with "." (no path tricks). registryFetcher puts it
+ * into the registry URL with only its `/` encoded.
  */
 function validName(name: string): boolean {
   const segments = name.startsWith('@') ? name.slice(1).split('/') : [name];
