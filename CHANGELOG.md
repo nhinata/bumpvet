@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.0](https://github.com/nhinata/bumpvet/compare/v0.2.1...v0.3.0) (2026-10-31)
+
+
+### Features
+
+* content signals from the release's files ([#44](https://github.com/nhinata/bumpvet/issues/44)) ([#51](https://github.com/nhinata/bumpvet/issues/51)) ([655cece](https://github.com/nhinata/bumpvet/commit/655ceceac14d1f41ae621049e2a8c7ca09b24fb7))
+
 ## [0.2.1](https://github.com/nhinata/bumpvet/compare/v0.2.0...v0.2.1) (2026-10-26)
 
 
