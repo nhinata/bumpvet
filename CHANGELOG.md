@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.1](https://github.com/nhinata/bumpvet/compare/v0.3.0...v0.3.1) (2026-10-31)
+
+
+### Bug Fixes
+
+* look for lost provenance over the line of the version upgraded to ([#69](https://github.com/nhinata/bumpvet/issues/69)) ([1a67c0e](https://github.com/nhinata/bumpvet/commit/1a67c0ed2712b4d4b8be6c6333cd1a3533738a78))
+
 ## [0.3.0](https://github.com/nhinata/bumpvet/compare/v0.2.1...v0.3.0) (2026-10-31)
 
 
