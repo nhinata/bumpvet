@@ -18,7 +18,7 @@ slightly as packages publish new versions.
 
 ### Results (2026-10-31, with content signals)
 
-From [this run](https://github.com/nhinata/bumpvet/actions/runs/41152027138).
+From [this run](https://github.com/nhinata/bumpvet/actions/runs/41209672636).
 The files of every release were read, none left unread; `hidden-code` and
 `new-capability` fired on none. The figures are the same as before content
 signals (2026-10-24).
