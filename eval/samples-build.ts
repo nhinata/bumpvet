@@ -1,6 +1,6 @@
 /**
- * Writes samples.json: the malicious releases the Evaluate content workflow
- * reads. They are the npm `compromised_lib` samples GuardDog's evaluation
+ * Writes samples.json: the malicious releases the Evaluate malicious samples
+ * workflow reads. They are the npm `compromised_lib` samples GuardDog's evaluation
  * picked from the Datadog dataset (one per cluster of similar code), plus the
  * incidents of test/incidents.test.ts that the dataset has. Each is paired
  * with the version a caret range would upgrade from: the highest earlier

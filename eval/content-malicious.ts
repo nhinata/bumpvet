@@ -1,37 +1,31 @@
 /**
- * Content groundwork (issue #44), malicious side: which kinds of code real
- * malicious releases added, from the Datadog dataset samples listed in
- * samples.json (see samples-build.ts). Runs only in
- * .github/workflows/eval-content.yml, in three steps:
+ * Content signals on real malicious releases: which ones bumpvet's content
+ * signals (and install-scripts) fire for, reading the files as bumpvet reads
+ * them, from the Datadog dataset samples listed in samples.json (see
+ * samples-build.ts). Runs only in
+ * .github/workflows/eval-malicious.yml, in three steps:
  *
  *   fetch <dir>             on the runner: the encrypted sample ZIPs (checked
- *                           against their git blob hashes) and the tarballs
- *                           they are compared with (checked against the registry)
+ *                           against their git blob hashes), and what bumpvet
+ *                           reads from the version each one replaces
  *   scan <dir> <work> <id>  in a container without network, after the workflow
  *                           has unzipped sample <id> to <work>: one JSON line
  *   report <results>        on the runner: the tables, from the JSON lines
  *
- * Only kinds of code and counts are printed, never the code itself.
+ * Only signals and counts are printed, never the code itself. A removed
+ * release's publisher and publish time are gone, so there is no verdict here;
+ * test/incidents.test.ts has the verdicts of the incidents.
  */
 import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { kindsIn, readTarball, registryContent, Unreadable } from '../src/content.js';
 import { slim } from '../src/registry.js';
-import { computeSignals } from '../src/signals.js';
-import {
-  added,
-  CANDIDATE_SETS,
-  caught,
-  fetchTarball,
-  NEW_URL_HOST,
-  PATTERNS,
-  readDirectory,
-  readTarball,
-  scan,
-  SCOPES,
-  type Scope,
-} from './content.js';
-import { load } from './updates.js';
+import { computeSignals, contentSignals, hasKinds } from '../src/signals.js';
+import type { Content } from '../src/types/content.js';
+import { SIGNALS, type Signal, type SignalId } from '../src/types/signals.js';
+import { readDirectory } from './content.js';
+import { load, pool } from './updates.js';
 
 interface Sample {
   id: string;
@@ -46,35 +40,39 @@ interface Sample {
 interface Result {
   id: string;
   error?: string;
-  kinds?: Record<Scope, string[]>;
-  /** An install script was added or changed, as bumpvet's install-scripts signal reads it. */
-  installScripts?: boolean;
+  /** The content signals and install-scripts, as bumpvet would report them. */
+  signals?: SignalId[];
+  /** install-scripts could not be told: no package.json read in the sample, or not valid JSON. */
+  scriptsUnknown?: true;
+  /** Files read in the sample. */
   files?: string;
 }
 const { dataset, samples } = JSON.parse(
   readFileSync(new URL('../../eval/samples.json', import.meta.url), 'utf8'),
 ) as { dataset: { repo: string; commit: string }; samples: Sample[] };
-const INSTALL_SCRIPTS = 'install-scripts';
-
-/** The package.json nearest the root. */
-function manifest(files: Map<string, Buffer>): unknown {
-  const path = [...files.keys()]
-    .filter((f) => f === 'package.json' || f.endsWith('/package.json'))
-    .sort((a, b) => a.split('/').length - b.split('/').length)[0];
-  if (!path) throw new Error('no package.json');
-  return JSON.parse(files.get(path)!.toString('utf8'));
+/** The package.json nearest the root, if there is one and it parses. */
+function manifest(files: [string, Buffer][]): unknown {
+  const [, data] =
+    files
+      .filter(([f]) => f === 'package.json' || f.endsWith('/package.json'))
+      .sort(([a], [b]) => a.split('/').length - b.split('/').length)[0] ?? [];
+  try {
+    return data && JSON.parse(data.toString('utf8'));
+  } catch {
+    return undefined;
+  }
 }
 
 /**
- * Whether bumpvet's install-scripts signal fires from one package.json to the
- * other, by its own code. bumpvet reads the registry's manifest, which for a
- * removed release is gone; the tarball's package.json stands in for it.
+ * Whether bumpvet's install-scripts signal fires from the registry's manifest
+ * of the version replaced to the sample, by its own code. The registry's
+ * manifest of the removed release is gone; its package.json stands in for it.
  */
-function installScripts(s: Sample, prev: unknown, next: unknown): boolean {
+function installScripts(s: Sample, prev: unknown, next: unknown): Signal[] {
   const time = { [s.from]: '2000-01-01T00:00:00Z', [s.to]: '2000-01-02T00:00:00Z' };
   const p = slim({ name: s.name, time, versions: { [s.from]: prev, [s.to]: next } }, s.name);
   const change = { name: s.name, from: s.from, to: s.to };
-  return computeSignals(change, p, { now: new Date(time[s.to]!) }).some(
+  return computeSignals(change, p, { now: new Date(time[s.to]!) }).filter(
     (signal) => signal.id === 'install-scripts',
   );
 }
@@ -82,8 +80,8 @@ function installScripts(s: Sample, prev: unknown, next: unknown): boolean {
 async function fetchAll(dir: string): Promise<void> {
   mkdirSync(join(dir, 'zips'), { recursive: true });
   mkdirSync(join(dir, 'prev'), { recursive: true });
-  const queue = [...samples];
-  const one = async (s: Sample) => {
+  const readContent = registryContent();
+  await pool(samples, 8, async (s) => {
     let zip: Buffer;
     try {
       const res = await fetch(
@@ -101,42 +99,65 @@ async function fetchAll(dir: string): Promise<void> {
     const blob = createHash('sha1').update(`blob ${zip.length}\0`).update(zip).digest('hex');
     if (blob !== s.blob) throw new Error(`${s.zip}: hash does not match samples.json`);
     writeFileSync(join(dir, 'zips', `${s.id}.zip`), zip);
+    // The version replaced, as bumpvet reads it: its manifest, and the kinds of
+    // code in its files or why they were not read.
     try {
-      const tgz = await fetchTarball((await load(s.name)).versions[s.from]?.dist);
-      writeFileSync(join(dir, 'prev', `${s.id}.tgz`), tgz);
+      const m = (await load(s.name)).versions[s.from];
+      if (!m) throw new Error('not in the registry');
+      const prev = join(dir, 'prev', s.id);
+      const c = await readContent(m);
+      writeFileSync(
+        `${prev}.content.json`,
+        JSON.stringify('found' in c ? { found: [...c.found] } : c),
+      );
+      writeFileSync(`${prev}.json`, JSON.stringify(m));
     } catch (err) {
       // Reported by scan as not measured.
       console.error(`${s.name}@${s.from}: ${(err as Error).message}`);
     }
-  };
-  await Promise.all(
-    Array.from({ length: 8 }, async () => {
-      for (let s = queue.shift(); s; s = queue.shift()) await one(s);
-    }),
-  );
+  });
+}
+
+/** The files, or why bumpvet would not read them; other errors are thrown. */
+function attempt(read: () => [string, Buffer][]): [string, Buffer][] | string {
+  try {
+    return read();
+  } catch (err) {
+    if (err instanceof Unreadable) return err.message;
+    throw err;
+  }
 }
 
 function scanOne(dir: string, work: string, id: string): Result {
-  const prevPath = join(dir, 'prev', `${id}.tgz`);
-  if (!existsSync(prevPath)) return { id, error: 'previous version not fetched' };
-  const prevFiles = readTarball(readFileSync(prevPath));
+  const prev = join(dir, 'prev', id);
+  // Written last by fetch, so its presence means the version replaced was fetched.
+  if (!existsSync(`${prev}.json`)) return { id, error: 'previous version not fetched' };
+  const saved = JSON.parse(readFileSync(`${prev}.content.json`, 'utf8')) as
+    { found: [string, string][] } | { unread: string };
+  const before: Content = 'found' in saved ? { found: new Map(saved.found) } : saved;
   // A sample is the package's files, or the tarball itself.
-  let files = readDirectory(work);
-  const tarballs = [...files.keys()].filter((f) => /\.(?:tgz|tar\.gz)$/.test(f));
-  if (tarballs.length === 1) files = readTarball(files.get(tarballs[0]!)!);
-  const prev = scan(prevFiles);
-  const next = scan(files);
+  const nextFiles = attempt(() => {
+    const files = readDirectory(work);
+    const tarballs = files.filter(([f]) => /\.(?:tgz|tar\.gz)$/.test(f));
+    return tarballs.length === 1 ? readTarball(tarballs[0]![1]) : files;
+  });
   // Reading nothing would look like adding nothing.
-  if (!next.all.read) return { id, error: 'no files read' };
+  if (typeof nextFiles !== 'string' && !nextFiles.length) return { id, error: 'no files read' };
   const sample = samples.find((x) => x.id === id)!;
+  const after: Content =
+    typeof nextFiles === 'string' ? { unread: nextFiles } : { found: kindsIn(nextFiles) };
+  const versions = { next: { version: sample.to }, reference: { version: sample.from } };
+  const signals = contentSignals(versions, after, hasKinds(after) ? before : undefined);
+  const next = typeof nextFiles === 'string' ? undefined : manifest(nextFiles);
+  const scripts =
+    next === undefined
+      ? []
+      : installScripts(sample, JSON.parse(readFileSync(`${prev}.json`, 'utf8')), next);
   return {
     id,
-    kinds: { code: added(prev, next, 'code'), all: added(prev, next, 'all') },
-    installScripts: installScripts(sample, manifest(prevFiles), manifest(files)),
-    files: SCOPES.map(
-      (s) =>
-        `${prev[s].read} -> ${next[s].read}${next[s].tooLarge ? ` (${next[s].tooLarge} too large)` : ''}`,
-    ).join(' / '),
+    signals: [...scripts, ...signals].map((x) => x.id),
+    ...(next === undefined ? { scriptsUnknown: true as const } : {}),
+    files: typeof nextFiles === 'string' ? 'not read' : String(nextFiles.length),
   };
 }
 
@@ -148,51 +169,39 @@ function report(resultsPath: string): void {
       .map((l) => JSON.parse(l) as Result)
       .map((r) => [r.id, r]),
   );
-  // An install-script change counts as one more kind, in either scope.
   const measured = samples.flatMap((s) => {
     const r = byId.get(s.id);
-    if (!r?.kinds) return [];
-    const extra = r.installScripts ? [INSTALL_SCRIPTS] : [];
-    const kinds = { code: [...extra, ...r.kinds.code], all: [...extra, ...r.kinds.all] };
-    return [{ s, r, kinds }];
+    return r?.signals ? [{ s, signals: r.signals, scriptsUnknown: !!r.scriptsUnknown }] : [];
   });
   type Measured = (typeof measured)[number];
-  const notMeasured = samples.filter((s) => !byId.get(s.id)?.kinds);
-  const withoutScripts = measured.filter((m) => !m.r.installScripts);
+  const has = (m: Measured, id: SignalId) => m.signals.includes(id);
+  const notMeasured = samples.filter((s) => !byId.get(s.id)?.signals);
+  const withoutScripts = measured.filter((m) => !m.scriptsUnknown && !has(m, 'install-scripts'));
+  // With an origin or timing signal, a content signal makes a BLOCK.
+  const content = (m: Measured) => m.signals.some((id) => SIGNALS[id] === 'content');
   const month = (s: Sample) => s.zip.split('/').at(-1)!.slice(0, 7);
-  const count = (set: Measured[], scope: Scope, has: (kinds: string[]) => boolean) =>
-    set.filter((m) => has(m.kinds[scope])).length;
-  const both = (set: Measured[], has: (kinds: string[]) => boolean) =>
-    SCOPES.map((s) => count(set, s, has)).join(' / ');
-  const KINDS = [INSTALL_SCRIPTS, ...Object.keys(PATTERNS), NEW_URL_HOST];
+  const count = (set: Measured[], id: SignalId) => set.filter((m) => has(m, id)).length;
+  // The signals this evaluation computes: the content group and the unchecked one.
+  const computed = (Object.keys(SIGNALS) as SignalId[]).filter(
+    (id) => SIGNALS[id] === 'content' || SIGNALS[id] === 'unchecked',
+  );
 
   console.log(`## Malicious releases: ${measured.length} measured of ${samples.length}\n`);
-  console.log(`Without an install-script change: ${withoutScripts.length}.`);
-  console.log('Counts are "code files / all files".\n');
-  console.log('| Kind added | Samples | Without an install-script change |');
-  console.log('| --- | --- | --- |');
-  for (const kind of KINDS) {
-    const has = (kinds: string[]) => kinds.includes(kind);
-    const rest = kind === INSTALL_SCRIPTS ? '' : both(withoutScripts, has);
-    console.log(`| \`${kind}\` | ${both(measured, has)} | ${rest} |`);
-  }
-
-  console.log('\n### Candidate sets: samples that add any kind in the set\n');
-  console.log('| Set | Kinds | Samples | Without an install-script change |');
-  console.log('| --- | --- | --- | --- |');
-  for (const [name, set] of Object.entries(CANDIDATE_SETS)) {
-    const has = (kinds: string[]) => caught(kinds, set);
-    const withScripts = (kinds: string[]) => kinds.includes(INSTALL_SCRIPTS) || has(kinds);
-    console.log(
-      `| ${name} | ${set.join(', ')} | ${both(measured, has)} (with install-scripts: ${both(measured, withScripts)}) | ${both(withoutScripts, has)} |`,
-    );
-  }
-
-  const anySet = [...new Set(Object.values(CANDIDATE_SETS).flat())];
-  const missed = withoutScripts.filter((m) => !caught(m.kinds.all, anySet));
   console.log(
-    `\n### Without an install-script change and caught by no set, all files (${missed.length})\n`,
+    `With a content signal: ${measured.filter(content).length}. ` +
+      `Without an install-script change: ${withoutScripts.length}, ` +
+      `of which ${withoutScripts.filter(content).length} have another content signal. ` +
+      `Install scripts not known (no package.json, or not valid JSON): ${measured.filter((m) => m.scriptsUnknown).length}.\n`,
   );
+  console.log('| Signal | Samples | Without an install-script change |');
+  console.log('| --- | --- | --- |');
+  for (const id of computed) {
+    const rest = id === 'install-scripts' ? '' : String(count(withoutScripts, id));
+    console.log(`| \`${id}\` | ${count(measured, id)} | ${rest} |`);
+  }
+
+  const missed = measured.filter((m) => !content(m));
+  console.log(`\n### No content signal (${missed.length})\n`);
   console.log('| Month | Samples | Packages |');
   console.log('| --- | --- | --- |');
   for (const m of [...new Set(missed.map((x) => month(x.s)))].sort()) {
@@ -200,28 +209,15 @@ function report(resultsPath: string): void {
     console.log(`| ${m} | ${set.length} | ${set.map((x) => `${x.s.name}@${x.s.to}`).join(', ')} |`);
   }
 
-  console.log('\n### By month the dataset found them, code files\n');
-  console.log('| Month | Samples | Kinds added (samples) |');
-  console.log('| --- | --- | --- |');
-  for (const m of [...new Set(measured.map((x) => month(x.s)))].sort()) {
-    const set = measured.filter((x) => month(x.s) === m);
-    const cells = KINDS.map((k) => [k, count(set, 'code', (kinds) => kinds.includes(k))] as const)
-      .filter(([, n]) => n)
-      .map(([k, n]) => `\`${k}\` ${n}`)
-      .join(', ');
-    console.log(`| ${m} | ${set.length} | ${cells} |`);
-  }
-
   console.log('\n### Incidents from test/incidents.test.ts\n');
-  console.log('| Release | Kinds added, code files | Added with all files | Files read |');
-  console.log('| --- | --- | --- | --- |');
+  console.log('| Release | Signals | Files read in the sample |');
+  console.log('| --- | --- | --- |');
   for (const s of samples.filter((x) => x.incident)) {
     const r = byId.get(s.id);
-    const m = measured.find((x) => x.s === s);
-    const list = (kinds: string[]) => kinds.map((k) => `\`${k}\``).join(', ') || 'none';
-    const code = m ? list(m.kinds.code) : `**${r?.error ?? 'not scanned'}**`;
-    const more = m ? list(m.kinds.all.filter((k) => !m.kinds.code.includes(k))) : '';
-    console.log(`| ${s.name} ${s.from} -> ${s.to} | ${code} | ${more} | ${r?.files ?? ''} |`);
+    const signals = r?.signals
+      ? r.signals.map((id) => `\`${id}\``).join(', ') || 'none'
+      : `**${r?.error ?? 'not scanned'}**`;
+    console.log(`| ${s.name} ${s.from} -> ${s.to} | ${signals} | ${r?.files ?? ''} |`);
   }
 
   if (notMeasured.length) {

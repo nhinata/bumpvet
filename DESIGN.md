@@ -143,7 +143,7 @@ in none of its files. A kind becomes a signal only if it
    stated as before -> after;
 2. is not specific to one attack (see [Not doing](#not-doing-and-why));
 3. meets principle 6: measured on benign updates and on real malicious
-   releases (`npm run eval:content` and the Evaluate content workflow);
+   releases ([eval/README.md](eval/README.md));
 4. needs no package code run and no service besides the registry.
 
 The kinds of `hidden-code` and `new-capability` were chosen this way: of the

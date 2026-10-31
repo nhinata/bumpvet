@@ -1,72 +1,20 @@
-name: Evaluate content
+name: Evaluate false positives
 
-# Groundwork for content signals (issue #44): which kinds of code malicious
-# releases added, and how often benign updates add the same kinds. Both tables
-# go to the run's summary and log.
-#
-# The malicious samples are real malware, read as text and never run. They
-# are unzipped only inside a container with no network, no capabilities, a
-# read-only root and an unprivileged user, into memory that is dropped with
-# the container. The job holds no secrets, and its token can only read this
-# public repository.
+# `npm run eval`: how often bumpvet speaks up on benign updates of popular
+# packages, vetting each as the CLI does and reading every tarball. Run by
+# hand for a change that can change a verdict (CONTRIBUTING.md, Evaluation).
+# The report goes to the run's summary and log.
 on:
   workflow_dispatch:
 
 permissions:
   contents: read
 
-# Explicit bash adds pipefail, so a failing command piped into tee fails the step.
-defaults:
-  run:
-    shell: bash
-
 concurrency:
   group: ${{ github.workflow }}
   cancel-in-progress: false
 
 jobs:
-  malicious:
-    runs-on: ubuntu-latest
-    timeout-minutes: 90
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        with:
-          node-version: 24
-          package-manager-cache: false
-      # .npmrc keeps dependencies' install scripts from running.
-      - run: npm ci
-      - run: npx tsc -p tsconfig.json
-      - run: node dist-eval/eval/content-malicious.js fetch "$RUNNER_TEMP/samples"
-      # One sample at a time: unzipped into memory, read, and removed.
-      - name: Scan the samples without network
-        run: |
-          docker run --rm --network none --cap-drop ALL --security-opt no-new-privileges \
-            --read-only --user 1000:1000 --tmpfs /work:rw,noexec,nosuid,nodev,size=2g \
-            -v "$PWD:/app:ro" -v "$RUNNER_TEMP/samples:/in:ro" -w /app \
-            node:24-bookworm@sha256:6449e19d8184d84062525b6a7524def03146c2cb04a7f08b076680d0e8e4240a \
-            sh -c '
-              # No -e: a sample that fails is one error line, not the end of the run.
-              for zip in /in/zips/*.zip; do
-                id=$(basename "$zip" .zip)
-                mkdir "/work/$id"
-                # unzip names archive members in its messages; they stay out of the results and the log.
-                if unzip -q -P infected "$zip" -d "/work/$id" >/dev/null 2>&1; then
-                  node dist-eval/eval/content-malicious.js scan /in "/work/$id" "$id" ||
-                    echo "{\"id\":\"$id\",\"error\":\"scan failed\"}"
-                else
-                  echo "{\"id\":\"$id\",\"error\":\"unzip failed\"}"
-                fi
-                # A sample can hold read-only directories.
-                chmod -R u+rwx "/work/$id" 2>/dev/null
-                rm -rf "/work/$id"
-              done
-            ' > "$RUNNER_TEMP/results.jsonl"
-      # In the log as well as the summary, so it can be read without signing in.
-      - run: node dist-eval/eval/content-malicious.js report "$RUNNER_TEMP/results.jsonl" | tee -a "$GITHUB_STEP_SUMMARY"
-
   benign:
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -79,4 +27,11 @@ jobs:
           node-version: 24
           package-manager-cache: false
       - run: npm ci
-      - run: npm run --silent eval:content | tee -a "$GITHUB_STEP_SUMMARY"
+      # Plain text, kept as it is in the summary by a code block that is closed
+      # even when the evaluation fails.
+      - run: |
+          status=0
+          npm run --silent eval > "$RUNNER_TEMP/eval.txt" || status=$?
+          cat "$RUNNER_TEMP/eval.txt"
+          { echo '```'; cat "$RUNNER_TEMP/eval.txt"; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          exit "$status"

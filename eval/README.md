@@ -16,7 +16,11 @@ would be, and vetted at two moments:
 Packuments are cached in `eval/.cache/` (not committed), so numbers can shift
 slightly as packages publish new versions.
 
-### Results (2026-10-24, v0.1)
+### Results (2026-10-31, with content signals)
+
+From [this run](https://github.com/nhinata/bumpvet/actions/runs/41152027138).
+The files of every release were read; no content signal fired, and none were
+left unread. The figures are the same as before content signals (2026-10-24).
 
 | Vetted           | Updates | OK    | REVIEW | BLOCK |
 | ---------------- | ------- | ----- | ------ | ----- |
@@ -101,10 +105,10 @@ with the version it upgrades from. These two counts chose which kinds became
 signals (DESIGN.md, "Content signals"), from candidates such as running
 commands or a new network host:
 
-- **Benign:** `npm run eval:content` reads the tarballs of the updates above
-  and counts how often each kind is added. Tarballs are checked against the
-  registry's integrity and read in memory; nothing is kept.
-- **Malicious:** the [Evaluate content](../.github/workflows/eval-content.yml)
+- **Benign:** `npm run eval` (above) reads the tarballs of the updates as the
+  CLI does: checked against the registry's hash and read in memory; nothing
+  is kept.
+- **Malicious:** the [Evaluate malicious samples](../.github/workflows/eval-malicious.yml)
   workflow, run by hand, does the same for real malicious releases from the
   [Datadog malicious packages dataset](https://github.com/DataDog/malicious-software-packages-dataset),
   listed with their hashes in [samples.json](samples.json): the hijacked
@@ -120,7 +124,8 @@ Both print the kinds of code found, never the code.
 ### Results (2026-10-29)
 
 From [this run](https://github.com/nhinata/bumpvet/actions/runs/40793276464)
-and `npm run eval:content` on the same day. Of the 424 malicious releases, 46
+and a count of the benign updates on the same day, both made before the
+evaluation used bumpvet's own reading. Of the 424 malicious releases, 46
 changed no install script; the kinds of `hidden-code` and `new-capability`
 caught 39 of them, and none of the 597 benign updates. `child_process` and
 `XMLHttpRequest` would have caught one more and flagged two benign updates, so

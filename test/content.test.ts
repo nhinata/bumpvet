@@ -58,7 +58,7 @@ describe('kindsIn', () => {
     expect(performance.now() - start).toBeLessThan(1000);
   });
 
-  // Each of these is in benign code that eval:content measured.
+  // Each of these is in benign code that the benign evaluation measured.
   it.each([
     ['a method named eval', 'parser.eval(x)'],
     ['an identifier ending in eval', 'safeEval(x)'],
