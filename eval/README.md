@@ -67,7 +67,7 @@ strictest among the packages it brings in.
 | `ua-parser-js@0.7.29` (2021-10)                | BLOCK           | fresh-publish, install-scripts                                                                                                 |
 | `coa@2.0.3` (2021-11)                          | BLOCK           | fresh-publish, install-scripts                                                                                                 |
 | `rc@1.2.9` (2021-11)                           | BLOCK           | fresh-publish, install-scripts                                                                                                 |
-| `eslint-config-prettier@8.10.1` (2025-07)      | BLOCK           | fresh-publish, install-scripts                                                                                                 |
+| `eslint-config-prettier@8.10.1` (2025-07)      | BLOCK           | provenance-lost, fresh-publish, install-scripts                                                                                |
 | `nx@20.9.0` (2025-08)                          | BLOCK           | provenance-lost, fresh-publish, install-scripts                                                                                |
 | `@rspack/core@1.1.7` (2024-12)                 | BLOCK           | provenance-lost, fresh-publish, install-scripts                                                                                |
 | `axios@1.14.1` (2026-03)                       | BLOCK           | axios: provenance-lost, fresh-publish (REVIEW); new dependency `plain-crypto-js@4.2.1`: fresh-publish, install-scripts (BLOCK) |

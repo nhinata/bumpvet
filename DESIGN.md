@@ -110,7 +110,7 @@ before the same checks are trusted for it.
 | Signal                 | Group     | Fires when                                                                                                                                                                                                                                            |
 | ---------------------- | --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `publisher-changed`    | origin    | the account that published the new version published none of the 20 versions before it, and the new version has no provenance                                                                                                                         |
-| `provenance-lost`      | origin    | the version published just before the new one had npm provenance and the new one does not                                                                                                                                                             |
+| `provenance-lost`      | origin    | the version being replaced or one of the 20 versions before the new one had npm provenance, and the new one does not                                                                                                                                  |
 | `fresh-publish`        | timing    | the new version is less than 72 hours old                                                                                                                                                                                                             |
 | `install-scripts`      | content   | a `preinstall`, `install` or `postinstall` script was added or changed                                                                                                                                                                                |
 | `not-from-registry`    | origin    | the package comes from git, a `file:` path, another registry, or its entry has no version, an invalid name, or a field of the wrong type, so there is nothing to compare it with                                                                      |
@@ -188,6 +188,16 @@ injected change that adds no new kind is missed (see
   _Trade-off:_ someone with write access to the repository can publish with
   valid provenance; bumpvet does not defend against that case through this
   signal.
+- **Lost provenance is looked for in the same 20 versions, and in the version
+  replaced.** Compared with the version replaced alone, it was missed when
+  that version predates the package's move to provenance: vetted from older
+  versions, `@rspack/core` 1.1.7 (from 0.4.3) and `axios` 1.14.1 (from
+  0.30.3) lost it. Compared with the version published just before alone, a
+  stolen token can hide it by publishing another release first, as
+  `eslint-config-prettier` 9.1.1 came 18 minutes before 8.10.1.
+  _Trade-off:_ a package that stops publishing with provenance, or publishes
+  an old line by hand beside a line built in CI, is `REVIEW` until 20 versions
+  without provenance have been published.
 - **Removing an install script is not a signal.** It takes power away.
 - **A registry URL is compared with the registry, not with a pattern.** Given
   what npm verifies (see [Threat model](#threat-model)), only an entry

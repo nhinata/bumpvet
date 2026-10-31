@@ -72,6 +72,17 @@ describe('computeSignals', () => {
     ]);
   });
 
+  it('flags lost provenance when the version just before had none', () => {
+    const p = packument('pkg', [
+      ...history,
+      { version: '1.1.1', time: '2025-11-30T00:00:00Z', publisher: 'alice' },
+      { version: '1.2.0', time: '2025-12-01T00:00:00Z', publisher: 'alice' },
+    ]);
+    expect(ids(computeSignals({ name: 'pkg', from: '1.1.0', to: '1.2.0' }, p, { now }))).toEqual([
+      'provenance-lost',
+    ]);
+  });
+
   it('does not flag a package that never had provenance', () => {
     const p = packument('pkg', [
       { version: '1.0.0', time: '2025-01-01T00:00:00Z', publisher: 'alice' },

@@ -121,8 +121,8 @@ function shallowFirst(entries: Map<string, LockPackage>): [string, LockPackage][
  *
  * - for tamper signals (`fromSource`, `fromIntegrity`), the old copy of the
  *   same version: the one at the same path, else the least nested one;
- * - for what changed (`from`, which install-scripts and provenance-lost
- *   compare with), the old entry at the same path, else that copy of the same
+ * - for what changed (`from`, which install-scripts compares with, and
+ *   provenance-lost among others), the old entry at the same path, else that copy of the same
  *   version, else the least nested old entry of the name.
  *
  * Without an old copy of the same version, the second is used for both. A new
