@@ -19,8 +19,9 @@ slightly as packages publish new versions.
 ### Results (2026-10-31, with content signals)
 
 From [this run](https://github.com/nhinata/bumpvet/actions/runs/41152027138).
-The files of every release were read; no content signal fired, and none were
-left unread. The figures are the same as before content signals (2026-10-24).
+The files of every release were read, none left unread; `hidden-code` and
+`new-capability` fired on none. The figures are the same as before content
+signals (2026-10-24).
 
 | Vetted           | Updates | OK    | REVIEW | BLOCK |
 | ---------------- | ------- | ----- | ------ | ----- |
@@ -121,18 +122,29 @@ commands or a new network host:
 
 Both print the kinds of code found, never the code.
 
-### Results (2026-10-29)
+### Results (2026-10-31)
 
-From [this run](https://github.com/nhinata/bumpvet/actions/runs/40793276464)
-and a count of the benign updates on the same day, both made before the
-evaluation used bumpvet's own reading. Of the 424 malicious releases, 46
-changed no install script; the kinds of `hidden-code` and `new-capability`
-caught 39 of them, and none of the 597 benign updates. `child_process` and
-`XMLHttpRequest` would have caught one more and flagged two benign updates, so
-they are left out. The 17 releases caught only by code after spaces come from
-one attack (June 2025). Five injected changes add no new kind
-(`@solana/web3.js@1.95.7` and four more); `axios@1.14.1` changed only its
-dependencies (bumpvet blocks it through the new dependency's install script).
-The evaluation left files over 20 MB unread: none in the benign updates; the
-malicious report did not count them, so its figures may include releases read
-only in part.
+From [this run](https://github.com/nhinata/bumpvet/actions/runs/41154794432),
+which reads the files as bumpvet does, and `npm run eval` above.
+
+| Releases                                                         | Count |
+| ---------------------------------------------------------------- | ----- |
+| Measured                                                         | 424   |
+| With an install-script change (`install-scripts`)                | 378   |
+| Without an install-script change                                 | 46    |
+| … caught by a content signal                                     | 39    |
+| … caught by no content signal                                    | 7     |
+| Install-script change not known (files or package.json not read) | 0     |
+| … caught by no content signal                                    | 0     |
+| With files left unread                                           | 0     |
+
+The 39 are caught by `hidden-code` (32) and `new-capability` (7); none of the
+597 benign updates has either, and none had files left unread. Of
+the 7 caught by no content signal, five injected changes add no new kind
+(`@solana/web3.js@1.95.7` and four more), `axios@1.14.1` changed only its
+dependencies (bumpvet blocks it through the new dependency's install script),
+and `@velora-dex/sdk@9.4.1` adds only `child_process`. From a count on
+2026-10-29, before the evaluation used bumpvet's own reading: `child_process`
+and `XMLHttpRequest` would have caught that one and flagged two benign
+updates, so they are left out; the 17 releases caught only by code after
+spaces come from one attack (June 2025).

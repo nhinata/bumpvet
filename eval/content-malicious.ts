@@ -42,8 +42,10 @@ interface Result {
   error?: string;
   /** The content signals and install-scripts, as bumpvet would report them. */
   signals?: SignalId[];
-  /** install-scripts could not be told: no package.json read in the sample, or not valid JSON. */
+  /** install-scripts could not be told: the sample's files or its package.json not read, or not valid JSON. */
   scriptsUnknown?: true;
+  /** Why files bumpvet would compare were not read: the sample's, or those of the version replaced. */
+  unread?: { sample?: string; previous?: string };
   /** Files read in the sample. */
   files?: string;
 }
@@ -147,7 +149,8 @@ function scanOne(dir: string, work: string, id: string): Result {
   const after: Content =
     typeof nextFiles === 'string' ? { unread: nextFiles } : { found: kindsIn(nextFiles) };
   const versions = { next: { version: sample.to }, reference: { version: sample.from } };
-  const signals = contentSignals(versions, after, hasKinds(after) ? before : undefined);
+  const compared = hasKinds(after) ? before : undefined;
+  const signals = contentSignals(versions, after, compared);
   const next = typeof nextFiles === 'string' ? undefined : manifest(nextFiles);
   const scripts =
     next === undefined
@@ -157,6 +160,14 @@ function scanOne(dir: string, work: string, id: string): Result {
     id,
     signals: [...scripts, ...signals].map((x) => x.id),
     ...(next === undefined ? { scriptsUnknown: true as const } : {}),
+    ...('unread' in after || (compared && 'unread' in compared)
+      ? {
+          unread: {
+            ...('unread' in after ? { sample: after.unread } : {}),
+            ...(compared && 'unread' in compared ? { previous: compared.unread } : {}),
+          },
+        }
+      : {}),
     files: typeof nextFiles === 'string' ? 'not read' : String(nextFiles.length),
   };
 }
@@ -171,42 +182,66 @@ function report(resultsPath: string): void {
   );
   const measured = samples.flatMap((s) => {
     const r = byId.get(s.id);
-    return r?.signals ? [{ s, signals: r.signals, scriptsUnknown: !!r.scriptsUnknown }] : [];
+    return r?.signals
+      ? [{ s, signals: r.signals, scriptsUnknown: !!r.scriptsUnknown, unread: r.unread }]
+      : [];
   });
   type Measured = (typeof measured)[number];
   const has = (m: Measured, id: SignalId) => m.signals.includes(id);
   const notMeasured = samples.filter((s) => !byId.get(s.id)?.signals);
+  const withScripts = measured.filter((m) => has(m, 'install-scripts'));
   const withoutScripts = measured.filter((m) => !m.scriptsUnknown && !has(m, 'install-scripts'));
+  const scriptsUnknown = measured.filter((m) => m.scriptsUnknown);
   // With an origin or timing signal, a content signal makes a BLOCK.
   const content = (m: Measured) => m.signals.some((id) => SIGNALS[id] === 'content');
+  const missed = measured.filter((m) => !content(m));
+  const unread = measured.filter((m) => m.unread);
   const month = (s: Sample) => s.zip.split('/').at(-1)!.slice(0, 7);
-  const count = (set: Measured[], id: SignalId) => set.filter((m) => has(m, id)).length;
-  // The signals this evaluation computes: the content group and the unchecked one.
-  const computed = (Object.keys(SIGNALS) as SignalId[]).filter(
-    (id) => SIGNALS[id] === 'content' || SIGNALS[id] === 'unchecked',
+  // The content signals a release without an install-script change can have:
+  // one whose files were not read has no package.json read either.
+  const others = (Object.keys(SIGNALS) as SignalId[]).filter(
+    (id) => SIGNALS[id] === 'content' && id !== 'install-scripts' && id !== 'content-not-checked',
   );
 
   console.log(`## Malicious releases: ${measured.length} measured of ${samples.length}\n`);
-  console.log(
-    `With a content signal: ${measured.filter(content).length}. ` +
-      `Without an install-script change: ${withoutScripts.length}, ` +
-      `of which ${withoutScripts.filter(content).length} have another content signal. ` +
-      `Install scripts not known (no package.json, or not valid JSON): ${measured.filter((m) => m.scriptsUnknown).length}.\n`,
-  );
-  console.log('| Signal | Samples | Without an install-script change |');
-  console.log('| --- | --- | --- |');
-  for (const id of computed) {
-    const rest = id === 'install-scripts' ? '' : String(count(withoutScripts, id));
-    console.log(`| \`${id}\` | ${count(measured, id)} | ${rest} |`);
-  }
+  // With, without and not known split Measured; the rows starting with … split the one above.
+  console.log('| Releases | Count |');
+  console.log('| --- | --- |');
+  const row = (label: string, n: number) => console.log(`| ${label} | ${n} |`);
+  row('Measured', measured.length);
+  row('With an install-script change (`install-scripts`)', withScripts.length);
+  row('Without an install-script change', withoutScripts.length);
+  row('… caught by a content signal', withoutScripts.filter(content).length);
+  row('… caught by no content signal', withoutScripts.filter((m) => !content(m)).length);
+  row('Install-script change not known (files or package.json not read)', scriptsUnknown.length);
+  row('… caught by no content signal', scriptsUnknown.filter((m) => !content(m)).length);
+  row('With files left unread', unread.length);
 
-  const missed = measured.filter((m) => !content(m));
-  console.log(`\n### No content signal (${missed.length})\n`);
+  console.log(
+    `\n### Content signals on the ${withoutScripts.length} without an install-script change\n`,
+  );
+  console.log(
+    `A release can have several, so the counts can add up to more than ${withoutScripts.filter(content).length}.\n`,
+  );
+  console.log('| Signal | Releases |');
+  console.log('| --- | --- |');
+  for (const id of others) row(`\`${id}\``, withoutScripts.filter((m) => has(m, id)).length);
+
+  console.log(`\n### Caught by no content signal (${missed.length})\n`);
   console.log('| Month | Samples | Packages |');
   console.log('| --- | --- | --- |');
   for (const m of [...new Set(missed.map((x) => month(x.s)))].sort()) {
     const set = missed.filter((x) => month(x.s) === m);
     console.log(`| ${m} | ${set.length} | ${set.map((x) => `${x.s.name}@${x.s.to}`).join(', ')} |`);
+  }
+
+  console.log(`\n### Files left unread (${unread.length})\n`);
+  for (const { s, unread: u } of unread) {
+    const why = [
+      ...(u!.sample ? [`sample: ${u!.sample}`] : []),
+      ...(u!.previous ? [`previous ${s.from}: ${u!.previous}`] : []),
+    ];
+    console.log(`- ${s.name}@${s.to}: ${why.join('; ')}`);
   }
 
   console.log('\n### Incidents from test/incidents.test.ts\n');
