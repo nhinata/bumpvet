@@ -153,7 +153,7 @@ describe('vetLockfiles: what a change is compared with', () => {
   it('keeps the comparison with each earlier version of a new version at several paths', async () => {
     const pkgs = fakeRegistry(
       packument('a', [
-        { version: '0.9.0', time: at(1), publisher: 'alice' },
+        { version: '0.9.0', time: at(1), publisher: 'alice', provenance: true },
         { version: '1.0.0', time: at(2), publisher: 'alice', scripts: { postinstall: 'x' } },
         { version: '2.0.0', time: at(3), publisher: 'alice', scripts: { postinstall: 'x' } },
       ]),
@@ -166,10 +166,12 @@ describe('vetLockfiles: what a change is compared with', () => {
       'node_modules/a': { version: '2.0.0' },
       'node_modules/b/node_modules/a': { version: '2.0.0' },
     });
-    const results = await vetLockfiles(before, after, pkgs, fakeContent(), { now });
+    // 0.9.0 is outside the baseline: only the comparison with it finds its provenance.
+    const opts = { now, baselineSize: 1 };
+    const results = await vetLockfiles(before, after, pkgs, fakeContent(), opts);
     expect(results.map((r) => [r.from, r.verdict])).toEqual([
       ['1.0.0', 'ok'],
-      ['0.9.0', 'review'],
+      ['0.9.0', 'block'],
     ]);
   });
 

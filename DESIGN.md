@@ -196,8 +196,9 @@ injected change that adds no new kind is missed (see
   stolen token can hide it by publishing another release first, as
   `eslint-config-prettier` 9.1.1 came 18 minutes before 8.10.1.
   _Trade-off:_ a package that stops publishing with provenance, or publishes
-  an old line by hand beside a line built in CI, is `REVIEW` until 20 versions
-  without provenance have been published.
+  an old line by hand beside a line built in CI, is `REVIEW` when upgraded
+  from a version with provenance, and otherwise until 20 versions without it
+  have been published.
 - **Removing an install script is not a signal.** It takes power away.
 - **A registry URL is compared with the registry, not with a pattern.** Given
   what npm verifies (see [Threat model](#threat-model)), only an entry

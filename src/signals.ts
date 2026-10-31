@@ -85,14 +85,11 @@ export function computeSignals(
 
   // The version replaced may predate provenance, and the one just before may
   // be an attacker's (DESIGN.md, Decisions): any of them counts.
-  const withProvenance = [...recent, ...(reference ? [reference] : [])].filter(
-    (v) => v.dist?.attestations,
-  );
-  if (withProvenance.length && !next.dist?.attestations) {
-    const last = withProvenance.reduce((a, b) =>
-      (own(packument.time, b.version) ?? '') > (own(packument.time, a.version) ?? '') ? b : a,
-    );
-    signals.push(signal('provenance-lost', `provenance (${last.version})`, 'none'));
+  const attested =
+    recent.filter((v) => v.dist?.attestations).at(-1) ??
+    (reference?.dist?.attestations ? reference : undefined);
+  if (attested && !next.dist?.attestations) {
+    signals.push(signal('provenance-lost', `provenance (${attested.version})`, 'none'));
   }
 
   const published = own(packument.time, change.to);
