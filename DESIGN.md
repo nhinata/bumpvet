@@ -110,7 +110,7 @@ before the same checks are trusted for it.
 | Signal               | Group   | Fires when                                                                                                                                                                       |
 | -------------------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `publisher-changed`  | origin  | the account that published the new version published none of the 20 versions before it, and the new version has no provenance                                                    |
-| `provenance-lost`    | origin  | the version being replaced had npm provenance and the new one does not                                                                                                           |
+| `provenance-lost`    | origin  | the version being replaced, or an earlier stable version of the same line (major; minor below 1.0.0), had npm provenance, and the new one does not                               |
 | `fresh-publish`      | timing  | the new version is less than 72 hours old                                                                                                                                        |
 | `install-scripts`    | content | a `preinstall`, `install` or `postinstall` script was added or changed                                                                                                           |
 | `not-from-registry`  | origin  | the package comes from git, a `file:` path, another registry, or its entry has no version, an invalid name, or a field of the wrong type, so there is nothing to compare it with |
@@ -146,6 +146,23 @@ before the same checks are trusted for it.
   _Trade-off:_ someone with write access to the repository can publish with
   valid provenance; bumpvet does not defend against that case through this
   signal.
+- **Lost provenance is looked for in the version replaced and in every
+  earlier stable version of the same line**, the versions a caret range moves
+  through: the same major, or below 1.0.0 the same minor. Compared with the
+  version replaced alone, it was missed when that version predates the
+  package's move to provenance, as for `@rspack/core` 1.1.7 from 0.7.5 and
+  `axios` 1.14.1 from 0.30.3 (test/incidents.test.ts). A one-off measurement
+  (pull request #69) found that looking back 5, 10 or 20 versions, or the
+  whole history, gave the same counts; taking in other lines flagged old lines
+  published by hand beside a newer line built in CI: 4 of 597 benign updates
+  instead of 1. Prereleases are left out, as a package may build only those
+  in CI.
+  _Trade-off:_ an attack on an old line that never had provenance gets no
+  `provenance-lost` (`eslint-config-prettier@8.10.1`, `BLOCK` by its install
+  script). A package that stops publishing with provenance within a line is
+  `REVIEW` until its next line, and one that publishes an older minor by hand
+  beside a newer one built in CI is `REVIEW` on each of those releases. How
+  often either happens is not measured.
 - **Removing an install script is not a signal.** It takes power away.
 - **A registry URL is compared with the registry, not with a pattern.** Given
   what npm verifies (see [Threat model](#threat-model)), only an entry

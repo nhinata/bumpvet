@@ -60,6 +60,65 @@ describe('computeSignals', () => {
     ]);
   });
 
+  // Issue #68: the lockfile's version can predate the move to provenance.
+  it('flags lost provenance when the version upgraded from predates provenance', () => {
+    const p = packument('pkg', [
+      { version: '0.9.0', time: '2024-06-01T00:00:00Z', publisher: 'alice' },
+      ...history,
+      { version: '1.2.0', time: '2025-12-01T00:00:00Z', publisher: 'alice' },
+    ]);
+    expect(computeSignals({ name: 'pkg', from: '0.9.0', to: '1.2.0' }, p, { now })).toMatchObject([
+      { id: 'provenance-lost', before: 'provenance (1.1.0)' },
+    ]);
+  });
+
+  it('does not hold a stable release to a prerelease built with provenance', () => {
+    const p = packument('pkg', [
+      { version: '2.0.0', time: '2025-01-01T00:00:00Z', publisher: 'alice' },
+      {
+        version: '2.1.0-canary.0',
+        time: '2025-06-01T00:00:00Z',
+        publisher: 'alice',
+        provenance: true,
+      },
+      { version: '2.0.1', time: '2025-12-01T00:00:00Z', publisher: 'alice' },
+    ]);
+    expect(computeSignals({ name: 'pkg', from: '2.0.0', to: '2.0.1' }, p, { now })).toEqual([]);
+  });
+
+  it('does not compare a new package with a prerelease built with provenance', () => {
+    const p = packument('pkg', [
+      { version: '2.0.0', time: '2025-01-01T00:00:00Z', publisher: 'alice' },
+      {
+        version: '2.1.0-canary.0',
+        time: '2025-06-01T00:00:00Z',
+        publisher: 'alice',
+        provenance: true,
+      },
+      { version: '2.0.1', time: '2025-12-01T00:00:00Z', publisher: 'alice' },
+    ]);
+    expect(computeSignals({ name: 'pkg', from: null, to: '2.0.1' }, p, { now })).toEqual([]);
+  });
+
+  // Below 1.0.0 a caret range stays within a minor, so 0.7.x is a line of its own.
+  it('does not hold a 0.x line to the next minor', () => {
+    const p = packument('pkg', [
+      { version: '0.7.30', time: '2025-01-01T00:00:00Z', publisher: 'alice' },
+      { version: '0.8.0', time: '2025-06-01T00:00:00Z', publisher: 'alice', provenance: true },
+      { version: '0.7.31', time: '2025-12-01T00:00:00Z', publisher: 'alice' },
+    ]);
+    expect(computeSignals({ name: 'pkg', from: '0.7.30', to: '0.7.31' }, p, { now })).toEqual([]);
+  });
+
+  it('does not flag an old line published without provenance beside a newer one with it', () => {
+    const p = packument('pkg', [
+      { version: '1.5.0', time: '2025-01-01T00:00:00Z', publisher: 'alice' },
+      { version: '2.0.0', time: '2025-06-01T00:00:00Z', publisher: 'alice', provenance: true },
+      { version: '1.5.1', time: '2025-12-01T00:00:00Z', publisher: 'alice' },
+    ]);
+    expect(computeSignals({ name: 'pkg', from: '1.5.0', to: '1.5.1' }, p, { now })).toEqual([]);
+  });
+
   it('does not flag a package that never had provenance', () => {
     const p = packument('pkg', [
       { version: '1.0.0', time: '2025-01-01T00:00:00Z', publisher: 'alice' },

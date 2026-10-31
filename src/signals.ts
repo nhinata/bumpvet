@@ -43,7 +43,7 @@ export function computeSignals(
     ];
   }
 
-  const { next, reference, earlier } = versions;
+  const { next, replaced, reference, earlier } = versions;
 
   // The registry's hash in the lockfile's algorithm: sha512 usually, sha1 for old lockfiles,
   // which the registry gives as `shasum` (and, for some old versions, as `integrity`).
@@ -84,8 +84,16 @@ export function computeSignals(
     signals.push(signal('publisher-changed', [...usual].join(', '), publisher));
   }
 
-  if (reference?.dist?.attestations && !next.dist?.attestations) {
-    signals.push(signal('provenance-lost', `provenance (${reference.version})`, 'none'));
+  // Any stable version of the line counts, and the version replaced, which may
+  // predate provenance; not `reference`'s stand-in for a new package, which may
+  // be of another line. An old line is not held to a newer one's (DESIGN.md, Decisions).
+  const attested =
+    earlier
+      .filter((v) => !v.version.includes('-') && lineOf(v.version) === lineOf(change.to))
+      .filter((v) => v.dist?.attestations)
+      .at(-1) ?? (replaced?.dist?.attestations ? replaced : undefined);
+  if (attested && !next.dist?.attestations) {
+    signals.push(signal('provenance-lost', `provenance (${attested.version})`, 'none'));
   }
 
   const published = own(packument.time, change.to);
@@ -115,7 +123,12 @@ export function computeSignals(
  */
 interface ComparedVersions {
   next: VersionManifest;
-  /** The version replaced, as `referenceOf` picks it; none for a first release. */
+  /** The version the lockfile replaces, if the registry still has it. */
+  replaced?: VersionManifest;
+  /**
+   * What the new version is compared with: `replaced`, or for a new package or
+   * a replaced version the registry no longer has, the latest before it.
+   */
   reference?: VersionManifest;
   /** The versions published before `next`, oldest first. */
   earlier: VersionManifest[];
@@ -125,21 +138,8 @@ function comparedVersions(change: Change, packument: Packument): ComparedVersion
   const next = own(packument.versions, change.to);
   if (!next) return undefined;
   const earlier = versionsBefore(packument, change.to);
-  return { next, reference: referenceOf(change, packument, earlier), earlier };
-}
-
-/**
- * The version a change is compared with: the one it replaces, or for a new
- * package or a replaced version the registry no longer has, the latest before it.
- */
-function referenceOf(
-  change: Change,
-  packument: Packument,
-  earlier: VersionManifest[],
-): VersionManifest | undefined {
-  return (
-    (change.from !== null ? own(packument.versions, change.from) : undefined) ?? earlier.at(-1)
-  );
+  const replaced = change.from !== null ? own(packument.versions, change.from) : undefined;
+  return { next, replaced, reference: replaced ?? earlier.at(-1), earlier };
 }
 
 /** Versions published before `version`, oldest first. */
@@ -154,6 +154,12 @@ function versionsBefore(packument: Packument, version: string): VersionManifest[
       const m = own(packument.versions, v);
       return m ? [m] : [];
     });
+}
+
+/** The versions a caret range moves through: the same major, or below 1.0.0 the same minor. */
+function lineOf(version: string): string {
+  const [major, minor] = version.split('.');
+  return major === '0' ? `0.${minor}` : (major ?? '');
 }
 
 function sameAlgorithm(a: string, b: string): boolean {

@@ -18,7 +18,7 @@ slightly as packages publish new versions.
 
 ### Results (2026-10-31)
 
-From [this run](https://github.com/nhinata/bumpvet/actions/runs/41152027138),
+From [this run](https://github.com/nhinata/bumpvet/actions/runs/41209672636),
 which also had content signals, since removed; they fired on none.
 
 | Vetted           | Updates | OK    | REVIEW | BLOCK |
