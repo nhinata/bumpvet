@@ -1,0 +1,7 @@
+# yaml-language-server: $schema=https://www.coderabbit.ai/integrations/schema.v2.json
+# Settings not listed here keep CodeRabbit's defaults (reviews.profile: chill).
+knowledge_base:
+  code_guidelines:
+    # AGENTS.md is read by default; the rules for writing code are in CONTRIBUTING.md.
+    filePatterns:
+      - CONTRIBUTING.md

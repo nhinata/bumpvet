@@ -1,8 +1,8 @@
-name: Evaluate content
+name: Evaluate malicious samples
 
-# Groundwork for content signals (issue #44): which kinds of code malicious
-# releases added, and how often benign updates add the same kinds. Both tables
-# go to the run's summary and log.
+# Which of bumpvet's content signals (and install-scripts) fire for real
+# malicious releases. Run by hand by the maintainers, when the content signals
+# change (eval/README.md). The report goes to the run's summary and log.
 #
 # The malicious samples are real malware, read as text and never run. They
 # are unzipped only inside a container with no network, no capabilities, a
@@ -66,17 +66,3 @@ jobs:
             ' > "$RUNNER_TEMP/results.jsonl"
       # In the log as well as the summary, so it can be read without signing in.
       - run: node dist-eval/eval/content-malicious.js report "$RUNNER_TEMP/results.jsonl" | tee -a "$GITHUB_STEP_SUMMARY"
-
-  benign:
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        with:
-          node-version: 24
-          package-manager-cache: false
-      - run: npm ci
-      - run: npm run --silent eval:content | tee -a "$GITHUB_STEP_SUMMARY"

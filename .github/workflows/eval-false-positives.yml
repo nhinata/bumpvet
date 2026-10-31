@@ -1,0 +1,37 @@
+name: Evaluate false positives
+
+# `npm run eval`: how often bumpvet speaks up on benign updates of popular
+# packages, vetting each as the CLI does and reading every tarball. Run by
+# hand for a change that can change a verdict (CONTRIBUTING.md, Evaluation).
+# The report goes to the run's summary and log.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+jobs:
+  benign:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - run: npm ci
+      # Plain text, kept as it is in the summary by a code block that is closed
+      # even when the evaluation fails.
+      - run: |
+          status=0
+          npm run --silent eval > "$RUNNER_TEMP/eval.txt" || status=$?
+          cat "$RUNNER_TEMP/eval.txt"
+          { echo '```'; cat "$RUNNER_TEMP/eval.txt"; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          exit "$status"
