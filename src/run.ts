@@ -2,7 +2,7 @@ import { execFileSync } from 'node:child_process';
 import { readFileSync, statSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { registryContent } from './content.js';
-import { messageOf } from './errors.js';
+import { messageOf } from './utils/errors.js';
 import { registryFetcher } from './registry.js';
 import { formatJson, formatText, printable } from './report.js';
 import { vetLockfiles } from './vet.js';

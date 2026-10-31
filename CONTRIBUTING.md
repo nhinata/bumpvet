@@ -138,7 +138,8 @@ in one of the modules that use them. The types of one function's parameters
 or result, and values chosen by measurement, stay with the code that uses
 them. Files in `src/types/` import only each other, so any module can import
 them without pulling in other code or making an import cycle; lint enforces
-this.
+this. Code that belongs to no domain goes in `src/utils/`, which imports
+nothing but itself and Node's own modules, also enforced by lint.
 
 **Checks on outside data start from the threat model.** Before writing a check
 that decides whether to trust a lockfile entry or a registry response, write

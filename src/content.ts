@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { gunzipSync } from 'node:zlib';
-import { messageWithCause } from './errors.js';
+import { messageWithCause } from './utils/errors.js';
 import type { Content, ReadContent } from './types/content.js';
 import type { VersionManifest } from './types/registry.js';
 

@@ -1,5 +1,5 @@
-import { messageWithCause } from './errors.js';
-import { isObject, str } from './json.js';
+import { messageWithCause } from './utils/errors.js';
+import { isObject, str } from './utils/json.js';
 import {
   INSTALL_HOOKS,
   type FetchPackument,

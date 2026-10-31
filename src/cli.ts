@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { messageOf } from './errors.js';
+import { messageOf } from './utils/errors.js';
 import { defaultEnv, runCli } from './run.js';
 
 // exitCode rather than process.exit(), which can cut piped output short.
