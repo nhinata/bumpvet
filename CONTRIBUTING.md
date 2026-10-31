@@ -182,8 +182,8 @@ its tests go with it.
 `eval/packages.txt` and reports how often bumpvet would speak up, vetting each
 as the CLI does, files included. It downloads every packument and hundreds of
 tarballs, so run it in the Evaluate false positives workflow, not on your
-machine: `gh workflow run eval-content.yml --ref <branch>` (in your fork, for a
-pull request from one).
+machine: `gh workflow run eval-false-positives.yml --ref <branch>` (in your
+fork, for a pull request from one).
 
 Run it for any change that can change a verdict. If the numbers move, update
 [eval/README.md](eval/README.md) and, when a decision rests on them,
