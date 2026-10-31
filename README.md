@@ -21,8 +21,7 @@ have seen them one hour after they were published.)
 
 It looks at **how a release was published** (by whom, how recently, with or
 without provenance) and **what changed in it** (its install scripts), and
-combines the two with a small table. Nothing from a
-package is ever executed.
+combines the two with a small table. Nothing from a package is ever executed.
 
 ## Usage
 

@@ -181,8 +181,9 @@ its tests go with it.
 `npm run eval` replays recent releases of the packages in
 `eval/packages.txt` and reports how often bumpvet would speak up, vetting each
 as the CLI does. It downloads every packument, so run it in the Evaluate false
-positives workflow, not on your machine: `gh workflow run eval-false-positives.yml --ref <branch>` (in your
-fork, for a pull request from one).
+positives workflow, not on your machine:
+`gh workflow run eval-false-positives.yml --ref <branch>` (in your fork, for a
+pull request from one).
 
 Run it for any change that can change a verdict. If the numbers move, update
 [eval/README.md](eval/README.md) and, when a decision rests on them,
