@@ -86,12 +86,13 @@ export function computeSignals(
     signals.push(signal('publisher-changed', [...usual].join(', '), publisher));
   }
 
-  // Any version of the same major counts, since the version replaced may
+  // Any stable version of the line counts, since the version replaced may
   // predate provenance; an old line is not held to a newer one's (DESIGN.md, Decisions).
-  const major = (v: string) => v.split('.', 1)[0];
   const attested =
-    earlier.filter((v) => major(v.version) === major(change.to) && v.dist?.attestations).at(-1) ??
-    (reference?.dist?.attestations ? reference : undefined);
+    earlier
+      .filter((v) => !v.version.includes('-') && lineOf(v.version) === lineOf(change.to))
+      .filter((v) => v.dist?.attestations)
+      .at(-1) ?? (reference?.dist?.attestations ? reference : undefined);
   if (attested && !next.dist?.attestations) {
     signals.push(signal('provenance-lost', `provenance (${attested.version})`, 'none'));
   }
@@ -208,6 +209,12 @@ function versionsBefore(packument: Packument, version: string): VersionManifest[
       const m = own(packument.versions, v);
       return m ? [m] : [];
     });
+}
+
+/** The versions a caret range moves through: the same major, or below 1.0.0 the same minor. */
+function lineOf(version: string): string {
+  const [major, minor] = version.split('.');
+  return major === '0' ? `0.${minor}` : (major ?? '');
 }
 
 function sameAlgorithm(a: string, b: string): boolean {

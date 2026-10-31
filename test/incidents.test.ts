@@ -294,6 +294,7 @@ const incidents: Incident[] = [
     changes: [{ name: '@rspack/core', from: '1.1.6', to: '1.1.7' }],
     packuments: [
       packument('@rspack/core', [
+        { version: '0.7.5', time: '2024-06-25T12:23:32Z', publisher: 'hardfist' },
         { version: '1.1.6', time: '2024-12-10T06:11:40Z', publisher: 'hardfist', provenance: true },
         {
           version: '1.1.7',
@@ -410,8 +411,24 @@ const incidents: Incident[] = [
   },
 ];
 
+// Issue #68: vetted from a version older than the one each report upgrades
+// from, before the package published with provenance.
+const fromOlder: [title: string, from: string, expected: Record<string, string>][] = [
+  [
+    '@rspack/core 1.1.7',
+    '0.7.5',
+    { '@rspack/core': 'block: provenance-lost, fresh-publish, install-scripts' },
+  ],
+  ['axios 1.14.1', '0.30.3', { axios: 'review: provenance-lost, fresh-publish' }],
+];
+
+const older = fromOlder.map(([title, from, expected]): Incident => {
+  const c = incidents.find((i) => i.title === title)!;
+  return { ...c, title: `${title}, from ${from}`, changes: [{ ...c.changes[0]!, from }], expected };
+});
+
 describe('incidents', () => {
-  for (const c of incidents) {
+  for (const c of [...incidents, ...older]) {
     it(c.title, async () => {
       const results = await vetChanges(
         c.changes,
