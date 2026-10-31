@@ -14,7 +14,7 @@
  */
 import { registryContent } from '../src/content.js';
 import type { Packument } from '../src/types/registry.js';
-import type { SignalId } from '../src/types/signals.js';
+import { SIGNALS, type SignalId } from '../src/types/signals.js';
 import type { PackageResult, Verdict } from '../src/types/verdicts.js';
 import { messageOf } from '../src/utils/errors.js';
 import { vetChanges } from '../src/vet.js';
@@ -95,11 +95,12 @@ for (const d of DELAYS) {
     const c = set.filter((r) => r.verdict === v).length;
     console.log(`  ${v.padEnd(7)} ${String(c).padStart(4)}  ${pct(c, n)}`);
   }
-  const bySignal = new Map<string, number>();
-  for (const r of set) for (const s of r.signals) bySignal.set(s, (bySignal.get(s) ?? 0) + 1);
+  // Every signal, so one that never fired reads as 0.
   console.log('  signals fired:');
-  for (const [s, c] of [...bySignal].sort((a, b) => b[1] - a[1]))
+  for (const s of Object.keys(SIGNALS) as SignalId[]) {
+    const c = set.filter((r) => r.signals.includes(s)).length;
     console.log(`    ${s.padEnd(20)} ${String(c).padStart(4)}  ${pct(c, n)}`);
+  }
 }
 
 for (const d of DELAYS) {

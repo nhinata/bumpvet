@@ -7,7 +7,7 @@
 import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { slim } from '../src/registry.js';
+import { registryFetcher, slim } from '../src/registry.js';
 import type { Packument } from '../src/types/registry.js';
 
 export const PACKAGES = readFileSync(new URL('../../eval/packages.txt', import.meta.url), 'utf8')
@@ -29,18 +29,17 @@ export async function pool<T>(items: T[], size: number, each: (item: T) => Promi
 const perPackage = arg('--per-package') ?? 10;
 const CACHE = fileURLToPath(new URL('../../eval/.cache/', import.meta.url));
 
+const fetchPackument = registryFetcher();
+
+/** A packument as bumpvet fetches it, kept in eval/.cache/ (as slim leaves it) for later runs. */
 export async function load(name: string): Promise<Packument> {
   const file = join(CACHE, name.replace('/', '__') + '.json');
   if (existsSync(file)) return slim(JSON.parse(readFileSync(file, 'utf8')), name);
-  const res = await fetch('https://registry.npmjs.org/' + name.replace('/', '%2f'), {
-    signal: AbortSignal.timeout(120_000),
-  });
-  if (!res.ok) throw new Error(`${name}: ${res.status}`);
-  const text = await res.text();
-  const packument = slim(JSON.parse(text), name); // check it before caching it
+  const packument = await fetchPackument(name);
+  if (!packument) throw new Error(`${name}: not in the registry`);
   mkdirSync(CACHE, { recursive: true });
   // Write and rename, so an interrupted run never leaves half a file in the cache.
-  writeFileSync(`${file}.tmp`, text);
+  writeFileSync(`${file}.tmp`, JSON.stringify(packument));
   renameSync(`${file}.tmp`, file);
   return packument;
 }

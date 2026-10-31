@@ -19,10 +19,11 @@
 import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { kindsIn, readTarball, registryContent, Unreadable, type Content } from '../src/content.js';
+import { kindsIn, readTarball, registryContent, Unreadable } from '../src/content.js';
 import { slim } from '../src/registry.js';
 import { computeSignals, contentSignals, hasKinds } from '../src/signals.js';
-import type { Signal } from '../src/types.js';
+import type { Content } from '../src/types/content.js';
+import { SIGNALS, type Signal, type SignalId } from '../src/types/signals.js';
 import { readDirectory } from './content.js';
 import { load, pool } from './updates.js';
 
@@ -40,7 +41,7 @@ interface Result {
   id: string;
   error?: string;
   /** The content signals and install-scripts, as bumpvet would report them. */
-  signals?: Pick<Signal, 'id' | 'group'>[];
+  signals?: SignalId[];
   /** install-scripts could not be told: no package.json read in the sample, or not valid JSON. */
   scriptsUnknown?: true;
   /** Files read in the sample. */
@@ -154,7 +155,7 @@ function scanOne(dir: string, work: string, id: string): Result {
       : installScripts(sample, JSON.parse(readFileSync(`${prev}.json`, 'utf8')), next);
   return {
     id,
-    signals: [...scripts, ...signals].map(({ id, group }) => ({ id, group })),
+    signals: [...scripts, ...signals].map((x) => x.id),
     ...(next === undefined ? { scriptsUnknown: true as const } : {}),
     files: typeof nextFiles === 'string' ? 'not read' : String(nextFiles.length),
   };
@@ -173,17 +174,17 @@ function report(resultsPath: string): void {
     return r?.signals ? [{ s, signals: r.signals, scriptsUnknown: !!r.scriptsUnknown }] : [];
   });
   type Measured = (typeof measured)[number];
-  const has = (m: Measured, id: string) => m.signals.some((x) => x.id === id);
+  const has = (m: Measured, id: SignalId) => m.signals.includes(id);
   const notMeasured = samples.filter((s) => !byId.get(s.id)?.signals);
   const withoutScripts = measured.filter((m) => !m.scriptsUnknown && !has(m, 'install-scripts'));
   // With an origin or timing signal, a content signal makes a BLOCK.
-  const content = (m: Measured) => m.signals.some((x) => x.group === 'content');
+  const content = (m: Measured) => m.signals.some((id) => SIGNALS[id] === 'content');
   const month = (s: Sample) => s.zip.split('/').at(-1)!.slice(0, 7);
-  const count = (set: Measured[], id: string) => set.filter((m) => has(m, id)).length;
-  // The signals that fired, the content group first.
-  const fired = [...new Map(measured.flatMap((m) => m.signals).map((x) => [x.id, x])).values()]
-    .sort((a, b) => Number(b.group === 'content') - Number(a.group === 'content'))
-    .map((x) => x.id);
+  const count = (set: Measured[], id: SignalId) => set.filter((m) => has(m, id)).length;
+  // The signals this evaluation computes: the content group and the unchecked one.
+  const computed = (Object.keys(SIGNALS) as SignalId[]).filter(
+    (id) => SIGNALS[id] === 'content' || SIGNALS[id] === 'unchecked',
+  );
 
   console.log(`## Malicious releases: ${measured.length} measured of ${samples.length}\n`);
   console.log(
@@ -194,7 +195,7 @@ function report(resultsPath: string): void {
   );
   console.log('| Signal | Samples | Without an install-script change |');
   console.log('| --- | --- | --- |');
-  for (const id of fired) {
+  for (const id of computed) {
     const rest = id === 'install-scripts' ? '' : String(count(withoutScripts, id));
     console.log(`| \`${id}\` | ${count(measured, id)} | ${rest} |`);
   }
@@ -214,7 +215,7 @@ function report(resultsPath: string): void {
   for (const s of samples.filter((x) => x.incident)) {
     const r = byId.get(s.id);
     const signals = r?.signals
-      ? r.signals.map((x) => `\`${x.id}\``).join(', ') || 'none'
+      ? r.signals.map((id) => `\`${id}\``).join(', ') || 'none'
       : `**${r?.error ?? 'not scanned'}**`;
     console.log(`| ${s.name} ${s.from} -> ${s.to} | ${signals} | ${r?.files ?? ''} |`);
   }
