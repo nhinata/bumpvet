@@ -86,6 +86,20 @@ describe('computeSignals', () => {
     expect(computeSignals({ name: 'pkg', from: '2.0.0', to: '2.0.1' }, p, { now })).toEqual([]);
   });
 
+  it('does not compare a new package with a prerelease built with provenance', () => {
+    const p = packument('pkg', [
+      { version: '2.0.0', time: '2025-01-01T00:00:00Z', publisher: 'alice' },
+      {
+        version: '2.1.0-canary.0',
+        time: '2025-06-01T00:00:00Z',
+        publisher: 'alice',
+        provenance: true,
+      },
+      { version: '2.0.1', time: '2025-12-01T00:00:00Z', publisher: 'alice' },
+    ]);
+    expect(computeSignals({ name: 'pkg', from: null, to: '2.0.1' }, p, { now })).toEqual([]);
+  });
+
   // Below 1.0.0 a caret range stays within a minor, so 0.7.x is a line of its own.
   it('does not hold a 0.x line to the next minor', () => {
     const p = packument('pkg', [
