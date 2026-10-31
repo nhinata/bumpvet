@@ -1,8 +1,8 @@
 name: Evaluate false positives
 
 # `npm run eval`: how often bumpvet speaks up on benign updates of popular
-# packages, vetting each as the CLI does and reading every tarball. Run by
-# hand for a change that can change a verdict (CONTRIBUTING.md, Evaluation).
+# packages, vetting each as the CLI does. Run by hand for a change that can
+# change a verdict (CONTRIBUTING.md, Evaluation).
 # The report goes to the run's summary and log.
 on:
   workflow_dispatch:

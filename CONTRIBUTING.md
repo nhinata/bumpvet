@@ -113,8 +113,8 @@ reaches the verdict only through the verdict table. Do not add a side channel
 `{ cause }` when rethrowing. The CLI maps failures to exit code 2; exit code 1
 means at least one `BLOCK` and nothing else.
 
-**Never run package code.** bumpvet reads metadata and files. It does not
-execute anything it downloads, in the tool or in tests.
+**Never run package code.** bumpvet reads metadata. It does not execute
+anything it downloads, in the tool or in tests.
 
 **Comments say why.** The code says what it does. A comment explains a choice
 that is not obvious from the code: a threshold, a registry quirk, a trade-off.
@@ -180,9 +180,8 @@ its tests go with it.
 
 `npm run eval` replays recent releases of the packages in
 `eval/packages.txt` and reports how often bumpvet would speak up, vetting each
-as the CLI does, files included. It downloads every packument and hundreds of
-tarballs, so run it in the Evaluate false positives workflow, not on your
-machine: `gh workflow run eval-false-positives.yml --ref <branch>` (in your
+as the CLI does. It downloads every packument, so run it in the Evaluate false
+positives workflow, not on your machine: `gh workflow run eval-false-positives.yml --ref <branch>` (in your
 fork, for a pull request from one).
 
 Run it for any change that can change a verdict. If the numbers move, update

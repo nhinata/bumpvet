@@ -1,5 +1,3 @@
-import { KINDS } from './content.js';
-import type { Content } from './types/content.js';
 import type { Change } from './types/lockfile.js';
 import {
   INSTALL_HOOKS,
@@ -115,7 +113,7 @@ export function computeSignals(
  * The new version and the one it is compared with, for every signal that
  * compares the two; none for a version the registry does not have.
  */
-export interface ComparedVersions {
+interface ComparedVersions {
   next: VersionManifest;
   /** The version replaced, as `referenceOf` picks it; none for a first release. */
   reference?: VersionManifest;
@@ -123,57 +121,11 @@ export interface ComparedVersions {
   earlier: VersionManifest[];
 }
 
-export function comparedVersions(
-  change: Change,
-  packument: Packument,
-): ComparedVersions | undefined {
+function comparedVersions(change: Change, packument: Packument): ComparedVersions | undefined {
   const next = own(packument.versions, change.to);
   if (!next) return undefined;
   const earlier = versionsBefore(packument, change.to);
   return { next, reference: referenceOf(change, packument, earlier), earlier };
-}
-
-/** Whether the version replaced has to be read: only when the new one has a kind to compare. */
-export const hasKinds = (content: Content): boolean => 'found' in content && content.found.size > 0;
-
-/**
- * Kinds of code the new version has and the version replaced has in none of
- * its files (DESIGN.md, Content signals). `before` is the version replaced,
- * read when `hasKinds(after)`.
- */
-export function contentSignals(
-  versions: Pick<ComparedVersions, 'next' | 'reference'>,
-  after: Content,
-  before: Content | undefined,
-): Signal[] {
-  const { reference } = versions;
-  // A new version that keeps its files from being read is a content change:
-  // otherwise going over a limit would turn a BLOCK into a REVIEW. The version
-  // replaced was published before; not reading it is only a reason to look.
-  if ('unread' in after) return [signal('content-not-checked', 'files read', after.unread)];
-  if (!after.found.size) return [];
-  let had = new Map<string, string>();
-  if (reference) {
-    if (!before) throw new Error(`${reference.version} was not read`);
-    if ('unread' in before)
-      return [
-        signal('previous-not-checked', `${reference.version}: ${before.unread}`, 'not compared'),
-      ];
-    had = before.found;
-  }
-  const signals: Signal[] = [];
-  for (const [id, patterns] of Object.entries(KINDS) as [keyof typeof KINDS, object][]) {
-    const added = Object.keys(patterns).filter((k) => after.found.has(k) && !had.has(k));
-    if (!added.length) continue;
-    signals.push(
-      signal(
-        id,
-        reference ? `none in ${reference.version}` : 'no earlier version',
-        added.map((k) => `${k} in ${after.found.get(k)}`).join('; '),
-      ),
-    );
-  }
-  return signals;
 }
 
 /**
