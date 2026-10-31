@@ -86,8 +86,11 @@ export function computeSignals(
     signals.push(signal('publisher-changed', [...usual].join(', '), publisher));
   }
 
-  if (reference?.dist?.attestations && !next.dist?.attestations) {
-    signals.push(signal('provenance-lost', `provenance (${reference.version})`, 'none'));
+  // How the version was published is compared with the one published just
+  // before it, as publishers are: the lockfile's may predate provenance.
+  const previous = earlier.at(-1);
+  if (previous?.dist?.attestations && !next.dist?.attestations) {
+    signals.push(signal('provenance-lost', `provenance (${previous.version})`, 'none'));
   }
 
   const published = own(packument.time, change.to);

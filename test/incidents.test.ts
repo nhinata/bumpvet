@@ -248,6 +248,13 @@ const incidents: Incident[] = [
           publisher: 'jounqin',
           provenance: true,
         },
+        // Published by the same token 18 minutes earlier (the advisory lists it).
+        {
+          version: '9.1.1',
+          time: '2025-07-18T15:51:53Z',
+          publisher: 'jounqin',
+          scripts: { postinstall: 'node install.js' },
+        },
         {
           version: '8.10.1',
           time: '2025-07-18T16:09:40Z',

@@ -286,7 +286,7 @@ describe('diffLockfiles', () => {
     ]);
   });
 
-  // Each earlier version is what install-scripts and provenance-lost compare with,
+  // Each earlier version is what install-scripts compares with,
   // so none of them is dropped.
   it('lists a new version once per earlier version it replaces', () => {
     const before = lockfile({
