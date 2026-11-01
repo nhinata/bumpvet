@@ -9,6 +9,6 @@ export function decide(signals: Signal[]): Verdict {
   const has = (group: Signal['group']) => signals.some((s) => s.group === group);
   if (has('tamper')) return 'block';
   if (has('content') && (has('origin') || has('timing'))) return 'block';
-  if (has('origin') || has('content') || has('unchecked')) return 'review';
+  if (has('origin') || has('content')) return 'review';
   return 'ok';
 }

@@ -1,5 +1,3 @@
-import { kindsIn } from '../src/content.js';
-import type { ReadContent } from '../src/types/content.js';
 import type { FetchPackument, Packument, VersionManifest } from '../src/types/registry.js';
 
 export interface FakeVersion {
@@ -64,27 +62,3 @@ export function lockfile(
 
 const tarballUrl = (name: string, version: string) =>
   `https://registry.npmjs.org/${name}/-/x-${version}.tgz`;
-
-/**
- * Releases' files by `name@version`, as text, read as bumpvet reads a
- * tarball's; or, as a string, why one is not read. Any other release has no files.
- */
-export function fakeContent(
-  releases: Record<string, Record<string, string> | string> = {},
-): ReadContent {
-  const byUrl = new Map(
-    Object.entries(releases).map(([key, files]) => {
-      const at = key.lastIndexOf('@');
-      return [tarballUrl(key.slice(0, at), key.slice(at + 1)), files];
-    }),
-  );
-  return (m) => {
-    const files = byUrl.get(m.dist?.tarball ?? '') ?? {};
-    if (typeof files === 'string') return Promise.resolve({ unread: files });
-    const entries = Object.entries(files).map(([path, text]): [string, Buffer] => [
-      path,
-      Buffer.from(text),
-    ]);
-    return Promise.resolve({ found: kindsIn(entries) });
-  };
-}

@@ -1,7 +1,7 @@
 /** The signals, their groups, and what computing them takes. */
 
 /** Which side of the verdict table a signal belongs to (see DESIGN.md). */
-export type SignalGroup = 'origin' | 'timing' | 'content' | 'tamper' | 'unchecked';
+export type SignalGroup = 'origin' | 'timing' | 'content' | 'tamper';
 
 /** Every signal, in the order of DESIGN.md's table, with its group: the only place a group is set. */
 export const SIGNALS = {
@@ -14,10 +14,6 @@ export const SIGNALS = {
   'integrity-mismatch': 'tamper',
   'tarball-mismatch': 'tamper',
   'not-in-registry': 'tamper',
-  'hidden-code': 'content',
-  'new-capability': 'content',
-  'content-not-checked': 'content',
-  'previous-not-checked': 'unchecked',
 } as const satisfies Record<string, SignalGroup>;
 
 export type SignalId = keyof typeof SIGNALS;

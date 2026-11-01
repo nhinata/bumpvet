@@ -1,7 +1,6 @@
 import { diffLockfiles } from './lockfile.js';
-import { comparedVersions, computeSignals, contentSignals, hasKinds } from './signals.js';
+import { computeSignals } from './signals.js';
 import { decide } from './verdict.js';
-import type { ReadContent } from './types/content.js';
 import type { Change } from './types/lockfile.js';
 import type { FetchPackument } from './types/registry.js';
 import type { SignalOptions } from './types/signals.js';
@@ -10,16 +9,13 @@ import type { PackageResult } from './types/verdicts.js';
 export async function vetChanges(
   changes: Change[],
   fetchPackument: FetchPackument,
-  readContent: ReadContent,
   opts: SignalOptions,
   concurrency = 8,
 ): Promise<PackageResult[]> {
   const results = new Array<PackageResult>(changes.length);
   let next = 0;
-  // After one fetch fails the run has failed: start no more fetches,
+  // After one fetch fails the run has failed: start no more fetches.
   let failed = false;
-  // and stop the tarball downloads under way, which can take minutes.
-  const stop = new AbortController();
   const worker = async () => {
     while (!failed && next < changes.length) {
       const i = next++;
@@ -29,22 +25,8 @@ export async function vetChanges(
       try {
         if (!change.source) packument = await fetchPackument(change.name);
         signals = computeSignals(change, packument, opts);
-        // A BLOCK stands whatever the files hold: they are not read.
-        const versions =
-          packument && decide(signals) !== 'block'
-            ? comparedVersions(change, packument)
-            : undefined;
-        if (versions) {
-          const after = await readContent(versions.next, stop.signal);
-          const before =
-            versions.reference && hasKinds(after)
-              ? await readContent(versions.reference, stop.signal)
-              : undefined;
-          signals.push(...contentSignals(versions, after, before));
-        }
       } catch (err) {
         failed = true;
-        stop.abort();
         throw err;
       }
       results[i] = {
@@ -64,8 +46,7 @@ export async function vetLockfiles(
   oldText: string | null,
   newText: string,
   fetchPackument: FetchPackument,
-  readContent: ReadContent,
   opts: SignalOptions,
 ): Promise<PackageResult[]> {
-  return vetChanges(diffLockfiles(oldText, newText), fetchPackument, readContent, opts);
+  return vetChanges(diffLockfiles(oldText, newText), fetchPackument, opts);
 }

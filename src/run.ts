@@ -1,12 +1,10 @@
 import { execFileSync } from 'node:child_process';
 import { readFileSync, statSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { registryContent } from './content.js';
 import { messageOf } from './utils/errors.js';
 import { registryFetcher } from './registry.js';
 import { formatJson, formatText, printable } from './report.js';
 import { vetLockfiles } from './vet.js';
-import type { ReadContent } from './types/content.js';
 import type { FetchPackument } from './types/registry.js';
 
 const USAGE = `Usage:
@@ -22,7 +20,6 @@ export interface CliEnv {
   stdout: (text: string) => void;
   stderr: (text: string) => void;
   fetchPackument: FetchPackument;
-  readContent: ReadContent;
   now: Date;
 }
 
@@ -32,7 +29,6 @@ export function defaultEnv(): CliEnv {
     stdout: (text) => process.stdout.write(text),
     stderr: (text) => process.stderr.write(text),
     fetchPackument: registryFetcher(),
-    readContent: registryContent(),
     now: new Date(),
   };
 }
@@ -178,9 +174,7 @@ export async function runCli(argv: string[], env: CliEnv): Promise<number> {
       args.files.length === 2
         ? [readLockfile(env.cwd, args.files[0]!), readLockfile(env.cwd, args.files[1]!)]
         : [lockfileAt(env.cwd, args.base), readLockfile(env.cwd, 'package-lock.json')];
-    const results = await vetLockfiles(oldText, newText, env.fetchPackument, env.readContent, {
-      now: env.now,
-    });
+    const results = await vetLockfiles(oldText, newText, env.fetchPackument, { now: env.now });
     env.stdout(args.json ? formatJson(results) : formatText(results));
     return results.some((r) => r.verdict === 'block') ? 1 : 0;
   } catch (err) {

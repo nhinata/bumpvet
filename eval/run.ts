@@ -1,18 +1,16 @@
 /**
  * False-positive check: replays the last few stable releases of popular
  * packages (assumed benign) and counts how often bumpvet would speak up.
- * Each update is vetted as the CLI vets it, reading the files of the releases
- * from the registry.
+ * Each update is vetted as the CLI vets it.
  *
  * Each update is vetted twice: one hour after publish (a Dependabot-style
  * PR opened right away) and seven days after (a team that waits).
  *
- * It downloads every packument and hundreds of tarballs: run it in the
- * Evaluate false positives workflow (CONTRIBUTING.md, Evaluation).
+ * It downloads every packument: run it in the Evaluate false positives
+ * workflow (CONTRIBUTING.md, Evaluation).
  *
  *   npm run eval [-- --per-package 10] [--baseline 5]
  */
-import { registryContent } from '../src/content.js';
 import type { Packument } from '../src/types/registry.js';
 import { SIGNALS, type SignalId } from '../src/types/signals.js';
 import type { PackageResult, Verdict } from '../src/types/verdicts.js';
@@ -31,12 +29,8 @@ interface Row {
   delay: string;
   verdict: Verdict;
   signals: SignalId[];
-  /** Why files were not read, for `content-not-checked` and `previous-not-checked`. */
-  unread: string[];
 }
 
-// One reader for the run, so each tarball is downloaded once for both delays.
-const readContent = registryContent();
 /** Packages and updates not measured (the registry or a download failed), with why. */
 const failed = new Map<string, string>();
 const packuments = new Map<string, Packument>();
@@ -59,15 +53,12 @@ const tasks = [...packuments].flatMap(([name, p]) =>
   ),
 );
 const rows: Row[] = [];
-// The reader limits how many tarballs are downloaded at once.
 await pool(tasks, 8, async (t) => {
   const update = `${t.change.name} ${t.change.from} -> ${t.change.to}`;
   let result: PackageResult;
   try {
     // One change in, one result out.
-    result = (
-      await vetChanges([t.change], fetchPackument, readContent, { now: t.now, baselineSize })
-    )[0]!;
+    result = (await vetChanges([t.change], fetchPackument, { now: t.now, baselineSize }))[0]!;
   } catch (err) {
     failed.set(update, messageOf(err));
     return;
@@ -77,9 +68,6 @@ await pool(tasks, 8, async (t) => {
     delay: t.delay,
     verdict: result.verdict,
     signals: result.signals.map((s) => s.id),
-    unread: result.signals
-      .filter((s) => s.id === 'content-not-checked' || s.id === 'previous-not-checked')
-      .map((s) => `${s.id}: ${s.id === 'content-not-checked' ? s.after : s.before}`),
   });
 });
 rows.sort((a, b) => a.update.localeCompare(b.update));
@@ -109,10 +97,6 @@ for (const d of DELAYS) {
   for (const r of flagged)
     console.log(`  ${r.verdict.padEnd(6)} ${r.update}  [${r.signals.join(', ')}]`);
 }
-
-const unread = measured.filter((r) => r.delay === DELAYS[1]!.label && r.unread.length);
-console.log(`\n== files not read (${unread.length})`);
-for (const r of unread) console.log(`  ${r.update}  ${r.unread.join('; ')}`);
 
 if (failed.size) {
   console.log(`\n== not measured (${failed.size})`);
