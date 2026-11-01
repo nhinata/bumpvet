@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.4.0](https://github.com/nhinata/bumpvet/compare/v0.3.0...v0.4.0) (2026-11-01)
+
+
+### ⚠ BREAKING CHANGES
+
+* remove the content signals ([#72](https://github.com/nhinata/bumpvet/issues/72))
+
+### Features
+
+* remove the content signals ([#72](https://github.com/nhinata/bumpvet/issues/72)) ([f84326e](https://github.com/nhinata/bumpvet/commit/f84326eacf517f0d668bba16c4764c0d04b1e46f))
+
+
+### Bug Fixes
+
+* look for lost provenance over the line of the version upgraded to ([#69](https://github.com/nhinata/bumpvet/issues/69)) ([1a67c0e](https://github.com/nhinata/bumpvet/commit/1a67c0ed2712b4d4b8be6c6333cd1a3533738a78))
+
 ## [0.3.0](https://github.com/nhinata/bumpvet/compare/v0.2.1...v0.3.0) (2026-10-31)
 
 
