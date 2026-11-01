@@ -75,8 +75,8 @@ strictest among the packages it brings in.
 
 13 of 18 caught (72%): 10 `BLOCK`, 3 `REVIEW`. The five misses carried their
 payload in the package code and came from an account that publishes the
-package. Source match (planned) is what would see code-only changes like
-these.
+package. Source match (planned) could see the three whose code was not in the
+repository; the maintainers of `node-ipc` and `colors` committed theirs.
 
 Where a report does not name the publisher or mention provenance, the test
 fills in a value (see its header). One verdict depends on it: no report names

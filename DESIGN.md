@@ -201,7 +201,7 @@ before the same checks are trusted for it.
   releases had no provenance, published from an account that usually
   publishes it, shows only freshness and is `OK` (`debug@4.4.2`; the rest are
   in eval/README.md, "Detection: incidents"). Source match (planned) is what
-  would catch it.
+  would catch it, unless the code is also in the repository.
 
 ## Known limitations
 
@@ -213,8 +213,9 @@ before the same checks are trusted for it.
   configuration names. An entry without an integrity is not pinned to any
   content, so a pull request that also points `.npmrc` at another registry
   is not caught.
-- What a package bundles is not vetted on its own, only the package that
-  bundles it.
+- A bundled dependency's entry is vetted against the registry like any
+  other, but its files come from the tarball of the package that bundles it,
+  which bumpvet does not read.
 - A registry package replaced by a link to a folder in the repository is not
   reported, since links are left out (see [Threat model](#threat-model));
   the folder's code is in the pull request's diff (issue #18).
