@@ -135,7 +135,7 @@ in the code, and values that follow from it are computed from it. DESIGN.md
 says why it was chosen; README.md links there rather than repeating it. Two
 things are shown in README.md too, for its readers: the verdict table, from
 DESIGN.md, and the share of ordinary updates that are `OK`, from
-eval/README.md. A change to either changes both.
+eval/README.md. When either changes at its source, change README.md with it.
 
 **Shared definitions go in `src/types/`.** Types and constants that several
 modules use as common terms of a domain live in `src/types/<domain>.ts`, not
