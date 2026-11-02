@@ -29,7 +29,11 @@ export const REGISTRY = 'https://registry.npmjs.org/';
 /** Said when the registry's manifest of a version names no tarball. */
 export const NO_TARBALL = 'no tarball URL in the registry';
 
-export type FetchPackument = (name: string) => Promise<Packument | null>;
+/**
+ * Fetches a package's packument, or null if the registry does not have it.
+ * `signal` stops it, including any wait before a retry.
+ */
+export type FetchPackument = (name: string, signal?: AbortSignal) => Promise<Packument | null>;
 
 /** The scripts npm runs when it installs a package. */
 export const INSTALL_HOOKS = ['preinstall', 'install', 'postinstall'] as const;

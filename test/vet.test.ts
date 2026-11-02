@@ -18,6 +18,28 @@ describe('vetChanges', () => {
     // The 8 workers each start one fetch before the failure is seen; none starts another.
     expect(calls).toBe(8);
   });
+
+  it('stops the fetches under way when one fails', async () => {
+    const changes = Array.from({ length: 8 }, (_, i) => ({
+      name: `p${i}`,
+      from: null,
+      to: '1.0.0',
+    }));
+    const signals: AbortSignal[] = [];
+    // The first fails; the others would wait for a retry until their signal stops them.
+    const fetchPackument = (name: string, signal?: AbortSignal) => {
+      signals.push(signal!);
+      if (name === 'p0') return Promise.reject(new Error('registry returned 503'));
+      return new Promise<null>((_, reject) =>
+        signal!.addEventListener('abort', () => reject(new Error('aborted'))),
+      );
+    };
+    await expect(vetChanges(changes, fetchPackument, { now: new Date() }, 8)).rejects.toThrow(
+      /503/,
+    );
+    expect(signals).toHaveLength(8);
+    expect(signals.every((s) => s.aborted)).toBe(true);
+  });
 });
 
 // Which old entry each change is compared with: the same version for tamper
