@@ -47,7 +47,9 @@ In CI, name an exact version and skip npx's install prompt
 change verdicts without a change in your repository. To run it from source,
 see [CONTRIBUTING.md](CONTRIBUTING.md).
 
-Exit codes: `0` nothing to block, `1` at least one `BLOCK`, `2` error.
+Exit codes: `0` nothing to block, `1` at least one `BLOCK`, `2` error. A
+failed registry request is retried before it is an error (see
+[DESIGN.md](DESIGN.md#decisions-and-the-numbers-behind-them)).
 
 bumpvet reads the metadata of each changed registry package from
 registry.npmjs.org.
