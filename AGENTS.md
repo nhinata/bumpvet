@@ -32,6 +32,8 @@ tend to get wrong.
    Patching spot by spot is how one fix opens the next hole.
 8. **Keep one rule in one place** ([Writing code](CONTRIBUTING.md#writing-code)).
    If you are about to write "as in X" in a comment, merge the two instead.
+   Before adding a number or a rule, search the code, DESIGN.md and README.md
+   for it, and say in a design proposal where each one will be written.
 9. **Check what an installer or platform really does before relying on it**:
    run the experiment or read the official documentation, and record the
    result in DESIGN.md if a check depends on it.
