@@ -14,19 +14,20 @@ export async function vetChanges(
 ): Promise<PackageResult[]> {
   const results = new Array<PackageResult>(changes.length);
   let next = 0;
-  // After one fetch fails the run has failed: start no more fetches.
-  let failed = false;
+  // After one change fails the run has failed: start no more fetches, and stop
+  // those under way, with any wait before a retry.
+  const stop = new AbortController();
   const worker = async () => {
-    while (!failed && next < changes.length) {
+    while (!stop.signal.aborted && next < changes.length) {
       const i = next++;
       const change = changes[i]!;
       let packument = null;
       let signals;
       try {
-        if (!change.source) packument = await fetchPackument(change.name);
+        if (!change.source) packument = await fetchPackument(change.name, stop.signal);
         signals = computeSignals(change, packument, opts);
       } catch (err) {
-        failed = true;
+        stop.abort();
         throw err;
       }
       results[i] = {

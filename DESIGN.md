@@ -191,6 +191,16 @@ before the same checks are trusted for it.
 - **An entry without `resolved` is vetted as a registry package.** npm
   fetches it from the registry by name and version (see
   [Threat model](#threat-model)), so that version is what is vetted.
+- **A failed registry request is tried twice more, as npm does.** Network
+  errors and the statuses npm retries (408, 420, 429, 5xx) are tried again
+  after 10 and then 60 seconds, npm's defaults, so a run gives the registry as
+  long as `npm ci` in the same job does; a `Retry-After` of up to 60 seconds
+  is honoured. A 404 is an answer, not a failure. When one package still
+  fails, the run exits `2` at once and stops the fetches under way: without
+  that, a registry that is down would keep the run going until every fetch
+  had given up. _Trade-off:_ the waits are npm's, not measured for bumpvet;
+  at worst, three 60-second timeouts and the waits make one package take
+  about four minutes before the run fails.
 - **Packages bumpvet cannot vet are signals too.** A separate "not vetted"
   list outside the verdict table would break principle 2 and let them pass
   with exit code 0.
