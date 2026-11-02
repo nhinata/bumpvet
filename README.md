@@ -91,12 +91,12 @@ jobs:
 
 ## How it decides
 
-| Signals                                                                                                                                                                                                                                                  | Verdict |
-| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
-| the lockfile installs something other than the registry's release: its integrity differs from the registry's, or it has none and `resolved` is not the registry's tarball, or the entry moved off the registry, or the version is gone from the registry | BLOCK   |
-| a new or changed install script together with an unusual origin or a fresh release                                                                                                                                                                       | BLOCK   |
-| an unusual origin (new publisher, lost provenance, not from the registry), or a new or changed install script                                                                                                                                            | REVIEW  |
-| nothing, or only a fresh release                                                                                                                                                                                                                         | OK      |
+| Signals                                                                                                                                                                                                                                                                          | Verdict |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
+| any **tamper** signal: the lockfile installs something other than the registry's release (its integrity differs from the registry's, or it has none and `resolved` is not the registry's tarball, or the entry moved off the registry, or the version is gone from the registry) | BLOCK   |
+| a new or changed install script (**content**) together with an unusual origin (**origin**) or a fresh release (**timing**)                                                                                                                                                       | BLOCK   |
+| an unusual origin (**origin**: new publisher, lost provenance, not from the registry), or a new or changed install script (**content**)                                                                                                                                          | REVIEW  |
+| nothing, or only a fresh release (**timing**)                                                                                                                                                                                                                                    | OK      |
 
 The signals, the thresholds and the measurements behind them are in
 [DESIGN.md](DESIGN.md). How often bumpvet speaks up on ordinary updates is

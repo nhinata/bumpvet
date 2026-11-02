@@ -121,12 +121,12 @@ before the same checks are trusted for it.
 
 ## Verdict table
 
-| Signals                                 | Verdict |
-| --------------------------------------- | ------- |
-| any tamper signal                       | BLOCK   |
-| content, together with origin or timing | BLOCK   |
-| origin or content                       | REVIEW  |
-| nothing, or timing only                 | OK      |
+| Signals                                             | Verdict |
+| --------------------------------------------------- | ------- |
+| any **tamper** signal                               | BLOCK   |
+| **content**, together with **origin** or **timing** | BLOCK   |
+| **origin** or **content**                           | REVIEW  |
+| nothing, or **timing** only                         | OK      |
 
 ## Decisions and the numbers behind them
 

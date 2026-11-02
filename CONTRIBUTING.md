@@ -172,6 +172,10 @@ its tests go with it.
 - Check that a new or changed test can fail: break the code it covers, see it
   fail, restore the code.
 - Tests never touch the network. Use the fakes in `test/helpers.ts`.
+- `test/docs.test.ts` checks the lists users read in the documents: the
+  signals and their groups in DESIGN.md against the code, and the verdict table
+  in README.md against DESIGN.md's. Only such lists; prose is checked by
+  review.
 - `test/incidents.test.ts` replays real incidents. Say where each value comes
   from: the live registry, or a named public report. If a value is a guess,
   say so in the comment.
