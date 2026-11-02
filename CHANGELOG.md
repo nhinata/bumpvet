@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.1](https://github.com/nhinata/bumpvet/compare/v0.4.0...v0.4.1) (2026-11-02)
+
+
+### Bug Fixes
+
+* retry failed registry requests as npm does ([#76](https://github.com/nhinata/bumpvet/issues/76)) ([54b7262](https://github.com/nhinata/bumpvet/commit/54b72626923a47cd9dd80ef6aa65b58dcd285f35)), closes [#75](https://github.com/nhinata/bumpvet/issues/75)
+
 ## [0.4.0](https://github.com/nhinata/bumpvet/compare/v0.3.0...v0.4.0) (2026-11-01)
 
 
