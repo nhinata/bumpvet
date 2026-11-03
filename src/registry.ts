@@ -2,7 +2,6 @@ import { setTimeout as delay } from 'node:timers/promises';
 import { messageWithCause } from './utils/errors.js';
 import { isObject, str } from './utils/json.js';
 import {
-  INSTALL_HOOKS,
   REGISTRY,
   type FetchPackument,
   type Packument,
@@ -19,6 +18,10 @@ const packumentUrl = (name: string) => REGISTRY + name.replace('/', '%2f');
  * for bumpvet.
  */
 const NPM_RETRY = { retries: 2, minTimeout: 10_000, factor: 10, maxTimeout: 60_000 };
+/** How long one request may take, body included: npm's `fetch-timeout` (5 minutes). */
+export const NPM_FETCH_TIMEOUT = 300_000;
+/** How long one packument request may take. */
+const PACKUMENT_TIMEOUT = 60_000;
 /** The wait before each retry, as npm computes it: 10 s, then 60 s. */
 const RETRY_WAITS = Array.from({ length: NPM_RETRY.retries }, (_, i) =>
   Math.min(NPM_RETRY.minTimeout * NPM_RETRY.factor ** i, NPM_RETRY.maxTimeout),
@@ -27,7 +30,7 @@ const RETRY_WAITS = Array.from({ length: NPM_RETRY.retries }, (_, i) =>
 const retried = (status: number) => [408, 420, 429].includes(status) || status >= 500;
 
 /** A failure that may pass if the request is made again: a status above, or the network. */
-class Transient extends Error {
+export class Transient extends Error {
   constructor(
     message: string,
     options?: { cause?: unknown },
@@ -38,13 +41,86 @@ class Transient extends Error {
   }
 }
 
-type Wait = (ms: number, signal?: AbortSignal) => Promise<unknown>;
-const wait: Wait = (ms, signal) => delay(ms, undefined, { signal });
+export type Wait = (ms: number, signal?: AbortSignal) => Promise<unknown>;
+export const wait: Wait = (ms, signal) => delay(ms, undefined, { signal });
+
+/**
+ * Runs `attempt`, and again after each of RETRY_WAITS while it fails with
+ * Transient. `signal` stops it, including a wait.
+ */
+export async function withRetries<T>(
+  attempt: () => Promise<T>,
+  signal: AbortSignal | undefined,
+  waitImpl: Wait,
+): Promise<T> {
+  for (let n = 1; ; n++) {
+    try {
+      return await attempt();
+    } catch (err) {
+      if (!(err instanceof Transient) || signal?.aborted) throw err;
+      const next = RETRY_WAITS[n - 1];
+      if (next === undefined) {
+        throw new Error(`${err.message}; gave up after ${n} attempts`, { cause: err });
+      }
+      await waitImpl(Math.min(Math.max(next, err.retryAfter ?? 0), NPM_RETRY.maxTimeout), signal);
+    }
+  }
+}
+
+/**
+ * One GET to the registry, for `what` (named in errors): the response when it
+ * is OK, null for a 404. A failure reading the body is `bodyFailed`.
+ */
+export async function request(
+  fetchImpl: typeof fetch,
+  url: string,
+  what: string,
+  signal: AbortSignal | undefined,
+  timeoutMs: number,
+  headers?: Record<string, string>,
+): Promise<Response | null> {
+  const timeout = AbortSignal.timeout(timeoutMs);
+  let res: Response;
+  try {
+    res = await fetchImpl(url, {
+      headers,
+      signal: signal ? AbortSignal.any([signal, timeout]) : timeout,
+    });
+  } catch (err) {
+    const reason = messageWithCause(err);
+    throw new Transient(`fetching ${what} from the registry failed: ${reason}`, { cause: err });
+  }
+  if (!res.ok) {
+    await discard(res);
+    if (res.status === 404) return null;
+    const message = `registry returned ${res.status} for ${what}`;
+    if (!retried(res.status)) throw new Error(message);
+    throw new Transient(message, undefined, retryAfter(res.headers.get('retry-after')));
+  }
+  return res;
+}
+
+/**
+ * Lets go of a response whose body is not read: unread, it would hold the
+ * connection until garbage collection. A body that already failed rejects the
+ * cancel; the caller has what it needs from the response.
+ */
+export async function discard(res: Response): Promise<void> {
+  await res.body?.cancel().catch(() => undefined);
+}
+
+/** A failure while a response's body is read: a timeout or reset may pass on a retry. */
+export function bodyFailed(err: unknown, what: string): Transient {
+  const reason = messageWithCause(err);
+  return new Transient(`reading the registry response for ${what} failed: ${reason}`, {
+    cause: err,
+  });
+}
 
 /**
  * Fetches full packuments from the public registry. Returns null for a package
  * the registry does not have. Network errors and the statuses npm retries are
- * tried again after each of RETRY_WAITS.
+ * tried again (withRetries).
  *
  * Each name is fetched once, and later calls share that fetch, whatever signal
  * they pass: give one fetcher one signal, as a run does.
@@ -54,23 +130,7 @@ export function registryFetcher(fetchImpl: typeof fetch = fetch, waitImpl = wait
   return (name, signal) => {
     let p = cache.get(name);
     if (!p) {
-      p = (async () => {
-        for (let attempt = 1; ; attempt++) {
-          try {
-            return await fetchOnce(fetchImpl, name, signal);
-          } catch (err) {
-            if (!(err instanceof Transient) || signal?.aborted) throw err;
-            const next = RETRY_WAITS[attempt - 1];
-            if (next === undefined) {
-              throw new Error(`${err.message}; gave up after ${attempt} attempts`, { cause: err });
-            }
-            await waitImpl(
-              Math.min(Math.max(next, err.retryAfter ?? 0), NPM_RETRY.maxTimeout),
-              signal,
-            );
-          }
-        }
-      })();
+      p = withRetries(() => fetchOnce(fetchImpl, name, signal), signal, waitImpl);
       cache.set(name, p);
     }
     return p;
@@ -82,35 +142,16 @@ async function fetchOnce(
   name: string,
   signal: AbortSignal | undefined,
 ): Promise<Packument | null> {
-  const timeout = AbortSignal.timeout(60_000);
-  let res: Response;
-  try {
-    res = await fetchImpl(packumentUrl(name), {
-      headers: { accept: 'application/json' },
-      signal: signal ? AbortSignal.any([signal, timeout]) : timeout,
-    });
-  } catch (err) {
-    const reason = messageWithCause(err);
-    throw new Transient(`fetching ${name} from the registry failed: ${reason}`, { cause: err });
-  }
-  if (!res.ok) {
-    // Unread, the body would hold the connection until garbage collection.
-    // A body that already failed rejects the cancel; the status is what matters here.
-    await res.body?.cancel().catch(() => undefined);
-    if (res.status === 404) return null;
-    const message = `registry returned ${res.status} for ${name}`;
-    if (!retried(res.status)) throw new Error(message);
-    throw new Transient(message, undefined, retryAfter(res.headers.get('retry-after')));
-  }
+  const res = await request(fetchImpl, packumentUrl(name), name, signal, PACKUMENT_TIMEOUT, {
+    accept: 'application/json',
+  });
+  if (!res) return null;
   // Read first, then parse: a timeout or reset mid-body is not "invalid JSON".
   let text: string;
   try {
     text = await res.text();
   } catch (err) {
-    const reason = messageWithCause(err);
-    throw new Transient(`reading the registry response for ${name} failed: ${reason}`, {
-      cause: err,
-    });
+    throw bodyFailed(err, name);
   }
   let json: unknown;
   try {
@@ -151,19 +192,10 @@ export function slim(raw: unknown, name: string): Packument {
     for (const [v, m] of Object.entries(raw.versions)) {
       if (!isObject(m)) continue;
       const user = isObject(m._npmUser) ? str(m._npmUser.name) : undefined;
-      const scripts = isObject(m.scripts) ? m.scripts : undefined;
       const dist = isObject(m.dist) ? m.dist : {};
       versions[v] = {
         version: v,
         _npmUser: user ? { name: user } : undefined,
-        scripts:
-          scripts &&
-          Object.fromEntries(
-            INSTALL_HOOKS.flatMap((h) => {
-              const script = str(scripts[h]);
-              return script ? [[h, script]] : [];
-            }),
-          ),
         dist: {
           integrity: str(dist.integrity),
           shasum: sha1Hex(dist.shasum),

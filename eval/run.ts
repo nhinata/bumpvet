@@ -6,11 +6,13 @@
  * Each update is vetted twice: one hour after publish (a Dependabot-style
  * PR opened right away) and seven days after (a team that waits).
  *
- * It downloads every packument: run it in the Evaluate false positives
- * workflow (CONTRIBUTING.md, Evaluation).
+ * It downloads every packument, and the tarballs of every new version and the
+ * one it is compared with: run it
+ * in the Evaluate false positives workflow (CONTRIBUTING.md, Evaluation).
  *
  *   npm run eval [-- --per-package 10] [--baseline 5]
  */
+import { tarballFetcher } from '../src/tarball.js';
 import type { Packument } from '../src/types/registry.js';
 import { SIGNALS, type SignalId } from '../src/types/signals.js';
 import type { PackageResult, Verdict } from '../src/types/verdicts.js';
@@ -29,6 +31,8 @@ interface Row {
   delay: string;
   verdict: Verdict;
   signals: SignalId[];
+  /** What the tamper signals said, which no benign update should have. */
+  tamper: string[];
 }
 
 /** Packages and updates not measured (the registry or a download failed), with why. */
@@ -42,6 +46,31 @@ await pool(PACKAGES, 8, async (name) => {
   }
 });
 const fetchPackument = (name: string) => Promise.resolve(packuments.get(name) ?? null);
+/**
+ * The bytes received of each tarball read, by URL, to show what the download
+ * limit has to fit; counted as they arrive, since a response need not give
+ * its length.
+ */
+const tarballBytes = new Map<string, number>();
+const fetchTarball = tarballFetcher((async (url: string, init?: RequestInit) => {
+  const res = await fetch(url, init);
+  if (!res.body) return res;
+  let bytes = 0;
+  const counted = res.body.pipeThrough(
+    new TransformStream<Uint8Array, Uint8Array>({
+      transform(chunk, controller) {
+        bytes += chunk.byteLength;
+        tarballBytes.set(url, bytes);
+        controller.enqueue(chunk);
+      },
+    }),
+  );
+  return new Response(counted, {
+    status: res.status,
+    statusText: res.statusText,
+    headers: res.headers,
+  });
+}) as typeof fetch);
 
 const tasks = [...packuments].flatMap(([name, p]) =>
   updates(p).flatMap(({ from, to }) =>
@@ -58,7 +87,9 @@ await pool(tasks, 8, async (t) => {
   let result: PackageResult;
   try {
     // One change in, one result out.
-    result = (await vetChanges([t.change], fetchPackument, { now: t.now, baselineSize }))[0]!;
+    result = (
+      await vetChanges([t.change], fetchPackument, fetchTarball, { now: t.now, baselineSize })
+    )[0]!;
   } catch (err) {
     failed.set(update, messageOf(err));
     return;
@@ -68,6 +99,9 @@ await pool(tasks, 8, async (t) => {
     delay: t.delay,
     verdict: result.verdict,
     signals: result.signals.map((s) => s.id),
+    tamper: result.signals
+      .filter((s) => s.group === 'tamper')
+      .map((s) => `${s.id}: ${s.before} -> ${s.after}`),
   });
 });
 rows.sort((a, b) => a.update.localeCompare(b.update));
@@ -94,9 +128,18 @@ for (const d of DELAYS) {
 for (const d of DELAYS) {
   const flagged = measured.filter((r) => r.delay === d.label && r.verdict !== 'ok');
   console.log(`\n== non-OK at ${d.label} (${flagged.length})`);
-  for (const r of flagged)
+  for (const r of flagged) {
     console.log(`  ${r.verdict.padEnd(6)} ${r.update}  [${r.signals.join(', ')}]`);
+    for (const t of r.tamper) console.log(`         ${t}`);
+  }
 }
+
+const sizes = [...tarballBytes].sort((a, b) => b[1] - a[1]);
+const mb = (bytes: number) => `${(bytes / 1_000_000).toFixed(1)} MB`;
+console.log(
+  `\n== tarballs read: ${sizes.length}, ${mb(sizes.reduce((sum, [, b]) => sum + b, 0))} in all`,
+);
+for (const [url, bytes] of sizes.slice(0, 5)) console.log(`  ${mb(bytes).padStart(9)}  ${url}`);
 
 if (failed.size) {
   console.log(`\n== not measured (${failed.size})`);

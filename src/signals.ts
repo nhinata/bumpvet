@@ -1,10 +1,6 @@
 import type { Change } from './types/lockfile.js';
-import {
-  INSTALL_HOOKS,
-  NO_TARBALL,
-  type Packument,
-  type VersionManifest,
-} from './types/registry.js';
+import { NO_TARBALL, type Packument, type VersionManifest } from './types/registry.js';
+import { INSTALL_HOOKS, type NotChecked, type Tarball } from './types/tarball.js';
 import { SIGNALS, type Signal, type SignalId, type SignalOptions } from './types/signals.js';
 
 /** A signal, with the group SIGNALS gives it. */
@@ -12,7 +8,11 @@ const signal = <K extends SignalId>(id: K, before: string, after: string): Signa
   // TypeScript does not tie SIGNALS[id] to id's own member of Signal; the group is that id's.
   ({ id, group: SIGNALS[id], before, after }) as Signal;
 
-/** Compares the new version with the versions before it and returns what changed. */
+/**
+ * Compares the new version with the versions before it and returns what
+ * changed, from the registry's metadata; tarballSignals adds what the
+ * tarballs say.
+ */
 export function computeSignals(
   change: Change,
   packument: Packument | null,
@@ -43,7 +43,7 @@ export function computeSignals(
     ];
   }
 
-  const { next, replaced, reference, earlier } = versions;
+  const { next, replaced, earlier } = versions;
 
   // The registry's hash in the lockfile's algorithm: sha512 usually, sha1 for old lockfiles,
   // which the registry gives as `shasum` (and, for some old versions, as `integrity`).
@@ -66,9 +66,9 @@ export function computeSignals(
   // Without an integrity to compare with the registry's, nothing ties the content
   // to the registry, so `resolved` must be the registry's tarball exactly
   // (DESIGN.md, threat model). With no tarball URL from the registry, that fails too.
-  const tarball = next.dist?.tarball;
-  if (!comparable && change.resolved !== undefined && change.resolved !== tarball) {
-    signals.push(signal('tarball-mismatch', tarball ?? NO_TARBALL, change.resolved));
+  const tarballUrl = next.dist?.tarball;
+  if (!comparable && change.resolved !== undefined && change.resolved !== tarballUrl) {
+    signals.push(signal('tarball-mismatch', tarballUrl ?? NO_TARBALL, change.resolved));
   }
 
   const publisher = next._npmUser?.name;
@@ -104,17 +104,61 @@ export function computeSignals(
     }
   }
 
-  // Only hooks that were added or changed: removing an install script takes power away.
-  const hooks = INSTALL_HOOKS.filter(
-    (h) => next.scripts?.[h] && next.scripts[h] !== reference?.scripts?.[h],
-  );
-  if (hooks.length) {
-    const show = (m: VersionManifest | undefined) =>
-      hooks.map((h) => `${h}: ${m?.scripts?.[h] ?? 'none'}`).join('; ');
-    signals.push(signal('install-scripts', show(reference), show(next)));
-  }
-
   return signals;
+}
+
+/**
+ * The manifests whose tarballs are to be read, given what computeSignals
+ * found: the new version's, and the one it is compared with, if any. None
+ * when the lockfile already installs something other than the registry's
+ * release (a tamper signal), or when the registry has no such version.
+ */
+export function tarballsToRead(
+  change: Change,
+  packument: Packument | null,
+  signals: Signal[],
+): { next: VersionManifest; previous?: VersionManifest } | undefined {
+  if (change.source || !packument || signals.some((s) => s.group === 'tamper')) return undefined;
+  const versions = comparedVersions(change, packument);
+  return versions && { next: versions.next, previous: versions.reference };
+}
+
+/**
+ * What the tarballs say (DESIGN.md, Decisions): `install-scripts` for an
+ * install hook of the new version's package.json, or a root binding.gyp, that
+ * the version it is compared with (`previous`) did not have; removing one
+ * takes power away. None for `previous` when there is no version to compare
+ * with.
+ */
+export function tarballSignals(
+  tarball: Tarball | NotChecked,
+  previous: Tarball | NotChecked | undefined,
+): Signal[] {
+  if ('notChecked' in tarball) {
+    return [signal('tarball-not-read', 'tarball read', tarball.notChecked)];
+  }
+  const after = installs(tarball);
+  const before = previous && !('notChecked' in previous) ? installs(previous) : {};
+  const added = INSTALLS.filter((k) => after[k] && after[k] !== before[k]);
+  if (!added.length) return [];
+  const was =
+    previous && 'notChecked' in previous
+      ? `not read: ${previous.notChecked}`
+      : installsText(added, before);
+  return [signal('install-scripts', was, installsText(added, after))];
+}
+
+/** What npm can run from a tarball when it installs it (DESIGN.md, threat model). */
+const INSTALLS = [...INSTALL_HOOKS, 'binding.gyp'] as const;
+type Installs = Partial<Record<(typeof INSTALLS)[number], string>>;
+
+function installs(tarball: Tarball): Installs {
+  return { ...tarball.scripts, 'binding.gyp': tarball.bindingGyp ? 'present' : undefined };
+}
+
+/** `keys` as `install: <script>; …`, with `none` where `installs` has none. */
+function installsText(keys: (typeof INSTALLS)[number][], installs: Installs) {
+  return keys.map((k) => `${k}: ${installs[k] ?? 'none'}`).join('; ');
 }
 
 /**

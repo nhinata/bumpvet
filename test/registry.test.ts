@@ -30,7 +30,6 @@ describe('slim', () => {
         '1.0.0': {
           version: '1.0.0',
           _npmUser: { name: 'alice' },
-          scripts: { postinstall: 'node x.js' },
           dist: {
             integrity: 'sha512-x',
             shasum: undefined,
@@ -63,7 +62,6 @@ describe('slim', () => {
     expect(slim({ versions: { '1.0.0': {} } }, 'pkg').versions['1.0.0']).toEqual({
       version: '1.0.0',
       _npmUser: undefined,
-      scripts: undefined,
       dist: {
         integrity: undefined,
         shasum: undefined,
@@ -112,7 +110,6 @@ describe('slim', () => {
         '1.0.0': null,
         '1.1.0': {
           _npmUser: 'alice',
-          scripts: { postinstall: { run: 'x' }, install: 3, preinstall: 'node p.js' },
           dist: { integrity: ['sha512-x'] },
         },
       },
@@ -124,7 +121,6 @@ describe('slim', () => {
         '1.1.0': {
           version: '1.1.0',
           _npmUser: undefined,
-          scripts: { preinstall: 'node p.js' },
           dist: {
             integrity: undefined,
             shasum: undefined,

@@ -14,11 +14,11 @@ would be, and vetted at two moments:
 - **7 days after publish:** a team that waits a week.
 
 Packuments are cached in `eval/.cache/` (not committed), so numbers can shift
-slightly as packages publish new versions.
+slightly as packages publish new versions. Tarballs are downloaded on each run.
 
-### Results (2026-10-31)
+### Results (2026-11-03)
 
-From [this run](https://github.com/nhinata/bumpvet/actions/runs/41212227475).
+From [this run](https://github.com/nhinata/bumpvet/actions/runs/41621273802).
 
 | Vetted           | Updates | OK    | REVIEW | BLOCK |
 | ---------------- | ------- | ----- | ------ | ----- |
@@ -36,6 +36,9 @@ What the non-OK cases were (7 days after publish):
 The 2 BLOCKs at one hour are the same `sharp` releases: a changed install
 script on a fresh release. That is exactly the pattern of a worm release, so
 bumpvet asks for a look.
+
+The run read 688 tarballs, 195.0 MB in all; the largest was 3.2 MB. The job
+took about a minute.
 
 ## Detection: incidents
 

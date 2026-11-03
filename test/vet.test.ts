@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { vetChanges, vetLockfiles } from '../src/vet.js';
-import { fakeRegistry, lockfile, packument } from './helpers.js';
+import type { FetchTarball } from '../src/types/tarball.js';
+import { fakeRegistry, lockfile, packument, tarballsAsPublished } from './helpers.js';
 
 describe('vetChanges', () => {
   it('starts no more fetches after one fails', async () => {
@@ -13,7 +14,9 @@ describe('vetChanges', () => {
     // Only the first fetch fails; without the stop, the other workers would go on through all 20.
     const firstFails = () =>
       ++calls === 1 ? Promise.reject(new Error('registry returned 503')) : Promise.resolve(null);
-    await expect(vetChanges(changes, firstFails, { now: new Date() }, 8)).rejects.toThrow(/503/);
+    await expect(
+      vetChanges(changes, firstFails, tarballsAsPublished, { now: new Date() }, 8),
+    ).rejects.toThrow(/503/);
     await new Promise((resolve) => setTimeout(resolve, 0)); // let any leftover work run
     // The 8 workers each start one fetch before the failure is seen; none starts another.
     expect(calls).toBe(8);
@@ -34,11 +37,73 @@ describe('vetChanges', () => {
         signal!.addEventListener('abort', () => reject(new Error('aborted'))),
       );
     };
-    await expect(vetChanges(changes, fetchPackument, { now: new Date() }, 8)).rejects.toThrow(
-      /503/,
-    );
+    await expect(
+      vetChanges(changes, fetchPackument, tarballsAsPublished, { now: new Date() }, 8),
+    ).rejects.toThrow(/503/);
     expect(signals).toHaveLength(8);
     expect(signals.every((s) => s.aborted)).toBe(true);
+  });
+});
+
+// The tarballs of the new version and the one it is compared with are read;
+// not when the lockfile already installs something else (DESIGN.md, Decisions).
+describe('vetChanges: which tarballs are read', () => {
+  const registry = fakeRegistry(
+    packument('pkg', [
+      { version: '1.0.0', time: '2025-01-01T00:00:00Z', publisher: 'alice' },
+      { version: '1.1.0', time: '2025-02-01T00:00:00Z', publisher: 'alice', bindingGyp: true },
+    ]),
+  );
+  const now = new Date('2026-01-01T00:00:00Z');
+  const reading = (fetch: FetchTarball = tarballsAsPublished) => {
+    const read: string[] = [];
+    const fetchTarball: FetchTarball = (manifest, what, signal) => {
+      read.push(what);
+      return fetch(manifest, what, signal);
+    };
+    return { read, fetchTarball };
+  };
+  const update = { name: 'pkg', from: '1.0.0', to: '1.1.0', integrity: 'sha512-pkg-1.1.0' };
+
+  it('reads the new version and the one it is compared with, and reports what changed', async () => {
+    const { read, fetchTarball } = reading();
+    const [r] = await vetChanges([update], registry, fetchTarball, { now });
+    expect(read).toEqual(['pkg@1.1.0', 'pkg@1.0.0']);
+    expect(r?.signals.map((s) => [s.id, s.before, s.after])).toEqual([
+      ['install-scripts', 'binding.gyp: none', 'binding.gyp: present'],
+    ]);
+  });
+
+  it('reads only the new version of a package with nothing before it', async () => {
+    const { read, fetchTarball } = reading();
+    const change = { name: 'pkg', from: null, to: '1.0.0', integrity: 'sha512-pkg-1.0.0' };
+    await vetChanges([change], registry, fetchTarball, { now });
+    expect(read).toEqual(['pkg@1.0.0']);
+  });
+
+  it('does not read a tarball the lockfile does not install', async () => {
+    const { read, fetchTarball } = reading();
+    const changes = [
+      { name: 'pkg', from: null, to: '1.0.0', integrity: 'sha512-other' },
+      { name: 'pkg', from: null, to: '9.9.9' },
+      { name: 'pkg', from: null, to: '1.0.0', source: 'git+https://example.com/x.git' },
+    ];
+    const results = await vetChanges(changes, registry, fetchTarball, { now });
+    expect(results.map((r) => r.signals.map((s) => s.id))).toEqual([
+      ['integrity-mismatch'],
+      ['not-in-registry'],
+      ['not-from-registry'],
+    ]);
+    expect(read).toEqual([]);
+  });
+
+  it('does not read the compared version when the new one was not read', async () => {
+    const { read, fetchTarball } = reading(() =>
+      Promise.resolve({ notChecked: 'over 256 MB to download' }),
+    );
+    const [r] = await vetChanges([update], registry, fetchTarball, { now });
+    expect(read).toEqual(['pkg@1.1.0']);
+    expect(r?.signals.map((s) => s.id)).toEqual(['tarball-not-read']);
   });
 });
 
@@ -64,7 +129,7 @@ describe('vetLockfiles: what a change is compared with', () => {
     ]),
   );
   const vet = async (before: string, after: string) =>
-    (await vetLockfiles(before, after, registry, { now })).map((r) => ({
+    (await vetLockfiles(before, after, registry, tarballsAsPublished, { now })).map((r) => ({
       name: r.name,
       from: r.from,
       to: r.to,
@@ -142,7 +207,7 @@ describe('vetLockfiles: what a change is compared with', () => {
       'node_modules/a': { version: '2.0.0' },
       'node_modules/b/node_modules/a': { version: '2.0.0' },
     });
-    const results = await vetLockfiles(before, after, pkgs, { now });
+    const results = await vetLockfiles(before, after, pkgs, tarballsAsPublished, { now });
     expect(results.map((r) => [r.from, r.verdict])).toEqual([
       ['1.0.0', 'ok'],
       ['0.9.0', 'block'],

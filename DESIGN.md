@@ -22,6 +22,8 @@ what it deliberately does not do, and why.
    with the one at `HEAD`.
 6. **A rule is added only when the evaluation says it helps:** detection goes
    up and false positives do not get worse. See [eval/README.md](eval/README.md).
+   A change that closes a way around an existing signal, rather than adding
+   one, needs only the second.
 
 ## Terms
 
@@ -54,13 +56,17 @@ looked at again.
   `version`, `name`, `resolved`, `integrity`, `link`, `inBundle`,
   `bundleDependencies`, and which entries exist;
 - **what a maintainer account publishes**, if the account or its token is
-  stolen: the code, the install scripts, the publish time.
+  stolen: the code, the install scripts, the publish time, and the version's
+  manifest, which the registry keeps beside the tarball without checking it
+  against the tarball's `package.json` (publicly known as manifest confusion).
 
 **bumpvet trusts:**
 
 - **the public npm registry's metadata** (`dist.tarball`, `dist.integrity`,
   `dist.shasum`, `_npmUser`, `time`, attestations) as a record of what was
-  published. A registry that lies is out of scope.
+  published. A registry that lies is out of scope. The manifest's `scripts`
+  are the publisher's word, not the registry's, so bumpvet reads install
+  hooks from the tarball (see Decisions).
 
 **What the installer does, checked by experiment:**
 
@@ -98,6 +104,34 @@ looked at again.
 
 These were checked with npm 10.9.4 and 11.6.2.
 
+- npm runs the `preinstall`, `install` and `postinstall` hooks of the
+  installed package's own `package.json`, and only for an entry whose
+  `hasInstallScript` is set; the registry's manifest is read only when the
+  lockfile is written, to set that field. With a hook only in the tarball's
+  `package.json`, `npm ci` ran it once `hasInstallScript` was edited to true.
+- With a `binding.gyp` at the package root and no `install` or `preinstall`
+  hook, npm runs `node-gyp rebuild` whatever `hasInstallScript` and `gypfile`
+  say: a release whose manifest has no `scripts`, and one published with
+  `gypfile: false`, both ran it on `npm ci` and `npm install`. `npm publish`
+  adds `"install": "node-gyp rebuild"` and `"gypfile": true` to the manifest
+  of a package with a `binding.gyp`; a manifest sent to the registry's API
+  directly need not.
+
+These were checked with npm 10.8.2 against a local registry (Verdaccio 6.8.0),
+and with npm 10.9.4 and 11.6.2.
+
+- npm unpacks a tarball with node-tar (pacote), dropping the first folder of
+  every path and leaving out links. node-tar reads leniently: it skips a
+  header it finds invalid but only its 512 bytes, so what was that entry's
+  body is read as headers; it gives a directory no body whatever its size
+  says; it ignores a PAX header over 1 MiB; and a later entry with the same
+  path replaces an earlier one. Each of these let a tarball show a reader one
+  `package.json` and npm another.
+
+These were checked with npm 10.8.2; test/tarball.test.ts checks the second
+against node-tar 6.2.1, which npm up to 10.9.5 unpacks with, and against
+node-tar 7, which npm 10.9.6 and later, 11 and 12 do.
+
 So for npm, a lockfile integrity equal to the registry's pins the content
 whatever `resolved` says, and only an entry without one that has a `resolved`
 must have exactly the registry's tarball URL (see `tarball-mismatch`); without
@@ -107,17 +141,18 @@ before the same checks are trusted for it.
 
 ## Signals
 
-| Signal               | Group   | Fires when                                                                                                                                                                       |
-| -------------------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `publisher-changed`  | origin  | the account that published the new version published none of the 20 versions before it, and the new version has no provenance                                                    |
-| `provenance-lost`    | origin  | the version being replaced, or an earlier stable version of the same line (major; minor below 1.0.0), had npm provenance, and the new one does not                               |
-| `fresh-publish`      | timing  | the new version is less than 72 hours old                                                                                                                                        |
-| `install-scripts`    | content | a `preinstall`, `install` or `postinstall` script was added or changed                                                                                                           |
-| `not-from-registry`  | origin  | the package comes from git, a `file:` path, another registry, or its entry has no version, an invalid name, or a field of the wrong type, so there is nothing to compare it with |
-| `source-changed`     | tamper  | a package that came from the public registry now comes from somewhere else (how lockfile injection looks)                                                                        |
-| `integrity-mismatch` | tamper  | the lockfile's integrity hash changed for the same version, or differs from the registry's                                                                                       |
-| `tarball-mismatch`   | tamper  | the lockfile has no integrity the registry's can be compared with, and its `resolved` is not exactly the registry's tarball URL for that version                                 |
-| `not-in-registry`    | tamper  | the registry does not serve the version (npm removes malicious releases)                                                                                                         |
+| Signal               | Group   | Fires when                                                                                                                                                                                                       |
+| -------------------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `publisher-changed`  | origin  | the account that published the new version published none of the 20 versions before it, and the new version has no provenance                                                                                    |
+| `provenance-lost`    | origin  | the version being replaced, or an earlier stable version of the same line (major; minor below 1.0.0), had npm provenance, and the new one does not                                                               |
+| `fresh-publish`      | timing  | the new version is less than 72 hours old                                                                                                                                                                        |
+| `install-scripts`    | content | the new version's tarball has a `preinstall`, `install` or `postinstall` hook in its `package.json`, or a root `binding.gyp`, that the tarball of the version it is compared with did not have, or had otherwise |
+| `not-from-registry`  | origin  | the package comes from git, a `file:` path, another registry, or its entry has no version, an invalid name, or a field of the wrong type, so there is nothing to compare it with                                 |
+| `source-changed`     | tamper  | a package that came from the public registry now comes from somewhere else (how lockfile injection looks)                                                                                                        |
+| `integrity-mismatch` | tamper  | the lockfile's integrity hash changed for the same version, or differs from the registry's                                                                                                                       |
+| `tarball-mismatch`   | tamper  | the lockfile has no integrity the registry's can be compared with, and its `resolved` is not exactly the registry's tarball URL for that version                                                                 |
+| `not-in-registry`    | tamper  | the registry does not serve the version (npm removes malicious releases)                                                                                                                                         |
+| `tarball-not-read`   | tamper  | the new version's tarball was not read: over a limit, in a form bumpvet does not read, or the registry gives no tarball URL on the registry or no hash for it                                                    |
 
 ## Verdict table
 
@@ -198,9 +233,44 @@ before the same checks are trusted for it.
   is honoured. A 404 is an answer, not a failure. When one package still
   fails, the run exits `2` at once and stops the fetches under way: without
   that, a registry that is down would keep the run going until every fetch
-  had given up. _Trade-off:_ the waits are npm's, not measured for bumpvet;
-  at worst, three 60-second timeouts and the waits make one package take
-  about four minutes before the run fails.
+  had given up. _Trade-off:_ the waits are npm's, not measured for bumpvet.
+  At worst, before the run fails, a packument takes about four minutes
+  (three 60-second timeouts and the waits) and a tarball about 16 (three
+  5-minute timeouts and the waits); an update reads its packument and two
+  tarballs one after another, about 36 minutes.
+- **Install hooks are read from the tarballs.** npm runs the hooks of the
+  installed `package.json`, and node-gyp for a root `binding.gyp`, whatever
+  the manifest declares (see [Threat model](#threat-model)). So
+  `install-scripts` compares the tarball of the new version with the tarball
+  of the version it is compared with, both read the same way, and a hook left
+  out of the manifest is reported as a declared one is. Whether npm runs a
+  hook for a given entry (`hasInstallScript`, `gypfile`) and how `npm publish`
+  rewrites the manifest are not followed: a hook or a `binding.gyp` in the
+  tarball counts. Tarballs are read after checking them against the
+  registry's hash, and never run; not when a tamper signal has already been
+  found. Only the root `package.json` and whether there is a root
+  `binding.gyp` are read, unlike the content signals of 0.3 (see
+  [Not doing](#not-doing-and-why)). _Trade-off:_ an update downloads two
+  tarballs as well as its packument; eval/README.md gives how much that came
+  to in the evaluation.
+- **A tarball is read in the forms packers write, and only where node-tar
+  reads it one way.** Matching each of node-tar's lenient rules (see
+  [Threat model](#threat-model)) would let any rule missed show bumpvet one
+  `package.json` and npm another. So bumpvet reads the forms npm 10.8.2, pnpm
+  12.16.1, yarn 4.18.1 and bun 1.4.4 write, where node-tar 6 and 7 read them
+  alike and without leniency; anything else is `tarball-not-read`. So is a
+  case variant of `package.json` or `binding.gyp` at the root, which a
+  case-insensitive file system writes as the same file. The forms are set in
+  src/tarball.ts, and test/tarball.test.ts checks them against node-tar 6 and
+  7 and those packers' output. _Trade-off:_ a release in another form is
+  `BLOCK`.
+- **A release that cannot be read is `BLOCK`.** Making a tarball larger than
+  a limit costs an attacker little, so `tarball-not-read` is a tamper
+  signal too. The limits, 256 MB to download, 512 MB unpacked and 128 MB for
+  the `package.json`, are those of 0.3, which fit large packages (`next` is
+  192 MB unpacked). A tarball is read as it arrives, and may take npm's
+  `fetch-timeout`, 5 minutes. _Trade-off:_ a release over a limit in earnest
+  is `BLOCK`.
 - **Packages bumpvet cannot vet are signals too.** A separate "not vetted"
   list outside the verdict table would break principle 2 and let them pass
   with exit code 0.
@@ -226,6 +296,14 @@ before the same checks are trusted for it.
 - A bundled dependency's entry is vetted against the registry like any
   other, but its files come from the tarball of the package that bundles it,
   which bumpvet does not read.
+- The tarball is read as npm unpacks it. Another installer that unpacks or
+  runs hooks its own way needs the same experiments before these signals
+  are trusted for it. Of the names a file system writes as `package.json` or
+  `binding.gyp`, only known ways are caught: case and Unicode form, a
+  trailing dot or space, and Windows short names.
+- Only changes are vetted. A version already in the lockfile is not read
+  again, also when only its `hasInstallScript` is newly set, which makes npm
+  run the hooks of its `package.json`.
 - A registry package replaced by a link to a folder in the repository is not
   reported, since links are left out (see [Threat model](#threat-model));
   the folder's code is in the pull request's diff (issue #18).
