@@ -362,6 +362,14 @@ describe('tarballFetcher: agrees with node-tar', () => {
     ],
     ['a PAX header with a link name', [{ ...paxPath('package/x'), linkpath: 'y' }, hidden]],
     ['a file with a link name in its header', [{ ...hidden, linkpath: 'y' }]],
+    [
+      'a long name header without a path, whose body holds an entry',
+      [
+        { ...longName('L', ''), path: '', size: 1024, body: tarBlocks(hidden) },
+        { path: 'package/x', body: '{}' },
+      ],
+    ],
+    ['a name with a line break after its NUL', [{ ...hidden, path: 'package/package.json\0\nx' }]],
     ['a file with a PAX link name', [paxHeader([['linkpath', 'x']]), hidden]],
     [
       'GNU headers throughout',

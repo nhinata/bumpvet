@@ -258,11 +258,13 @@ class TarScanner {
   }
 
   private header(header: Buffer): void {
+    // A text field as node-tar reads it: up to a NUL, and on after a line
+    // break that follows one.
     const field = (start: number, length: number) =>
       header
         .subarray(start, start + length)
         .toString('utf8')
-        .replace(/\0.*$/s, '');
+        .replace(/\0.*/, '');
     // Every header carries a checksum; node-tar skips a header with a wrong one.
     const sum = header.reduce((s, b, i) => s + (i >= 148 && i < 156 ? 32 : b), 0);
     if (octal(header, 148) !== sum) throw new Unreadable('tar: bad header');
@@ -270,17 +272,28 @@ class TarScanner {
     if (size === undefined) throw new Unreadable('tar: size not in octal');
     const type = String.fromCharCode(header[156]!);
     const linkname = field(157, 100);
+    const hasLinkName = header.subarray(157, 257).some((b) => b !== 0);
+    // The header's own path as node-tar reads it: the name, with the prefix
+    // under the magic `ustar\0` `00`, joined on even when empty if byte 475 is
+    // set.
+    let ownPath = field(0, 100);
+    if (header.subarray(257, 265).toString('latin1') === 'ustar\u000000') {
+      const prefix = header[475] !== 0 ? field(345, 155) : field(345, 130);
+      if (header[475] !== 0 || prefix) ownPath = `${prefix}/${ownPath}`;
+    }
     const pad = (512 - (size % 512)) % 512;
 
     if (type === 'x' || type === 'L' || type === 'K') {
-      // node-tar 6 skips a meta header with a link name, which node-tar 7 reads
-      // in a PAX header; and it gives a pending PAX size to the next header
-      // even when that is a meta header, which node-tar 7 does not.
-      if (header.subarray(157, 257).some((b) => b !== 0)) {
-        throw new Unreadable('tar: a link name on a meta header');
-      }
-      if (this.meta?.size !== undefined)
+      // node-tar skips a meta header without a path of its own (node-tar 6
+      // would take a pending PAX path for one), and node-tar 6 one with a link
+      // name, which node-tar 7 reads in a PAX header. node-tar 6 also gives a
+      // pending PAX size to the next header even when that is a meta header,
+      // which node-tar 7 does not.
+      if (!ownPath) throw new Unreadable('tar: a meta header without a path');
+      if (hasLinkName) throw new Unreadable('tar: a link name on a meta header');
+      if (this.meta?.size !== undefined) {
         throw new Unreadable('tar: a meta header after a PAX size');
+      }
       if (size > MAX_META) throw new Unreadable('tar: a meta header over 1 MiB');
       // node-tar does nothing with an empty one.
       const done = (body: Buffer) => {
@@ -295,15 +308,8 @@ class TarScanner {
     if (meta?.size !== undefined && meta.size !== size) {
       throw new Unreadable('tar: a PAX size that differs from the header');
     }
-    // The path as node-tar reads it: a PAX or GNU long name, or the name with
-    // the prefix under the magic `ustar\0` `00`, joined on even when empty if
-    // byte 475 is set.
-    let path = field(0, 100);
-    if (header.subarray(257, 265).toString('latin1') === 'ustar\u000000') {
-      const prefix = header[475] !== 0 ? field(345, 155) : field(345, 130);
-      if (header[475] !== 0 || prefix) path = `${prefix}/${path}`;
-    }
-    path = meta?.path ?? path;
+    // A PAX or GNU long name comes before the header's own path.
+    const path = meta?.path ?? ownPath;
     // node-tar skips a header without a path, a link without a target in its
     // own header, and a file or folder with one, keeping what PAX headers and
     // long names gave for the entry after it.
@@ -314,9 +320,7 @@ class TarScanner {
       this.entry = { left: size, pad, done: () => undefined };
       return;
     }
-    if (header.subarray(157, 257).some((b) => b !== 0)) {
-      throw new Unreadable('tar: a link name on a file or folder');
-    }
+    if (hasLinkName) throw new Unreadable('tar: a link name on a file or folder');
     if (type !== '0' && type !== '5')
       throw new Unreadable(`tar: entry type ${JSON.stringify(type)}`);
     if (type === '5' && size !== 0) throw new Unreadable('tar: a folder with a size');
