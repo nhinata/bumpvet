@@ -5,3 +5,10 @@ knowledge_base:
     # AGENTS.md is read by default; the rules for writing code are in CONTRIBUTING.md.
     filePatterns:
       - CONTRIBUTING.md
+reviews:
+  auto_review:
+    # Pull requests that workflows open with generated changes only: the
+    # release (release.yml) and the README action example (update-readme.yml).
+    ignore_title_keywords:
+      - 'chore(main): release'
+      - 'docs: point the README action example at'
