@@ -61,7 +61,12 @@ of the packed tarball. Run them before pushing.
   | `docs:`, `test:`, `refactor:`, `ci:`, `chore:` | everything else                        | none                    |
 
 - **Describe what changed and why, with numbers where you decided by
-  numbers.** Keep it to facts a reviewer can check.
+  numbers.** Keep it to facts a reader can check, in the description and in
+  everything the pull request adds: documents, code and test comments, commit
+  messages. Leave out how the work went, such as what was tried first, and
+  anything not yet public, such as the ID of a draft security advisory. The
+  description may list review findings and what was done about them
+  ([AGENTS.md](AGENTS.md), item 6).
 - `main` is protected: every change goes through a pull request, and CI must
   pass.
 

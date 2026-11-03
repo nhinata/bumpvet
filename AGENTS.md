@@ -39,5 +39,8 @@ tend to get wrong.
    result in DESIGN.md if a check depends on it.
 10. **Check that a new or changed test can fail**, and that it protects one of
     the three things in [Tests](CONTRIBUTING.md#tests).
-11. **Commit messages and pull request descriptions state checkable facts:**
-    what changed, why, and the numbers behind it.
+11. **Everything published states checkable facts**
+    ([Pull requests](CONTRIBUTING.md#pull-requests)): documents and comments
+    too, not only commit messages and pull request descriptions. Not how the
+    work went, save the review findings in the description (item 6), nor
+    anything not yet public.
