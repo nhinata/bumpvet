@@ -4,3 +4,4 @@ dist-eval/
 eval/.cache/
 coverage/
 *.tgz
+!test/fixtures/**/*.tgz

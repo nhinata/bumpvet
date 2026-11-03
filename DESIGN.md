@@ -249,15 +249,23 @@ before the same checks are trusted for it.
   found. Only the root `package.json` and whether there is a root
   `binding.gyp` are read, unlike the content signals of 0.3 (see
   [Not doing](#not-doing-and-why)).
-- **A tarball is read only in the form `npm pack` writes.** Matching each of
-  node-tar's lenient rules (see [Threat model](#threat-model)) would let any
-  rule missed show bumpvet one `package.json` and npm another. So bumpvet reads a gzipped ustar archive of plain files and folders,
-  with PAX headers for long paths, and nothing else; a case variant of `package.json` or `binding.gyp` at the
-  root, which a case-insensitive file system writes as the same file, is not
-  read either. Anything else is `tarball-not-read`. The form is set in
-  src/tarball.ts, and test/tarball.test.ts checks that whatever bumpvet reads,
-  node-tar unpacks the same. _Trade-off:_ a release packed by another tool in
-  another form is `BLOCK`; how often, `npm run eval` measures.
+- **A tarball is read in the forms packers write, and only where node-tar's
+  reading is settled.** Matching each of node-tar's lenient rules (see
+  [Threat model](#threat-model)) would let any rule missed show bumpvet one
+  `package.json` and npm another. So bumpvet reads what npm 10.8.2, pnpm
+  12.16.1, yarn 4.18.1 and bun 1.4.4 write: ustar and GNU headers; files,
+  folders, and links, which it leaves out as npm does; PAX headers and GNU
+  long names before an entry. Where node-tar would read leniently (a header
+  it skips, a PAX size other than the header's), or node-tar 6 and 7 read
+  differently, the tarball is `tarball-not-read`; so is a case variant of
+  `package.json` or `binding.gyp` at the root, which a case-insensitive file
+  system writes as the same file. The forms are set in src/tarball.ts.
+  test/tarball.test.ts checks that what those packers write is read as
+  node-tar 6 and 7 read it, that whatever bumpvet reads node-tar reads the
+  same, and that each form not read is one node-tar 6 or 7 reads otherwise.
+  _Trade-off:_ a release in another form is `BLOCK`, such as one packed by
+  yarn with a link whose target is over 100 characters, or with a global PAX
+  header (`git archive`).
 - **A release that cannot be read is `BLOCK`.** Making a tarball larger than
   a limit costs an attacker little, so `tarball-not-read` is a tamper
   signal too. The limits, 256 MB to download, 512 MB unpacked and 128 MB for

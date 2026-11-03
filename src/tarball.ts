@@ -25,7 +25,7 @@ const MAX_META = 1024 * 1024;
 
 const MB = (bytes: number) => `${bytes / 1_000_000} MB`;
 
-/** A tarball bumpvet does not read: over a limit, or not in the form `npm pack` writes. */
+/** A tarball bumpvet does not read: over a limit, or not in a form it reads (TarScanner). */
 class Unreadable extends Error {}
 
 /**
@@ -187,11 +187,13 @@ function packageJsonHooks(packageJson: Buffer | undefined): Tarball['scripts'] {
 }
 
 /**
- * Reads a tar stream piece by piece, in the form `npm pack` writes and no
- * other (DESIGN.md, Decisions): headers with the magic `ustar\0` `00` and a
- * valid checksum; files (`0`) and folders (`5`, no body), each with a path of
- * a first folder and plain parts; PAX headers (`x`) under 1 MiB, each for the
- * file or folder after it. It keeps the root package.json and notes a root
+ * Reads a tar stream piece by piece, in the forms npm, pnpm, yarn and bun
+ * write, as node-tar 6 and 7 both read them (DESIGN.md, Decisions): headers
+ * with a valid checksum; files (`0`), folders (`5`, no body) and links (`1`,
+ * `2`, which npm leaves out), each with a path of a first folder and plain
+ * parts; and before an entry, PAX headers (`x`) and GNU long names (`L`, `K`)
+ * under 1 MiB. Anything node-tar reads leniently, or node-tar 6 and 7 read
+ * differently, is not read. It keeps the root package.json and notes a root
  * binding.gyp, the names npm strips the first folder to.
  */
 class TarScanner {
@@ -202,9 +204,8 @@ class TarScanner {
   private ended = false;
   /** The entry whose body comes next: its bytes left, the padding after it, and what to keep. */
   private entry?: { left: number; pad: number; keep?: Buffer[]; done: (body: Buffer) => void };
-  /** The path a PAX header gave the next entry. */
-  private paxPath?: string;
-  private afterPax = false;
+  /** What PAX headers and GNU long names gave the next entry, merged in order as node-tar does. */
+  private meta?: Meta;
 
   constructor(private readonly limits: typeof LIMITS) {}
 
@@ -265,34 +266,60 @@ class TarScanner {
     // Every header carries a checksum; node-tar skips a header with a wrong one.
     const sum = header.reduce((s, b, i) => s + (i >= 148 && i < 156 ? 32 : b), 0);
     if (octal(header, 148) !== sum) throw new Unreadable('tar: bad header');
-    if (header.subarray(257, 265).toString('latin1') !== 'ustar\u000000') {
-      throw new Unreadable('tar: not a ustar header');
-    }
     const size = octal(header, 124);
     if (size === undefined) throw new Unreadable('tar: size not in octal');
     const type = String.fromCharCode(header[156]!);
-    if (header.subarray(157, 257).some((b) => b !== 0)) throw new Unreadable('tar: a link');
+    const linkname = field(157, 100);
     const pad = (512 - (size % 512)) % 512;
 
-    if (type === 'x') {
-      // node-tar merges two; this reader would take the second's path alone.
-      if (this.afterPax) throw new Unreadable('tar: two PAX headers in a row');
-      if (size > MAX_META) throw new Unreadable('tar: a PAX header over 1 MiB');
-      this.afterPax = true;
-      this.entry = { left: size, pad, keep: [], done: (body) => (this.paxPath = paxPath(body)) };
+    if (type === 'x' || type === 'L' || type === 'K') {
+      // node-tar 6 skips a meta header with a link name, which node-tar 7 reads
+      // in a PAX header; and it gives a pending PAX size to the next header
+      // even when that is a meta header, which node-tar 7 does not.
+      if (header.subarray(157, 257).some((b) => b !== 0)) {
+        throw new Unreadable('tar: a link name on a meta header');
+      }
+      if (this.meta?.size !== undefined)
+        throw new Unreadable('tar: a meta header after a PAX size');
+      if (size > MAX_META) throw new Unreadable('tar: a meta header over 1 MiB');
+      // node-tar does nothing with an empty one.
+      const done = (body: Buffer) => {
+        if (size) this.meta = { ...this.meta, ...metaOf(type, body) };
+      };
+      this.entry = { left: size, pad, keep: [], done };
       return;
+    }
+    const meta = this.meta;
+    this.meta = undefined;
+    // node-tar takes a PAX size over the header's.
+    if (meta?.size !== undefined && meta.size !== size) {
+      throw new Unreadable('tar: a PAX size that differs from the header');
+    }
+    // The path as node-tar reads it: a PAX or GNU long name, or the name with
+    // the prefix under the magic `ustar\0` `00`, joined on even when empty if
+    // byte 475 is set.
+    let path = field(0, 100);
+    if (header.subarray(257, 265).toString('latin1') === 'ustar\u000000') {
+      const prefix = header[475] !== 0 ? field(345, 155) : field(345, 130);
+      if (header[475] !== 0 || prefix) path = `${prefix}/${path}`;
+    }
+    path = meta?.path ?? path;
+    // node-tar skips a header without a path, a link without a target in its
+    // own header, and a file or folder with one, keeping what PAX headers and
+    // long names gave for the entry after it.
+    if (!path) throw new Unreadable('tar: an entry without a path');
+    if (type === '1' || type === '2') {
+      if (!linkname) throw new Unreadable('tar: a link without a target');
+      // npm leaves links out (pacote).
+      this.entry = { left: size, pad, done: () => undefined };
+      return;
+    }
+    if (header.subarray(157, 257).some((b) => b !== 0)) {
+      throw new Unreadable('tar: a link name on a file or folder');
     }
     if (type !== '0' && type !== '5')
       throw new Unreadable(`tar: entry type ${JSON.stringify(type)}`);
     if (type === '5' && size !== 0) throw new Unreadable('tar: a folder with a size');
-
-    // The path as node-tar reads it under this magic: with byte 475 set, the
-    // prefix is joined on even when it is empty.
-    const name = field(0, 100);
-    const prefix = header[475] !== 0 ? field(345, 155) : field(345, 130);
-    const path = this.paxPath ?? (header[475] !== 0 || prefix ? `${prefix}/${name}` : name);
-    this.paxPath = undefined;
-    this.afterPax = false;
     const file = rootName(path, type === '5');
 
     const target = file === undefined ? undefined : sameFileAs(file);
@@ -362,14 +389,25 @@ function rootName(path: string, folder: boolean): string | undefined {
   return parts.length === 2 ? parts[1] : undefined;
 }
 
+/** What PAX headers and GNU long names give the entry after them that bumpvet uses. */
+interface Meta {
+  path?: string;
+  size?: number;
+}
+
 /**
- * The `path` of a PAX header. Its records are `<length> <key>=<value>\n`;
- * node-tar splits them at line breaks and bumpvet by length, so a value with a
- * line break, a length that does not match, `size`, `linkpath`, or a `path`
- * node-tar would read as a number, is not read.
+ * What a meta header's body gives the next entry. A GNU long name (`L`) is its
+ * body up to a NUL, cut as node-tar cuts it; a long link name (`K`) gives
+ * nothing bumpvet uses. A PAX header's records
+ * are `<length> <key>=<value>\n`; node-tar splits them at line breaks and
+ * bumpvet by length, so a value with a line break, a length that does not
+ * match, a `size` that is not a number, or a `path` node-tar would read as a
+ * number, is not read.
  */
-function paxPath(body: Buffer): string | undefined {
-  let path: string | undefined;
+function metaOf(type: 'x' | 'L' | 'K', body: Buffer): Meta {
+  if (type === 'L') return { path: body.toString('utf8').replace(/\0.*/, '') };
+  if (type === 'K') return {};
+  const meta: Meta = {};
   let at = 0;
   while (at < body.length && body[at] !== 0) {
     const space = body.indexOf(0x20, at);
@@ -386,13 +424,15 @@ function paxPath(body: Buffer): string | undefined {
     }
     const key = record.slice(0, eq);
     const value = record.slice(eq + 1, -1);
-    if (key === 'size' || key === 'linkpath') throw new Unreadable(`tar: PAX ${key}`);
     if (key === 'path') {
       if (/^[0-9]+$/.test(value)) throw new Unreadable('tar: a PAX path of digits');
-      path = value;
+      meta.path = value;
+    } else if (key === 'size') {
+      if (!/^[0-9]+$/.test(value)) throw new Unreadable('tar: a PAX size not a number');
+      meta.size = Number(value);
     }
     at += length;
   }
   if (body.subarray(at).some((b) => b !== 0)) throw new Unreadable('tar: bad PAX record');
-  return path;
+  return meta;
 }

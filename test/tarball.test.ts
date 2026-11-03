@@ -1,5 +1,6 @@
+import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
-import { gzipSync } from 'node:zlib';
+import { gunzipSync, gzipSync } from 'node:zlib';
 import { describe, expect, it } from 'vitest';
 import { tarballFetcher } from '../src/tarball.js';
 import type { Tarball } from '../src/types/tarball.js';
@@ -8,6 +9,14 @@ import { paxHeader, paxPath, served, tarBlocks, tarball, type TarEntry } from '.
 const noWait = () => Promise.resolve();
 const pkg = (scripts?: Record<string, unknown>) =>
   JSON.stringify({ name: 'pkg', version: '1.0.0', scripts });
+
+/** A GNU long name (`L`) or long link name (`K`) for the next entry. */
+const longName = (type: 'L' | 'K', name: string): TarEntry => ({
+  path: '././@LongLink',
+  type,
+  body: `${name}\0`,
+  magic: 'ustar  \0',
+});
 
 /** What tarballFetcher reads from a tarball of `entries`. */
 async function read(entries: TarEntry[], options?: Parameters<typeof tarball>[1]) {
@@ -57,6 +66,16 @@ describe('tarballFetcher: what it reads', () => {
     expect(files).toEqual({ scripts: { preinstall: 'node x.js' }, bindingGyp: false });
   });
 
+  // npm leaves links out (pacote).
+  it('leaves out links', async () => {
+    const files = await read([
+      { path: 'package/package.json', type: '2', linkpath: 'other.json' },
+      { path: 'package/binding.gyp', type: '1', linkpath: 'package/other.gyp' },
+      { path: 'package/x', body: pkg({ postinstall: 'node x.js' }) },
+    ]);
+    expect(files).toEqual({ scripts: {}, bindingGyp: false });
+  });
+
   // As npm reads the installed package.json (read-package-json-fast).
   it('leaves out a hook that is not a string, or is empty', async () => {
     const files = await read([
@@ -74,7 +93,7 @@ describe('tarballFetcher: what it reads', () => {
   });
 });
 
-// A tarball bumpvet cannot read is `manifest-not-checked` (DESIGN.md, Decisions).
+// A tarball bumpvet cannot read is `tarball-not-read` (DESIGN.md, Decisions).
 describe('tarballFetcher: what it does not read', () => {
   const notChecked = (reason: RegExp) => ({ notChecked: expect.stringMatching(reason) as string });
 
@@ -108,11 +127,6 @@ describe('tarballFetcher: what it does not read', () => {
       ],
       /twice/,
     ],
-    [
-      'package.json as a link',
-      [{ path: 'package/package.json', type: '2', linkpath: 'package/other' }],
-      /a link/,
-    ],
     ['package.json as a folder', [{ path: 'package/package.json/', type: '5' }], /not a file/],
     [
       'package.json that is not JSON',
@@ -120,6 +134,27 @@ describe('tarballFetcher: what it does not read', () => {
       /not valid JSON/,
     ],
     ['an entry type npm does not write', [{ path: 'package/fifo', type: '6' }], /entry type/],
+    [
+      'a PAX size that differs from the header',
+      [paxHeader([['size', '5']]), { path: 'package/package.json', body: pkg() }],
+      /PAX size that differs/,
+    ],
+    [
+      'a meta header after a PAX size',
+      [
+        paxHeader([['size', '2']]),
+        longName('L', 'package/package.json'),
+        { path: 'package/x', body: '{}' },
+      ],
+      /after a PAX size/,
+    ],
+    ['a link without a target', [{ path: 'package/l', type: '2' }], /without a target/],
+    [
+      'a file with a link name in its header',
+      [{ path: 'package/package.json', body: pkg(), linkpath: 'y' }],
+      /link name on a file/,
+    ],
+    ['a link without a path', [{ path: '', type: '2', linkpath: 'x' }], /without a path/],
   ] as [string, TarEntry[], RegExp][])('%s', async (_, entries, reason) => {
     expect(await read(entries)).toEqual(notChecked(reason));
   });
@@ -273,6 +308,11 @@ async function expectAgreement(tgz: Buffer, label: string) {
 
 const benign = { path: 'package/package.json', body: pkg() };
 const hidden = { path: 'package/package.json', body: pkg({ postinstall: 'node x.js' }) };
+const long = JSON.stringify({
+  name: 'pkg',
+  description: 'x'.repeat(600),
+  scripts: { postinstall: 'node x.js' },
+});
 
 // Forms that node-tar reads leniently, each hiding a package.json from a
 // reader that does not read it the same way (DESIGN.md, threat model).
@@ -290,6 +330,67 @@ describe('tarballFetcher: agrees with node-tar', () => {
     [
       'a prefix under a magic other than ustar 00',
       [{ ...hidden, magic: 'ustar  \0', prefix: 'x' }],
+    ],
+    // Each of these is not read; without the rule, bumpvet and one node-tar
+    // read differently.
+    ['a PAX size that differs from the header', [paxHeader([['size', '5']]), hidden]],
+    [
+      'a meta header after a PAX size',
+      [
+        // Over a block, so that node-tar 6 reads past the long name's body.
+        paxHeader([['size', String(long.length)]]),
+        longName('L', 'package/package.json'),
+        { path: 'package/x', body: long },
+      ],
+    ],
+    [
+      'a link whose target is only in a PAX header',
+      [
+        paxHeader([['linkpath', 'x']]),
+        longName('L', 'package/l'),
+        { path: 'package/l', type: '2' },
+        hidden,
+      ],
+    ],
+    [
+      'a link without a target',
+      [benign, { path: 'package/l', type: '2', size: 1024, body: tarBlocks(hidden) }],
+    ],
+    [
+      'a link without a path',
+      [benign, { path: '', type: '2', linkpath: 'x', size: 1024, body: tarBlocks(hidden) }],
+    ],
+    ['a PAX header with a link name', [{ ...paxPath('package/x'), linkpath: 'y' }, hidden]],
+    ['a file with a link name in its header', [{ ...hidden, linkpath: 'y' }]],
+    ['a file with a PAX link name', [paxHeader([['linkpath', 'x']]), hidden]],
+    [
+      'GNU headers throughout',
+      [
+        { ...benign, magic: 'ustar  \0' },
+        { ...hidden, magic: 'ustar  \0' },
+      ],
+    ],
+    [
+      'a GNU long name',
+      [
+        benign,
+        longName('L', 'package/package.json'),
+        { path: 'package/x', body: pkg({ postinstall: 'node x.js' }) },
+      ],
+    ],
+    [
+      'a GNU long link name on a link',
+      [longName('K', 'x'.repeat(120)), { path: 'package/l', type: '2' }, hidden],
+    ],
+    [
+      'a PAX size the same as the header',
+      [
+        paxHeader([
+          ['path', 'package/package.json'],
+          ['size', String(pkg({ postinstall: 'node x.js' }).length)],
+        ]),
+        { path: 'package/x', body: pkg({ postinstall: 'node x.js' }) },
+      ],
     ],
     ['an empty prefix with its 131st byte set', [{ ...hidden, prefix: `${'\0'.repeat(130)}x` }]],
     [
@@ -362,7 +463,9 @@ describe('tarballFetcher: agrees with node-tar', () => {
       [{ path: 'package/', type: '5' }, hidden, { path: 'package/binding.gyp', body: '{}' }],
       [paxPath(`package/${'d'.repeat(120)}/package.json`), hidden, benign],
       [benign, { path: 'package/lib/', type: '5' }, { path: 'package/lib/a.js', body: 'x' }],
-    ].map((entries) => tarball(entries as TarEntry[], { gzip: false }));
+    ]
+      .map((entries) => tarball(entries as TarEntry[], { gzip: false }))
+      .concat(PACKERS.map((tool) => gunzipSync(packed(tool))));
     for (let n = 0; n < 2000; n++) {
       const tar = Buffer.from(bases[int(bases.length)]!);
       const blocks = tar.length / 512;
@@ -370,8 +473,14 @@ describe('tarballFetcher: agrees with node-tar', () => {
       let damaged: Buffer;
       if (kind === 0) {
         // A byte anywhere, most often in a header's fields.
-        const at = int(blocks) * 512 + (random() < 0.8 ? int(345) : int(512));
-        tar[at] = int(256);
+        const block = int(blocks) * 512;
+        tar[block + (random() < 0.8 ? int(345) : int(512))] = int(256);
+        // Half the time with the checksum made right again, so node-tar reads the header.
+        if (random() < 0.5) {
+          tar.fill(0x20, block + 148, block + 156);
+          const sum = tar.subarray(block, block + 512).reduce((n, b) => n + b, 0);
+          tar.write(`${sum.toString(8).padStart(6, '0')}\0 `, block + 148, 'latin1');
+        }
         damaged = tar;
       } else if (kind === 1) {
         // A zero block put in.
@@ -393,5 +502,34 @@ describe('tarballFetcher: agrees with node-tar', () => {
       }
       await expectAgreement(gzipSync(damaged), `damage ${n} (kind ${kind})`);
     }
+  });
+});
+
+// One package (install hooks, a root binding.gyp, a path and a file name over
+// 100 characters, links) as npm 10.8.2, pnpm 12.16.1, yarn 4.18.1 and bun 1.4.4
+// pack it; yarn-long-link adds a link whose target is over 100 characters.
+const PACKERS = ['npm', 'pnpm', 'yarn', 'bun'];
+function packed(name: string): Buffer {
+  return readFileSync(new URL(`fixtures/packers/${name}.tgz`, import.meta.url));
+}
+
+describe('tarballFetcher: what packers write', () => {
+  it.each(PACKERS)('reads what %s packs, as node-tar 6 and 7 read it', async (tool) => {
+    const tgz = packed(tool);
+    const s = served(tgz);
+    const ours = await tarballFetcher(s.fetchImpl, noWait)(s.manifest, 'pkg@1.0.0');
+    expect(ours).toEqual({ scripts: { postinstall: 'node x.js' }, bindingGyp: true });
+    for (const [version, tar] of NODE_TARS) {
+      expect(await npmReads(tgz, tar), `node-tar ${version}`).toEqual(ours);
+    }
+  });
+
+  // yarn puts the link name on the PAX header too, which node-tar 6 skips and
+  // node-tar 7 reads.
+  it('does not read a link whose PAX header has a link name, as yarn writes a long one', async () => {
+    const s = served(packed('yarn-long-link'));
+    expect(await tarballFetcher(s.fetchImpl, noWait)(s.manifest, 'pkg@1.0.0')).toEqual({
+      notChecked: expect.stringMatching(/link name on a meta header/) as string,
+    });
   });
 });
