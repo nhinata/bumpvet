@@ -1,14 +1,16 @@
 import { diffLockfiles } from './lockfile.js';
-import { computeSignals } from './signals.js';
+import { computeSignals, tarballSignals, tarballsToRead } from './signals.js';
 import { decide } from './verdict.js';
 import type { Change } from './types/lockfile.js';
-import type { FetchPackument } from './types/registry.js';
+import type { FetchPackument, VersionManifest } from './types/registry.js';
+import type { FetchTarball } from './types/tarball.js';
 import type { SignalOptions } from './types/signals.js';
 import type { PackageResult } from './types/verdicts.js';
 
 export async function vetChanges(
   changes: Change[],
   fetchPackument: FetchPackument,
+  fetchTarball: FetchTarball,
   opts: SignalOptions,
   concurrency = 8,
 ): Promise<PackageResult[]> {
@@ -26,6 +28,15 @@ export async function vetChanges(
       try {
         if (!change.source) packument = await fetchPackument(change.name, stop.signal);
         signals = computeSignals(change, packument, opts);
+        const toRead = tarballsToRead(change, packument, signals);
+        if (toRead) {
+          const read = (m: VersionManifest) =>
+            fetchTarball(m, `${change.name}@${m.version}`, stop.signal);
+          const tarball = await read(toRead.next);
+          const previous =
+            toRead.previous && !('notChecked' in tarball) ? await read(toRead.previous) : undefined;
+          signals.push(...tarballSignals(tarball, previous));
+        }
       } catch (err) {
         stop.abort();
         throw err;
@@ -47,7 +58,8 @@ export async function vetLockfiles(
   oldText: string | null,
   newText: string,
   fetchPackument: FetchPackument,
+  fetchTarball: FetchTarball,
   opts: SignalOptions,
 ): Promise<PackageResult[]> {
-  return vetChanges(diffLockfiles(oldText, newText), fetchPackument, opts);
+  return vetChanges(diffLockfiles(oldText, newText), fetchPackument, fetchTarball, opts);
 }

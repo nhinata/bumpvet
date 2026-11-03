@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { computeSignals } from '../src/signals.js';
+import { computeSignals, tarballSignals } from '../src/signals.js';
+import type { Tarball } from '../src/types/tarball.js';
 import { decide } from '../src/verdict.js';
 import { packument } from './helpers.js';
 import type { Signal } from '../src/types/signals.js';
@@ -133,39 +134,6 @@ describe('computeSignals', () => {
     ]);
     const [s] = computeSignals({ name: 'pkg', from: '1.1.0', to: '1.2.0' }, p, { now });
     expect(s).toMatchObject({ id: 'fresh-publish', after: '2h old' });
-  });
-
-  it('flags added or changed install scripts against the version being replaced', () => {
-    const p = packument('pkg', [
-      ...history,
-      {
-        version: '1.2.0',
-        time: '2025-12-01T00:00:00Z',
-        publisher: 'alice',
-        provenance: true,
-        scripts: { postinstall: 'node x.js', test: 'vitest' },
-      },
-    ]);
-    const [s] = computeSignals({ name: 'pkg', from: '1.1.0', to: '1.2.0' }, p, { now });
-    expect(s).toEqual({
-      id: 'install-scripts',
-      group: 'content',
-      before: 'postinstall: none',
-      after: 'postinstall: node x.js',
-    });
-  });
-
-  it('does not flag a removed install script', () => {
-    const p = packument('pkg', [
-      {
-        version: '1.0.0',
-        time: '2025-01-01T00:00:00Z',
-        publisher: 'alice',
-        scripts: { install: 'node check.js' },
-      },
-      { version: '1.1.0', time: '2025-12-01T00:00:00Z', publisher: 'alice' },
-    ]);
-    expect(computeSignals({ name: 'pkg', from: '1.0.0', to: '1.1.0' }, p, { now })).toEqual([]);
   });
 
   it('compares a newly added package with the version published before it', () => {
@@ -438,6 +406,67 @@ describe('computeSignals', () => {
     ]);
     expect(ids(computeSignals({ name: 'nope', from: null, to: '1.0.0' }, null, { now }))).toEqual([
       'not-in-registry',
+    ]);
+  });
+});
+
+// What npm can run from a release, read from its tarball and compared with
+// the version before it (DESIGN.md, Decisions).
+describe('tarballSignals', () => {
+  const t = (scripts: Tarball['scripts'] = {}, bindingGyp = false): Tarball => ({
+    scripts,
+    bindingGyp,
+  });
+
+  it('flags an install hook added or changed against the compared version', () => {
+    expect(tarballSignals(t({ postinstall: 'node x.js' }), t())).toEqual([
+      {
+        id: 'install-scripts',
+        group: 'content',
+        before: 'postinstall: none',
+        after: 'postinstall: node x.js',
+      },
+    ]);
+    const [s] = tarballSignals(t({ install: 'node b.js' }), t({ install: 'node a.js' }));
+    expect([s?.before, s?.after]).toEqual(['install: node a.js', 'install: node b.js']);
+  });
+
+  // npm runs node-gyp for it (DESIGN.md, threat model).
+  it('flags a binding.gyp the compared version did not have', () => {
+    const [s] = tarballSignals(t({}, true), t());
+    expect([s?.id, s?.before, s?.after]).toEqual([
+      'install-scripts',
+      'binding.gyp: none',
+      'binding.gyp: present',
+    ]);
+  });
+
+  it('does not flag what is unchanged, or removed', () => {
+    const native = t({ install: 'node-gyp rebuild' }, true);
+    expect(tarballSignals(native, native)).toEqual([]);
+    expect(tarballSignals(t(), native)).toEqual([]);
+  });
+
+  it('compares a version with nothing before it with no hooks', () => {
+    expect(tarballSignals(t({ preinstall: 'node p.js' }), undefined)[0]?.before).toBe(
+      'preinstall: none',
+    );
+  });
+
+  it('names the compared version that was not read', () => {
+    expect(
+      tarballSignals(t({ preinstall: 'node p.js' }), { notChecked: 'tar: bad header' })[0]?.before,
+    ).toBe('not read: tar: bad header');
+  });
+
+  it('is tarball-not-read when the new version was not read', () => {
+    expect(tarballSignals({ notChecked: 'over 256 MB to download' }, t())).toEqual([
+      {
+        id: 'tarball-not-read',
+        group: 'tamper',
+        before: 'tarball read',
+        after: 'over 256 MB to download',
+      },
     ]);
   });
 });

@@ -3,9 +3,11 @@ import { readFileSync, statSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { messageOf } from './utils/errors.js';
 import { registryFetcher } from './registry.js';
+import { tarballFetcher } from './tarball.js';
 import { formatJson, formatText, printable } from './report.js';
 import { vetLockfiles } from './vet.js';
 import type { FetchPackument } from './types/registry.js';
+import type { FetchTarball } from './types/tarball.js';
 
 const USAGE = `Usage:
   bumpvet [--base <git-ref>] [--json]     compare ./package-lock.json with the one at <git-ref> (default HEAD)
@@ -20,6 +22,7 @@ export interface CliEnv {
   stdout: (text: string) => void;
   stderr: (text: string) => void;
   fetchPackument: FetchPackument;
+  fetchTarball: FetchTarball;
   now: Date;
 }
 
@@ -29,6 +32,7 @@ export function defaultEnv(): CliEnv {
     stdout: (text) => process.stdout.write(text),
     stderr: (text) => process.stderr.write(text),
     fetchPackument: registryFetcher(),
+    fetchTarball: tarballFetcher(),
     now: new Date(),
   };
 }
@@ -174,7 +178,9 @@ export async function runCli(argv: string[], env: CliEnv): Promise<number> {
       args.files.length === 2
         ? [readLockfile(env.cwd, args.files[0]!), readLockfile(env.cwd, args.files[1]!)]
         : [lockfileAt(env.cwd, args.base), readLockfile(env.cwd, 'package-lock.json')];
-    const results = await vetLockfiles(oldText, newText, env.fetchPackument, { now: env.now });
+    const results = await vetLockfiles(oldText, newText, env.fetchPackument, env.fetchTarball, {
+      now: env.now,
+    });
     env.stdout(args.json ? formatJson(results) : formatText(results));
     return results.some((r) => r.verdict === 'block') ? 1 : 0;
   } catch (err) {

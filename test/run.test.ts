@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { runCli, type CliEnv } from '../src/run.js';
-import { fakeRegistry, lockfile, packument } from './helpers.js';
+import { fakeRegistry, lockfile, packument, tarballsAsPublished } from './helpers.js';
 import type { FetchPackument } from '../src/types/registry.js';
 import type { PackageResult } from '../src/types/verdicts.js';
 
@@ -73,6 +73,7 @@ async function run(argv: string[], cwd: string, fetchPackument: FetchPackument =
     stdout: (t) => (stdout += t),
     stderr: (t) => (stderr += t),
     fetchPackument,
+    fetchTarball: tarballsAsPublished,
     now,
   };
   const code = await runCli(argv, env);

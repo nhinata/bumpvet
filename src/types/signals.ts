@@ -14,6 +14,7 @@ export const SIGNALS = {
   'integrity-mismatch': 'tamper',
   'tarball-mismatch': 'tamper',
   'not-in-registry': 'tamper',
+  'tarball-not-read': 'tamper',
 } as const satisfies Record<string, SignalGroup>;
 
 export type SignalId = keyof typeof SIGNALS;

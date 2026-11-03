@@ -10,7 +10,6 @@ export interface Packument {
 export interface VersionManifest {
   version: string;
   _npmUser?: { name?: string };
-  scripts?: Record<string, string>;
   dist?: {
     integrity?: string;
     /** The sha1 in lowercase hex; dropped when it is not one. */
@@ -34,6 +33,3 @@ export const NO_TARBALL = 'no tarball URL in the registry';
  * `signal` stops it, including any wait before a retry.
  */
 export type FetchPackument = (name: string, signal?: AbortSignal) => Promise<Packument | null>;
-
-/** The scripts npm runs when it installs a package. */
-export const INSTALL_HOOKS = ['preinstall', 'install', 'postinstall'] as const;

@@ -36,6 +36,23 @@ jobs:
       - run: npm run lint
       - run: npm run typecheck
       - run: npm test
+      # test/tarball.test.ts checks the reading of tarballs against the node-tar
+      # majors in devDependencies; the npm of this Node.js has to unpack with one.
+      - name: Check that the tests cover this npm's node-tar
+        run: |
+          node -e '
+            const { join } = require("node:path");
+            const npm = require(join(process.argv[1], "npm/package.json")).version;
+            const npmTar = require(join(process.argv[1], "npm/node_modules/tar/package.json")).version;
+            const tested = Object.values(require("./package.json").devDependencies)
+              .flatMap((v) => /^npm:tar@(\d+)\./.exec(v)?.[1] ?? []);
+            const major = npmTar.split(".")[0];
+            if (!tested.includes(major)) {
+              console.error(`npm ${npm} unpacks with node-tar ${npmTar}; the tests cover majors ${tested.join(", ")}`);
+              process.exit(1);
+            }
+            console.log(`node-tar ${npmTar}: covered`);
+          ' "$(npm root -g)"
       - run: npm run build
       # The built entry point starts and parses arguments.
       - run: node dist/cli.js --help

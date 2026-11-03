@@ -22,7 +22,7 @@
  */
 import { describe, expect, it } from 'vitest';
 import { vetChanges } from '../src/vet.js';
-import { fakeRegistry, packument } from './helpers.js';
+import { fakeRegistry, packument, tarballsAsPublished } from './helpers.js';
 import type { Change } from '../src/types/lockfile.js';
 import type { Packument } from '../src/types/registry.js';
 
@@ -417,9 +417,14 @@ const older = fromOlder.map(([title, from, expected]): Incident => {
 describe('incidents', () => {
   for (const c of [...incidents, ...older]) {
     it(c.title, async () => {
-      const results = await vetChanges(c.changes, fakeRegistry(...c.packuments), {
-        now: new Date(Date.parse(c.published) + 3_600_000),
-      });
+      const results = await vetChanges(
+        c.changes,
+        fakeRegistry(...c.packuments),
+        tarballsAsPublished,
+        {
+          now: new Date(Date.parse(c.published) + 3_600_000),
+        },
+      );
       const got = Object.fromEntries(
         results.map((r) => [r.name, `${r.verdict}: ${r.signals.map((s) => s.id).join(', ')}`]),
       );
@@ -437,6 +442,7 @@ describe('incidents', () => {
     const [r] = await vetChanges(
       [{ name: '@ctrl/tinycolor', from: '4.1.0', to: '4.1.1' }],
       fakeRegistry(p),
+      tarballsAsPublished,
       { now: new Date('2026-10-24T00:00:00Z') },
     );
     expect(r?.verdict).toBe('block');
