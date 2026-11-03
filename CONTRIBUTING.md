@@ -62,9 +62,8 @@ of the packed tarball. Run them before pushing.
 
 - **Describe what changed and why, with numbers where you decided by
   numbers.** Keep it to facts a reviewer can check.
-- `main` is protected: every change goes through a pull request, CI must pass,
-  and the branch must be up to date with `main` ("Update branch" is fine; the
-  merge commit disappears in the squash).
+- `main` is protected: every change goes through a pull request, and CI must
+  pass.
 
 ### Review findings
 
