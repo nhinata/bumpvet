@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.0](https://github.com/nhinata/bumpvet/compare/v0.4.1...v0.5.0) (2026-11-03)
+
+
+### Features
+
+* read install hooks from the tarballs ([#84](https://github.com/nhinata/bumpvet/issues/84)) ([f015a41](https://github.com/nhinata/bumpvet/commit/f015a4112e6f275436eebfc2e8efa05a05b7358f))
+
 ## [0.4.1](https://github.com/nhinata/bumpvet/compare/v0.4.0...v0.4.1) (2026-11-02)
 
 
