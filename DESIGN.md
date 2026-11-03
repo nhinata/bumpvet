@@ -152,7 +152,7 @@ before the same checks are trusted for it.
 | `integrity-mismatch` | tamper  | the lockfile's integrity hash changed for the same version, or differs from the registry's                                                                                                                       |
 | `tarball-mismatch`   | tamper  | the lockfile has no integrity the registry's can be compared with, and its `resolved` is not exactly the registry's tarball URL for that version                                                                 |
 | `not-in-registry`    | tamper  | the registry does not serve the version (npm removes malicious releases)                                                                                                                                         |
-| `tarball-not-read`   | tamper  | the new version's tarball was not read: over a limit, or in a form npm does not write                                                                                                                            |
+| `tarball-not-read`   | tamper  | the new version's tarball was not read: over a limit, in a form bumpvet does not read, or the registry gives no tarball URL on the registry or no hash for it                                                    |
 
 ## Verdict table
 
@@ -233,9 +233,11 @@ before the same checks are trusted for it.
   is honoured. A 404 is an answer, not a failure. When one package still
   fails, the run exits `2` at once and stops the fetches under way: without
   that, a registry that is down would keep the run going until every fetch
-  had given up. _Trade-off:_ the waits are npm's, not measured for bumpvet;
-  at worst, three 60-second timeouts and the waits make one package take
-  about four minutes before the run fails.
+  had given up. _Trade-off:_ the waits are npm's, not measured for bumpvet.
+  At worst, before the run fails, a packument takes about four minutes
+  (three 60-second timeouts and the waits) and a tarball about 16 (three
+  5-minute timeouts and the waits); an update reads its packument and two
+  tarballs one after another, about 36 minutes.
 - **Install hooks are read from the tarballs.** npm runs the hooks of the
   installed `package.json`, and node-gyp for a root `binding.gyp`, whatever
   the manifest declares (see [Threat model](#threat-model)). So
