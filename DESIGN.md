@@ -250,7 +250,9 @@ before the same checks are trusted for it.
   registry's hash, and never run; not when a tamper signal has already been
   found. Only the root `package.json` and whether there is a root
   `binding.gyp` are read, unlike the content signals of 0.3 (see
-  [Not doing](#not-doing-and-why)).
+  [Not doing](#not-doing-and-why)). _Trade-off:_ an update downloads two
+  tarballs as well as its packument; eval/README.md gives how much that came
+  to in the evaluation.
 - **A tarball is read in the forms packers write, and only where node-tar's
   reading is settled.** Matching each of node-tar's lenient rules (see
   [Threat model](#threat-model)) would let any rule missed show bumpvet one

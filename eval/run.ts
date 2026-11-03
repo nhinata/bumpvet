@@ -6,7 +6,8 @@
  * Each update is vetted twice: one hour after publish (a Dependabot-style
  * PR opened right away) and seven days after (a team that waits).
  *
- * It downloads every packument, and the tarball of every new version: run it
+ * It downloads every packument, and the tarballs of every new version and the
+ * one it is compared with: run it
  * in the Evaluate false positives workflow (CONTRIBUTING.md, Evaluation).
  *
  *   npm run eval [-- --per-package 10] [--baseline 5]
