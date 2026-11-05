@@ -38,7 +38,7 @@ interface Incident {
 
 const incidents: Incident[] = [
   // https://github.com/chalk/chalk/issues/656 (2025-09-08): the account of
-  // maintainer qix was phished and used to publish his packages; the payload
+  // maintainer qix was phished and used to publish its packages; the payload
   // was in the code. chalk is usually published by sindresorhus.
   {
     title: 'chalk 5.6.1',

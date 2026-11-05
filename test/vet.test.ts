@@ -108,8 +108,7 @@ describe('vetChanges: which tarballs are read', () => {
 });
 
 // Which old entry each change is compared with: the same version for tamper
-// signals, the entry at the same path for what changed (`from`). Each case is
-// one a review found, or one npm writes.
+// signals, the entry at the same path for what changed (`from`).
 describe('vetLockfiles: what a change is compared with', () => {
   const now = new Date('2026-01-10T00:00:00Z');
   const at = (month: number) => `2025-${String(month).padStart(2, '0')}-01T00:00:00Z`;
