@@ -32,8 +32,8 @@ Requires Node.js 22 or later.
 # compare it with the one at HEAD
 npx bumpvet
 
-# ...or with another ref, e.g. the base branch of a pull request
-npx bumpvet --base origin/main
+# ...or with another ref, e.g. where a branch left origin/main
+npx bumpvet --base "$(git merge-base origin/main HEAD)"
 
 # Two lockfiles on disk
 npx bumpvet old/package-lock.json new/package-lock.json
