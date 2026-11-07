@@ -178,21 +178,26 @@ before the same checks are trusted for it.
   and 4 h 12 min for the first malicious `nx` releases
   ([advisory](https://github.com/advisories/GHSA-cxm3-wv7p-598c)). Others last
   far longer: `event-stream` 3.3.6 stayed for 78 days
-  ([npm](https://blog.npmjs.org/post/180565383195/details-about-the-event-stream-incident)),
-  and across 174 malicious packages on three registries, typosquats included,
+  ([npm](https://blog.npmjs.org/post/180565383195/details-about-the-event-stream-incident)).
+  Across 174 malicious packages on three registries, typosquats included,
   public reports came a mean of 209 and a median of 67 days after publish
-  ([Backstabber's Knife Collection](https://arxiv.org/abs/2005.09535)). These
-  numbers support any window longer than about 4 hours; they do not single out
-  72 hours, and no practical window reaches the long-lived cases.
+  ([Backstabber's Knife Collection](https://arxiv.org/abs/2005.09535)); that is
+  the time to a report, not to removal, so it does not show how long they
+  stayed. The removal times support any window longer than about 4 hours; they
+  do not single out 72 hours, and no practical window reaches a case like
+  `event-stream`.
   Dependabot [waits 3 days](https://docs.github.com/en/code-security/dependabot/working-with-dependabot/dependabot-options-reference#cooldown-)
-  before a version update by default, so a pull request made that way has no
-  `fresh-publish`. The signal applies to updates made sooner: Dependabot
-  security updates, which do not wait, a shorter `cooldown`, Renovate unless
+  before a version update by default, so the dependency it updates has no
+  `fresh-publish`. Whether transitive dependencies wait as well
+  [depends on the package manager and its version](https://github.com/dependabot/dependabot-core/pull/15485).
+  The signal applies to releases taken sooner: such transitive dependencies,
+  Dependabot security updates, which do not wait, a shorter `cooldown`,
+  Renovate unless
   [`minimumReleaseAge`](https://docs.renovatebot.com/configuration-options/#minimumreleaseage)
   makes it wait, and updates made by hand.
   _Trade-off:_ an install script change in a release past the window is
-  `REVIEW` unless an origin signal also fires, including under Dependabot's
-  default wait.
+  `REVIEW` unless an origin signal also fires, which includes the dependency
+  Dependabot updates under its default wait.
 - **The publisher baseline is 20 versions.** With 5 versions, 5.4% of benign
   updates flagged a new publisher; with the whole history, 3.9%, but the
   compromised `chalk@5.6.1` was missed because the same account had published
