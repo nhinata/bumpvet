@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.6.0](https://github.com/nhinata/bumpvet/compare/v0.5.0...v0.6.0) (2026-11-07)
+
+
+### ⚠ BREAKING CHANGES
+
+* report links in the lockfile ([#92](https://github.com/nhinata/bumpvet/issues/92))
+
+### Bug Fixes
+
+* report links in the lockfile ([#92](https://github.com/nhinata/bumpvet/issues/92)) ([25d6498](https://github.com/nhinata/bumpvet/commit/25d6498d98a52ed9963ec700e3e33725c4ae7378)), closes [#18](https://github.com/nhinata/bumpvet/issues/18)
+
 ## [0.5.0](https://github.com/nhinata/bumpvet/compare/v0.4.1...v0.5.0) (2026-11-03)
 
 
