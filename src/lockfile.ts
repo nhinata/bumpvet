@@ -15,13 +15,30 @@ function validName(name: string): boolean {
 }
 
 /**
+ * What is wrong with an entry's fields, if anything. npm reads a null field as
+ * missing, and uses any other value as it is, so a non-string is not read as
+ * missing. `link` is accepted only in the form npm writes.
+ */
+function invalidField(entry: JsonObject): string | undefined {
+  if (entry.link !== undefined && entry.link !== null && entry.link !== true) {
+    return `invalid link ${JSON.stringify(entry.link)}`;
+  }
+  for (const field of ['name', 'version', 'resolved', 'integrity']) {
+    const value = entry[field];
+    if (value !== undefined && value !== null && typeof value !== 'string') {
+      return `invalid ${field} ${JSON.stringify(value)}`;
+    }
+  }
+  return undefined;
+}
+
+/**
  * Where an entry comes from, when bumpvet cannot vet it as a version of the
  * public registry. Without a `resolved` (or with an empty one) npm fetches the
  * version from the registry, as it does for omit-lockfile-registry-resolved
  * (DESIGN.md, threat model). A registry URL is not judged here: whether it is
  * the right tarball is checked against the registry itself (see
- * `tarball-mismatch` in signals.ts). npm reads a null field as missing, and
- * uses any other value as it is, so a non-string is not read as missing.
+ * `tarball-mismatch` in signals.ts).
  */
 function elsewhere(
   entry: JsonObject,
@@ -29,12 +46,8 @@ function elsewhere(
   version: string,
   resolved: string | undefined,
 ): string | undefined {
-  for (const field of ['name', 'version', 'resolved', 'integrity']) {
-    const value = entry[field];
-    if (value !== undefined && value !== null && typeof value !== 'string') {
-      return `invalid ${field} ${JSON.stringify(value)}`;
-    }
-  }
+  const invalid = invalidField(entry);
+  if (invalid) return invalid;
   if (!validName(name)) return `invalid package name ${JSON.stringify(name)}`;
   if (resolved && !resolved.startsWith(REGISTRY)) return resolved;
   if (!version) return 'no version in the lockfile';
@@ -43,19 +56,20 @@ function elsewhere(
 
 export interface LockPackage {
   name: string;
-  /** Empty when the entry has none (then `elsewhere` says so). */
+  /** Empty when the entry has none (then `elsewhere` says so); a link's target for a link. */
   version: string;
   integrity?: string;
   /** The URL the lockfile records, whatever the source. */
   resolved?: string;
   /** Set when the package does not come from the public registry: what it comes from instead. */
   elsewhere?: string;
+  link?: true;
 }
 
 /**
  * Reads the installed packages of a package-lock.json (lockfileVersion 2 or 3).
- * Only links are left out (workspaces and `file:` folders, whose targets are
- * outside `node_modules/`): npm downloads nothing for them. Bundled
+ * A link is read by its path and target alone, so that it stays the same link
+ * when its workspace changes version (DESIGN.md, decisions). Bundled
  * dependencies are kept (DESIGN.md, decisions). The text may come from a pull
  * request, so every field is checked for its type; `label` names the file in
  * errors.
@@ -76,11 +90,21 @@ export function parseLockfile(text: string, label = 'lockfile'): Map<string, Loc
   }
   const out = new Map<string, LockPackage>();
   for (const [path, entry] of Object.entries(lock.packages)) {
-    if (!path.includes('node_modules/') || !isObject(entry) || entry.link === true) continue;
-    const name =
-      str(entry.name) || path.slice(path.lastIndexOf('node_modules/') + 'node_modules/'.length);
-    const version = str(entry.version) ?? '';
+    if (!path.includes('node_modules/') || !isObject(entry)) continue;
+    const pathName = path.slice(path.lastIndexOf('node_modules/') + 'node_modules/'.length);
     const resolved = str(entry.resolved) || undefined;
+    if (entry.link === true) {
+      const target = `link to ${resolved ?? 'nothing'}`;
+      out.set(path, {
+        name: pathName,
+        version: target,
+        elsewhere: invalidField(entry) ?? target,
+        link: true,
+      });
+      continue;
+    }
+    const name = str(entry.name) || pathName;
+    const version = str(entry.version) ?? '';
     out.set(path, {
       name,
       version,
@@ -128,26 +152,51 @@ function shallowFirst(entries: Map<string, LockPackage>): [string, LockPackage][
  * Without an old copy of the same version, the second is used for both. A new
  * artifact is listed once per distinct comparison: two paths that replaced
  * different versions give two changes, so that neither comparison is lost.
+ *
+ * A link has no version to compare, so it is compared only with the old entry
+ * at its path, and no other entry is compared with a link.
  */
 export function diffLockfiles(oldText: string | null, newText: string): Change[] {
   const before =
     oldText === null ? new Map<string, LockPackage>() : parseLockfile(oldText, 'the old lockfile');
   const byName = new Map<string, LockPackage[]>();
   for (const [, p] of shallowFirst(before)) {
+    if (p.link) continue;
     const list = byName.get(p.name);
     if (list) list.push(p);
     else byName.set(p.name, [p]);
   }
   const seen = new Set<string>();
   const changes: Change[] = [];
+  const add = (change: Change, artifact: string) => {
+    const key = JSON.stringify([
+      change.name,
+      change.to,
+      artifact,
+      change.from,
+      change.fromSource,
+      change.fromIntegrity,
+    ]);
+    if (seen.has(key)) return;
+    seen.add(key);
+    changes.push(change);
+  };
   for (const [path, pkg] of parseLockfile(newText, 'the new lockfile')) {
+    const old = before.get(path);
+    const artifact = artifactKey(pkg);
+    if (pkg.link) {
+      if (old?.link && old.version === pkg.version && artifactKey(old) === artifact) continue;
+      const change: Change = { name: pkg.name, from: old?.version ?? null, to: pkg.version };
+      if (pkg.elsewhere) change.source = pkg.elsewhere;
+      if (old?.elsewhere) change.fromSource = old.elsewhere;
+      add(change, artifact);
+      continue;
+    }
     const named = byName.get(pkg.name) ?? [];
     const sameVersion = named.filter((p) => p.version === pkg.version);
-    const artifact = artifactKey(pkg);
     if (sameVersion.some((p) => artifactKey(p) === artifact)) continue;
 
-    const old = before.get(path);
-    const atPath = old?.name === pkg.name ? old : undefined;
+    const atPath = !old?.link && old?.name === pkg.name ? old : undefined;
     const copy = atPath?.version === pkg.version ? atPath : sameVersion[0];
     const replaced = atPath ?? copy ?? named[0];
     const compared = copy ?? replaced;
@@ -163,18 +212,7 @@ export function diffLockfiles(oldText: string | null, newText: string): Change[]
     if (copy?.integrity && pkg.integrity && copy.integrity !== pkg.integrity) {
       change.fromIntegrity = copy.integrity;
     }
-
-    const key = JSON.stringify([
-      change.name,
-      change.to,
-      artifact,
-      change.from,
-      change.fromSource,
-      change.fromIntegrity,
-    ]);
-    if (seen.has(key)) continue;
-    seen.add(key);
-    changes.push(change);
+    add(change, artifact);
   }
   return changes.sort((a, b) => a.name.localeCompare(b.name) || a.to.localeCompare(b.to));
 }

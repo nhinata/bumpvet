@@ -3,9 +3,9 @@
 /** One package version that the lockfile change brings in. */
 export interface Change {
   name: string;
-  /** Version the old lockfile had ('' if its entry had none), or null when the package is new. */
+  /** Version the old lockfile had ('' if its entry had none; `link to <target>` for a link), or null when the package is new. */
   from: string | null;
-  /** Empty when the lockfile entry has no version (also in --json output). */
+  /** Empty when the lockfile entry has no version; `link to <target>` for a link (also in --json output). */
   to: string;
   /** Integrity the new lockfile expects, if it records one. */
   integrity?: string;

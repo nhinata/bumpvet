@@ -151,6 +151,169 @@ describe('vetLockfiles: what a change is compared with', () => {
     ]);
   });
 
+  describe('links', () => {
+    const lock = (packages: Record<string, unknown>) =>
+      JSON.stringify({ lockfileVersion: 3, packages: { '': { name: 'app' }, ...packages } });
+    const link = (resolved: string) => ({ resolved, link: true });
+    /** A registry entry as lockfile() writes it. */
+    const lockfileEntry = (name: string, version: string) =>
+      (
+        JSON.parse(lockfile({ [`node_modules/${name}`]: { version } })) as {
+          packages: Record<string, object>;
+        }
+      ).packages[`node_modules/${name}`]!;
+
+    it('blocks a registry package replaced by a link', async () => {
+      const before = lockfile({ 'node_modules/x': { version: '1.0.0' } });
+      const after = lock({
+        'node_modules/x': link('vendor/x'),
+        'vendor/x': { version: '1.0.0' },
+      });
+      const [result] = await vetLockfiles(before, after, registry, tarballsAsPublished, { now });
+      expect(result?.verdict).toBe('block');
+      expect(result?.signals).toEqual([
+        {
+          id: 'source-changed',
+          group: 'tamper',
+          before: 'npm registry',
+          after: 'link to vendor/x',
+        },
+      ]);
+    });
+
+    it('asks for a review of a new link', async () => {
+      const after = lock({
+        'node_modules/lib': link('packages/lib'),
+        'packages/lib': { version: '1.0.0' },
+      });
+      const [result] = await vetLockfiles(lock({}), after, registry, tarballsAsPublished, { now });
+      expect(result?.verdict).toBe('review');
+      expect(result?.signals).toEqual([
+        {
+          id: 'not-from-registry',
+          group: 'origin',
+          before: 'not installed',
+          after: 'link to packages/lib',
+        },
+      ]);
+    });
+
+    it('asks for a review of a link that points somewhere else', async () => {
+      const before = lock({ 'node_modules/lib': link('packages/lib') });
+      const after = lock({ 'node_modules/lib': link('vendor/lib') });
+      const [result] = await vetLockfiles(before, after, registry, tarballsAsPublished, { now });
+      expect(result?.verdict).toBe('review');
+      expect(result?.signals[0]?.id).toBe('not-from-registry');
+    });
+
+    it('says nothing of a link whose workspace only changed version', async () => {
+      const before = lock({
+        'node_modules/lib': link('packages/lib'),
+        'packages/lib': { version: '1.0.0' },
+      });
+      const after = lock({
+        'node_modules/lib': link('packages/lib'),
+        'packages/lib': { version: '1.1.0' },
+      });
+      expect(await vet(before, after)).toEqual([]);
+    });
+
+    it('vets a registry package that replaced a link as a new package', async () => {
+      const before = lock({ 'node_modules/x': link('vendor/x') });
+      const after = lockfile({ 'node_modules/x': { version: '2.0.0' } });
+      expect(await vet(before, after)).toEqual([
+        { name: 'x', from: null, to: '2.0.0', signals: [] },
+      ]);
+    });
+
+    it('compares a registry package with the old registry version, not with a link of its name', async () => {
+      const before = lock({
+        'node_modules/semver': link('vendor/semver'),
+        'node_modules/a/node_modules/semver': lockfileEntry('semver', '6.3.1'),
+      });
+      const after = lock({
+        'node_modules/semver': link('vendor/semver'),
+        'node_modules/b/node_modules/semver': lockfileEntry('semver', '7.6.0'),
+      });
+      expect(await vet(before, after)).toEqual([
+        { name: 'semver', from: '6.3.1', to: '7.6.0', signals: ['install-scripts'] },
+      ]);
+    });
+
+    it('blocks a registry package replaced by a link another path already has', async () => {
+      const before = lock({
+        'node_modules/x': lockfileEntry('x', '1.0.0'),
+        'node_modules/a/node_modules/x': link('vendor/x'),
+      });
+      const after = lock({
+        'node_modules/x': link('vendor/x'),
+        'node_modules/a/node_modules/x': link('vendor/x'),
+      });
+      expect((await vet(before, after))[0]?.signals).toEqual(['source-changed']);
+    });
+
+    it('blocks a registry package replaced by a link when another path has a different one', async () => {
+      const before = lock({
+        'node_modules/x': lockfileEntry('x', '1.0.0'),
+        'node_modules/a/node_modules/x': link('vendor/other'),
+      });
+      const after = lock({
+        'node_modules/x': link('vendor/evil'),
+        'node_modules/a/node_modules/x': link('vendor/other'),
+      });
+      expect(await vet(before, after)).toEqual([
+        { name: 'x', from: '1.0.0', to: 'link to vendor/evil', signals: ['source-changed'] },
+      ]);
+    });
+
+    it('blocks an aliased registry package replaced by a link', async () => {
+      const before = lock({
+        'node_modules/my-x': { ...lockfileEntry('x', '1.0.0'), name: 'x' },
+      });
+      const after = lock({ 'node_modules/my-x': link('vendor/x') });
+      expect((await vet(before, after))[0]?.signals).toEqual(['source-changed']);
+    });
+
+    it('asks for a review of a new link whose name a nested package has', async () => {
+      const nested = { 'node_modules/a/node_modules/x': lockfileEntry('x', '1.0.0') };
+      const before = lock(nested);
+      const after = lock({ ...nested, 'node_modules/x': link('packages/x') });
+      expect(await vet(before, after)).toEqual([
+        { name: 'x', from: null, to: 'link to packages/x', signals: ['not-from-registry'] },
+      ]);
+    });
+
+    it('reports a link to another target when a field of the wrong type stays the same', async () => {
+      const before = lock({
+        'node_modules/x': { ...link('vendor/a'), version: 1 },
+      });
+      const after = lock({
+        'node_modules/x': { ...link('vendor/evil'), version: 1 },
+      });
+      expect((await vet(before, after))[0]?.to).toBe('link to vendor/evil');
+    });
+
+    it('reports a link to another target when the path gives an invalid name', async () => {
+      const before = lock({ 'node_modules/.x': link('vendor/a') });
+      const after = lock({ 'node_modules/.x': link('vendor/evil') });
+      expect((await vet(before, after))[0]?.to).toBe('link to vendor/evil');
+    });
+
+    it('lists the same new link at two paths once', async () => {
+      const after = lock({
+        'packages/a/node_modules/lib': link('packages/lib'),
+        'packages/b/node_modules/lib': link('packages/lib'),
+      });
+      expect(await vet(lock({}), after)).toHaveLength(1);
+    });
+
+    it('blocks a registry entry given a `link` of another type, with nothing else changed', async () => {
+      const before = lock({ 'node_modules/x': lockfileEntry('x', '1.0.0') });
+      const after = lock({ 'node_modules/x': { ...lockfileEntry('x', '1.0.0'), link: 1 } });
+      expect((await vet(before, after))[0]?.signals).toEqual(['source-changed']);
+    });
+  });
+
   it('flags a version that came from the registry elsewhere and now comes from another server', async () => {
     const before = lockfile({
       'node_modules/x': { version: '1.0.0', resolved: 'git+ssh://git@github.com/x/x.git#aaa' },

@@ -115,15 +115,17 @@ under the package.
 `source-changed`, `not-in-registry`): the lockfile installs something other
 than the registry's release. A lockfile npm or Dependabot generated from the
 registry does this only for a private package or a version a package bundles,
-so one of these happened:
+and npm does it when a dependency moves into a workspace, so one of these
+happened:
 
-| Cause                                                                       | How to tell                                                                                                 | What to do                                                                              |
-| --------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
-| the registry removed the version (`not-in-registry`)                        | the package's npm page and security advisories                                                              | treat the version as malicious; close the pull request and wait for the next release    |
-| the lockfile was edited by hand or by a pull request                        | the `version`, `resolved` and `integrity` lines in the diff                                                 | regenerate the lockfile with `npm install` instead of merging the edit                  |
-| a private package on registry.npmjs.org (`not-in-registry`)                 | the package is yours or your organization's; bumpvet does not log in, so the registry answers 404           | expected: bumpvet cannot vet private packages (see DESIGN.md, Known limitations)        |
-| a package bundles a version that is not on the registry (`not-in-registry`) | the entry sits under that package and has no `resolved`; the version is missing from the package's npm page | expected: the bundled files come from that package's tarball (see DESIGN.md, Decisions) |
-| a bumpvet bug                                                               | neither of the above                                                                                        | open an issue with the two lockfiles                                                    |
+| Cause                                                                       | How to tell                                                                                                 | What to do                                                                                  |
+| --------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| the registry removed the version (`not-in-registry`)                        | the package's npm page and security advisories                                                              | treat the version as malicious; close the pull request and wait for the next release        |
+| the lockfile was edited by hand or by a pull request                        | the `version`, `resolved` and `integrity` lines in the diff                                                 | regenerate the lockfile with `npm install` instead of merging the edit                      |
+| a private package on registry.npmjs.org (`not-in-registry`)                 | the package is yours or your organization's; bumpvet does not log in, so the registry answers 404           | expected: bumpvet cannot vet private packages (see DESIGN.md, Known limitations)            |
+| a package bundles a version that is not on the registry (`not-in-registry`) | the entry sits under that package and has no `resolved`; the version is missing from the package's npm page | expected: the bundled files come from that package's tarball (see DESIGN.md, Decisions)     |
+| a dependency moved into a workspace or `file:` folder (`source-changed`)    | the signal says `link to <folder>`, and `package.json` names that folder in `workspaces` or as `file:`      | expected if the move was meant; if `package.json` does not name it, the lockfile was edited |
+| a bumpvet bug                                                               | neither of the above                                                                                        | open an issue with the two lockfiles                                                        |
 
 **BLOCK because a content change meets an origin or timing signal**
 (`install-scripts` with, for example, `publisher-changed` or `fresh-publish`):
@@ -143,12 +145,12 @@ the shape of a worm release.
 **REVIEW**: something unusual, but nothing that blocks on its own. Before
 merging, check each signal listed:
 
-| Signal              | Check                                                                                                                                                                          |
-| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `install-scripts`   | step 1 above                                                                                                                                                                   |
-| `publisher-changed` | step 2 above                                                                                                                                                                   |
-| `provenance-lost`   | the project's release notes or workflow: did it stop publishing from CI on purpose?                                                                                            |
-| `not-from-registry` | the `resolved` URL is the git repository, file or registry you meant to use; "no version in the lockfile" or "invalid ..." means the entry was edited: regenerate the lockfile |
+| Signal              | Check                                                                                                                                                                                                                                                                                             |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `install-scripts`   | step 1 above                                                                                                                                                                                                                                                                                      |
+| `publisher-changed` | step 2 above                                                                                                                                                                                                                                                                                      |
+| `provenance-lost`   | the project's release notes or workflow: did it stop publishing from CI on purpose?                                                                                                                                                                                                               |
+| `not-from-registry` | the `resolved` URL is the git repository, file or registry you meant to use; `link to <folder>` is a folder `package.json` names in `workspaces` or as `file:`, and npm runs its install hooks; "no version in the lockfile" or "invalid ..." means the entry was edited: regenerate the lockfile |
 
 When a BLOCK or REVIEW turns out to be wrong, open an issue: false positives
 are what decides whether a check can be made required.

@@ -5,13 +5,58 @@ import { lockfile } from './helpers.js';
 const raw = (packages: Record<string, unknown>) => JSON.stringify({ lockfileVersion: 3, packages });
 
 describe('parseLockfile', () => {
-  it('skips workspace links and workspace folders', () => {
+  it('reads a link as coming from elsewhere, and skips the folder it points at', () => {
     const text = raw({
       '': { name: 'app' },
       'packages/lib': { name: 'lib', version: '1.0.0' },
       'node_modules/lib': { resolved: 'packages/lib', link: true },
     });
-    expect(parseLockfile(text).size).toBe(0);
+    expect([...parseLockfile(text)]).toEqual([
+      [
+        'node_modules/lib',
+        {
+          name: 'lib',
+          version: 'link to packages/lib',
+          elsewhere: 'link to packages/lib',
+          link: true,
+        },
+      ],
+    ]);
+  });
+
+  it('reads a link by its path and target, whatever name and version its entry gives', () => {
+    const text = raw({
+      'node_modules/lib': { resolved: 'packages/lib', link: true, name: 'other', version: '1.0.0' },
+    });
+    expect(parseLockfile(text).get('node_modules/lib')).toMatchObject({
+      name: 'lib',
+      version: 'link to packages/lib',
+    });
+  });
+
+  it('reads a link without a target as coming from elsewhere', () => {
+    const text = raw({ 'node_modules/lib': { link: true } });
+    expect(parseLockfile(text).get('node_modules/lib')?.elsewhere).toBe('link to nothing');
+  });
+
+  it.each([[1], ['yes'], ['false'], [0], [''], [false]])(
+    'reads a `link` of %j as a field of the wrong type',
+    (link) => {
+      const text = raw({ 'node_modules/a': { version: '1.0.0', link } });
+      expect(parseLockfile(text).get('node_modules/a')?.elsewhere).toBe(
+        `invalid link ${JSON.stringify(link)}`,
+      );
+    },
+  );
+
+  it('reads a `link` of null as missing, as it does other fields', () => {
+    const text = raw({ 'node_modules/a': { version: '1.0.0', link: null } });
+    expect(parseLockfile(text).get('node_modules/a')?.elsewhere).toBeUndefined();
+  });
+
+  it('reads a link whose target has the wrong type as a field of the wrong type', () => {
+    const text = raw({ 'node_modules/lib': { link: true, resolved: 1 } });
+    expect(parseLockfile(text).get('node_modules/lib')?.elsewhere).toBe('invalid resolved 1');
   });
 
   it('reads scoped names from the path', () => {

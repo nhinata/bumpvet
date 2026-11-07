@@ -23,7 +23,9 @@ what it deliberately does not do, and why.
 6. **A rule is added only when the evaluation says it helps:** detection goes
    up and false positives do not get worse. See [eval/README.md](eval/README.md).
    A change that closes a way around an existing signal, rather than adding
-   one, needs only the second.
+   one, needs only the second. If the change brings a false positive that
+   `npm run eval` cannot measure, Decisions names it and says why it is
+   accepted.
 
 ## Terms
 
@@ -95,7 +97,11 @@ looked at again.
   installed the entry under the workspace from another server. What npm does
   take from a tarball it does not download, even with a `resolved` at another
   server. It downloads what the project itself bundles.
-- npm downloads nothing for a `link` entry, nor for an entry under one.
+- npm downloads nothing for a `link` entry, nor for an entry under one. It
+  does create the link and run the hooks of the folder, also when no
+  `package.json` asks for that link: with `package.json` unchanged, a `link`
+  entry that replaced a registry package, and one for a new name, both ran
+  the folder's `postinstall` on `npm ci`.
 - npm installs an entry without a version only when the rest of it is what
   npm would install anyway: with `resolved` at another package, another
   version, or another server, `npm ci` fails ("Missing: ms@2.1.3 from lock
@@ -147,7 +153,7 @@ before the same checks are trusted for it.
 | `provenance-lost`    | origin  | the version being replaced, or an earlier stable version of the same line (major; minor below 1.0.0), had npm provenance, and the new one does not                                                               |
 | `fresh-publish`      | timing  | the new version is less than 72 hours old                                                                                                                                                                        |
 | `install-scripts`    | content | the new version's tarball has a `preinstall`, `install` or `postinstall` hook in its `package.json`, or a root `binding.gyp`, that the tarball of the version it is compared with did not have, or had otherwise |
-| `not-from-registry`  | origin  | the package comes from git, a `file:` path, another registry, or its entry has no version, an invalid name, or a field of the wrong type, so there is nothing to compare it with                                 |
+| `not-from-registry`  | origin  | the package comes from git, a `file:` path, a link, another registry, or its entry has no version, an invalid name, or a field of the wrong type, so there is nothing to compare it with                         |
 | `source-changed`     | tamper  | a package that came from the public registry now comes from somewhere else (how lockfile injection looks)                                                                                                        |
 | `integrity-mismatch` | tamper  | the lockfile's integrity hash changed for the same version, or differs from the registry's                                                                                                                       |
 | `tarball-mismatch`   | tamper  | the lockfile has no integrity the registry's can be compared with, and its `resolved` is not exactly the registry's tarball URL for that version                                                                 |
@@ -251,6 +257,20 @@ before the same checks are trusted for it.
   lockfile, was steered through a workspace's `bundleDependencies`. Bundled
   entries are vetted as registry packages by name and version. _Trade-off:_ a
   bundled version that is not on the registry is `not-in-registry` (`BLOCK`).
+- **A link is reported as not coming from the registry.** `npm ci` creates a
+  link that only the lockfile names and runs the hooks of its folder (see
+  [Threat model](#threat-model)), so what shows that the folder's code runs is
+  in the lockfile, even though the code itself is in the pull request's diff.
+  A link has no version to compare, so it is compared with the old entry at
+  its path alone: a registry package there makes it `source-changed`; nothing
+  there, or a link to another target, makes it `not-from-registry`. A workspace
+  changing version reports nothing. `link` other than `true`, the form npm writes, is a field of the wrong type.
+  _Trade-off:_ adding, moving or renaming a workspace is `REVIEW`, and moving a
+  dependency into a workspace is `BLOCK`. `npm run eval` replays registry
+  releases, which have no links, so it cannot measure these. A first lockfile reports every link it has. They are accepted because they
+  happen only when links change or the lockfile is new, and leaving links out
+  would let a pull request run a folder's hooks unreported. A new link is `REVIEW`, so a
+  reader must act on the warning: it does not stop the merge.
 - **An entry without `resolved` is vetted as a registry package.** npm
   fetches it from the registry by name and version (see
   [Threat model](#threat-model)), so that version is what is vetted.
@@ -329,12 +349,11 @@ before the same checks are trusted for it.
   are trusted for it. Of the names a file system writes as `package.json` or
   `binding.gyp`, only known ways are caught: case and Unicode form, a
   trailing dot or space, and Windows short names.
+- A `link` is read in the form npm writes. bumpvet does not follow what else
+  npm accepts, nor look for other ways it may run a folder's hooks.
 - Only changes are vetted. A version already in the lockfile is not read
   again, also when only its `hasInstallScript` is newly set, which makes npm
   run the hooks of its `package.json`.
-- A registry package replaced by a link to a folder in the repository is not
-  reported, since links are left out (see [Threat model](#threat-model));
-  the folder's code is in the pull request's diff (issue #18).
 
 ## Not doing (and why)
 
