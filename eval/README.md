@@ -10,7 +10,8 @@ Replays the last 10 stable releases of each package in
 release is paired with the highest earlier version below it, as an upgrade
 would be, and vetted at two moments:
 
-- **1 hour after publish:** a bot opens the pull request right away.
+- **1 hour after publish:** a bot that does not wait, as Dependabot does not on
+  a security update.
 - **7 days after publish:** a team that waits a week.
 
 Packuments are cached in `eval/.cache/` (not committed), so numbers can shift
