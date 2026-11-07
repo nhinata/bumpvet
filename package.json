@@ -40,13 +40,13 @@
   "devDependencies": {
     "@eslint/js": "10.0.1",
     "@types/node": "22.20.5",
-    "eslint": "10.13.0",
+    "eslint": "10.14.0",
     "prettier": "3.9.10",
     "tar6": "npm:tar@6.2.1",
     "tar7": "npm:tar@7.5.22",
     "typescript": "5.9.3",
     "typescript-eslint": "8.72.1",
-    "vitest": "5.0.5"
+    "vitest": "5.1.0"
   },
   "exports": {
     "./package.json": "./package.json"
