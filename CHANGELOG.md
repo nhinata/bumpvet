@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0](https://github.com/nhinata/bumpvet/compare/v0.6.0...v0.7.0) (2026-11-10)
+
+
+### Features
+
+* post the verdict on the pull request with the comment input ([#98](https://github.com/nhinata/bumpvet/issues/98)) ([7d0df7c](https://github.com/nhinata/bumpvet/commit/7d0df7c905e65727518de3877ec9afd0e7000d53))
+
 ## [0.6.0](https://github.com/nhinata/bumpvet/compare/v0.5.0...v0.6.0) (2026-11-07)
 
 
