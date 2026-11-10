@@ -89,8 +89,38 @@ jobs:
 - The `exit-code` output is bumpvet's exit code, or empty if bumpvet did not
   run. After a failure, later steps run only if this step has
   `continue-on-error: true` or they have an `if:` such as `always()`.
-- There is no way yet to accept a `BLOCK` you have checked: the job stays
-  failed, and the pull request is merged without it.
+- With `comment: true`, the action also posts the verdict and the report on
+  the pull request: a `REVIEW`, a `BLOCK` or an error, and from then on every
+  verdict, `OK` included. There is one comment per `working-directory`,
+  updated in place. It names the pull request's head, the base it was
+  compared with, and the run. Only `pull_request` is commented on; do not move
+  to `pull_request_target` for it. Give `pull-requests: write` to the bumpvet
+  job only, since a workflow's `permissions` reach every step of its jobs,
+  Dependabot's runs included. A job's `permissions` replace the workflow's, so
+  `contents: read` goes there too:
+
+  ```yaml
+  jobs:
+    bumpvet:
+      permissions:
+        contents: read
+        pull-requests: write
+  ```
+
+  A read-only token, which a pull request from a fork gets by default, cannot
+  post; a warning says so. The comment never changes the job's result, but its
+  step can take up to the limit in [DESIGN.md](DESIGN.md#decisions-and-the-numbers-behind-them).
+
+- The comment shows the last run that wrote it, which is not always the
+  pull request's current head or base: a newer head's run may not start or
+  finish, or may fail to write (a warning says so). It stays where it was
+  first posted; a changed verdict shows in the check's result. Uses of the
+  action with the same `working-directory` in other jobs or workflows, or with
+  another `base`, update the same comment.
+- Whether the job is a required check is up to the repository. Required, it
+  keeps auto-merge from merging a `BLOCK`, and a `BLOCK` you have checked is
+  merged by someone on the ruleset's bypass list. Not required, it is merged
+  with the job failed.
 
 ## How it decides
 

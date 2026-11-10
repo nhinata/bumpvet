@@ -322,6 +322,32 @@ before the same checks are trusted for it.
 - **Packages bumpvet cannot vet are signals too.** A separate "not vetted"
   list outside the verdict table would break principle 2 and let them pass
   with exit code 0.
+- **The pull request comment never changes the job's result, nor writes over
+  a newer head.** With the action's `comment` input, the verdict is posted on
+  the pull request and updated by later runs. Before writing, the action reads
+  the pull request's head from GitHub's API and writes only if it is the head
+  the run vetted; the step does not start once the run is cancelled. Any
+  failure is a warning, and the step succeeds. It gives up after 120 seconds,
+  room for a few requests at 30 seconds each; the values are not measured.
+  Unlike registry requests, GitHub API requests are not tried again: a failure
+  leaves the verdict and the job as they are, and the next run writes again.
+  _Trade-off:_ a job whose `timeout-minutes` leaves less than that can time
+  out. What this relies on:
+  - The runner reads a step's standard output and standard error as workflow
+    commands, each line by line and with no order between the two, except
+    between `::stop-commands::` and its token (actions/runner,
+    `src/Runner.Worker/Handlers/ScriptHandler.cs` and
+    `src/Runner.Worker/ActionCommandManager.cs`). The script's output, which
+    quotes comments anyone can write, goes through one stream between the two.
+  - The report is posted inside a fenced code block, whose content is literal
+    text, not inlines, so links and emphasis do not apply (GitHub Flavored
+    Markdown Spec, "Fenced code blocks" and "Autolinks (extension)").
+    GitHub's `@` mentions and `#` references are not in the spec; no official
+    source found says they are inactive in a fenced block.
+  - Writing a comment needs `pull-requests: write` or `issues: write`, and
+    reading the pull request `contents: read` (GitHub Docs, "Permissions
+    required for GitHub Apps"). A pull request from a fork gets a read-only
+    token by default (GitHub Docs, "Events that trigger workflows").
 
 ## Known misses
 
