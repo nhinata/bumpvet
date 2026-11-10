@@ -335,10 +335,9 @@ before the same checks are trusted for it.
   out. The comment shows the last run that wrote it, which is not always the
   pull request's current head or base: a newer head's run may not start, not
   finish or fail to write, and a push can come between the check and the
-  write. Updating it sends no notification and leaves it where it was first
-  posted. Uses with the same `working-directory` in other jobs or workflows,
-  or with another `base`, update the same comment. Only GitHub.com is
-  covered. What this relies on:
+  write. It stays where it was first posted. Uses with the same
+  `working-directory` in other jobs or workflows, or with another `base`,
+  update the same comment. Only GitHub.com is covered. What this relies on:
   - The runner reads a step's standard output and standard error as workflow
     commands, each line by line and with no order between the two, except
     between `::stop-commands::` and its token (actions/runner,
@@ -354,8 +353,9 @@ before the same checks are trusted for it.
     source found says they are inactive in a fenced block.
   - Listing comments needs `issues: read` or `pull-requests: read`, writing
     them `issues: write` or `pull-requests: write`, and reading the pull
-    request `contents: read` or `pull-requests: read` (GitHub Docs,
-    "Permissions required for GitHub Apps"). A pull request from a fork gets a read-only
+    request `contents: read` or `pull-requests: read` (GitHub Docs, "REST
+    API endpoints for issue comments" and "REST API endpoints for pull
+    requests"). A pull request from a fork gets a read-only
     token by default (GitHub Docs, "Events that trigger workflows").
 
 ## Known misses

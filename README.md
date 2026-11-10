@@ -89,9 +89,9 @@ jobs:
 - The `exit-code` output is bumpvet's exit code, or empty if bumpvet did not
   run. After a failure, later steps run only if this step has
   `continue-on-error: true` or they have an `if:` such as `always()`.
-- With `comment: true`, the action also posts the verdict and the report on
-  the pull request when it is `REVIEW`, `BLOCK` or an error, and updates that
-  comment on later runs, `OK` included. There is one comment per
+- With `comment: true`, on `pull_request`, the action also posts the verdict
+  and the report on the pull request when it is `REVIEW`, `BLOCK` or an
+  error, and updates that comment on later runs, `OK` included. There is one comment per
   `working-directory`. The job needs:
 
   ```yaml
@@ -103,7 +103,10 @@ jobs:
   ```
 
   A pull request from a fork gets a read-only token by default, so nothing is
-  posted and a warning says so. The comment never changes the job's result.
+  posted and a warning says so. The comment never changes the job's result,
+  but its step can take up to the limit in
+  [DESIGN.md](DESIGN.md#decisions-and-the-numbers-behind-them), which also
+  says what the comment does not guarantee.
 
 - Whether the job is a required check is up to the repository. Required, it
   keeps auto-merge from merging a `BLOCK`, and a `BLOCK` you have checked is
