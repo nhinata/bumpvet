@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { escapeData, runComment, verdictOf } from '../action/comment.mjs';
+import { runComment, verdictOf } from '../action/comment.mjs';
 
 // The action's `comment` input (README.md, GitHub Actions), against a fake of
 // GitHub's REST API.
@@ -20,7 +20,8 @@ interface Comment {
 
 /**
  * A pull request's comments and head. `answer` replaces the answer to a
- * method, `never` makes a method never answer; `calls` records each call.
+ * method, given the body sent, unless it returns nothing; `never` makes a
+ * method never answer; `calls` records each call.
  */
 function github(
   comments: Comment[] = [],
@@ -28,7 +29,11 @@ function github(
     head = HEAD,
     answer = {},
     never = [],
-  }: { head?: string; answer?: Record<string, () => Response>; never?: string[] } = {},
+  }: {
+    head?: string;
+    answer?: Record<string, (body: string) => Response | undefined>;
+    never?: string[];
+  } = {},
 ) {
   const calls: string[] = [];
   let next = 100;
@@ -36,10 +41,10 @@ function github(
     const method = init?.method ?? 'GET';
     const { pathname, searchParams } = new URL(url);
     calls.push(`${method} ${pathname}`);
-    const replaced = answer[method];
-    if (replaced) return replaced();
     const body =
       typeof init?.body === 'string' ? (JSON.parse(init.body) as { body: string }).body : '';
+    const replaced = answer[method]?.(body);
+    if (replaced) return replaced;
     if (method === 'GET' && pathname.endsWith('/comments')) {
       const page = Number(searchParams.get('page'));
       return Response.json(comments.slice((page - 1) * 100, page * 100));
@@ -189,7 +194,7 @@ describe('runComment', () => {
     const gh = github([], {
       answer: {
         POST: () => {
-          if (refused) return Response.json({});
+          if (refused) return undefined;
           refused = true;
           return Response.json({ message: 'Validation Failed' }, { status: 422 });
         },
@@ -197,6 +202,9 @@ describe('runComment', () => {
     });
     expect(await runComment(job(), gh.fetchImpl)).toEqual([]);
     expect(gh.calls.filter((c) => c.startsWith('POST'))).toHaveLength(2);
+    expect(gh.comments).toHaveLength(1);
+    expect(gh.comments[0]!.body).toContain('The report is too long for a comment. See the run.');
+    expect(gh.comments[0]!.body).not.toContain(SUMMARY);
   });
 
   it('does nothing on an event other than pull_request', async () => {
@@ -220,6 +228,16 @@ describe('runComment', () => {
     }
   });
 
+  it('keeps each warning on one line, so that text from GitHub cannot start a workflow command', async () => {
+    const message = 'no\n::error::x\r100%';
+    const [warning] = await runComment(
+      job(),
+      github([], { answer: { GET: () => Response.json({ message }, { status: 500 }) } }).fetchImpl,
+    );
+    expect(warning).toContain('500 no%0A::error::x%0D100%25.');
+    expect(warning).not.toMatch(/[\r\n]/);
+  });
+
   it('says that an earlier comment may be out of date when a write fails', async () => {
     const [warning] = await runComment(
       job(),
@@ -234,11 +252,5 @@ describe('runComment', () => {
       github([], { never: ['GET'] }).fetchImpl,
     );
     expect(warning).toContain('GitHub did not answer in time.');
-  });
-});
-
-describe('escapeData', () => {
-  it('keeps text from the GitHub API on one line, so that it cannot start a workflow command', () => {
-    expect(escapeData('no\n::error::x\r100%')).toBe('no%0A::error::x%0D100%25');
   });
 });

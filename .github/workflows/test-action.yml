@@ -115,8 +115,9 @@ jobs:
           # The default, HEAD^1, applies on pull_request only.
           base: ${{ github.event_name != 'pull_request' && 'HEAD^1' || '' }}
           # This workflow cannot write to pull requests, so no comment is
-          # posted: the outcome below checks that this leaves the job's result
-          # as the verdict made it. Left out on the other rows, the default.
+          # posted: the check below shows that the action's exit code and
+          # outcome stay as the verdict made them. Left out on the other rows,
+          # the default.
           comment: ${{ matrix.comment || false }}
       - name: Check the outcome
         env:

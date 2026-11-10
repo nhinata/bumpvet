@@ -174,7 +174,7 @@ its tests go with it.
 
 - Group tests by the public function they exercise (`parseLockfile`,
   `diffLockfiles`, `computeSignals`, `decide`, `vetChanges`, `runCli`, and the
-  action's `verdictOf`, `runComment` and `escapeData`), not
+  action's `verdictOf` and `runComment`), not
   private helpers, and put a new test in the group of the function it calls.
 - Build fixtures that could really occur: a signal with its real group, a
   lockfile entry npm could write, input an attacker could write under the

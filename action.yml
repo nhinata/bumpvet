@@ -165,7 +165,7 @@ runs:
         # can write to; nothing it prints may act as a workflow command. One
         # stream, so that its lines come before the closing token.
         echo "::stop-commands::$token"
-        node "$GITHUB_ACTION_PATH/action/comment.mjs" 2>&1
+        node "$GITHUB_ACTION_PATH/action/post-comment.mjs" 2>&1
         code=$?
         # A line of its own, even if the script's output did not end with one.
         echo

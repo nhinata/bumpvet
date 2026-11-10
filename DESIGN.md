@@ -332,11 +332,19 @@ before the same checks are trusted for it.
   Unlike registry requests, GitHub API requests are not tried again: a failure
   leaves the verdict and the job as they are, and the next run writes again.
   _Trade-off:_ a job whose `timeout-minutes` leaves less than that can time
-  out. What this relies on:
+  out. The comment shows the last run that wrote it, which is not always the
+  pull request's current head or base: a newer head's run may not start, not
+  finish or fail to write, and a push can come between the check and the
+  write. Updating it sends no notification and leaves it where it was first
+  posted. Uses with the same `working-directory` in other jobs or workflows,
+  or with another `base`, update the same comment. Only GitHub.com is
+  covered. What this relies on:
   - The runner reads a step's standard output and standard error as workflow
     commands, each line by line and with no order between the two, except
     between `::stop-commands::` and its token (actions/runner,
-    `src/Runner.Worker/Handlers/ScriptHandler.cs` and
+    `src/Runner.Sdk/ProcessInvoker.cs`,
+    `src/Runner.Worker/Handlers/ScriptHandler.cs`,
+    `src/Runner.Worker/Handlers/OutputManager.cs` and
     `src/Runner.Worker/ActionCommandManager.cs`). The script's output, which
     quotes comments anyone can write, goes through one stream between the two.
   - The report is posted inside a fenced code block, whose content is literal
@@ -344,9 +352,10 @@ before the same checks are trusted for it.
     Markdown Spec, "Fenced code blocks" and "Autolinks (extension)").
     GitHub's `@` mentions and `#` references are not in the spec; no official
     source found says they are inactive in a fenced block.
-  - Writing a comment needs `pull-requests: write` or `issues: write`, and
-    reading the pull request `contents: read` (GitHub Docs, "Permissions
-    required for GitHub Apps"). A pull request from a fork gets a read-only
+  - Listing comments needs `issues: read` or `pull-requests: read`, writing
+    them `issues: write` or `pull-requests: write`, and reading the pull
+    request `contents: read` or `pull-requests: read` (GitHub Docs,
+    "Permissions required for GitHub Apps"). A pull request from a fork gets a read-only
     token by default (GitHub Docs, "Events that trigger workflows").
 
 ## Known misses

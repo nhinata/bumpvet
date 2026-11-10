@@ -1,10 +1,7 @@
 // Posts bumpvet's verdict as a comment on the pull request, for the action's
-// `comment` input (README.md, GitHub Actions; DESIGN.md, Decisions). action.yml
-// runs it and turns what it writes to WARNINGS into warnings; nothing here
-// changes the job's result.
-import { appendFileSync, readFileSync } from 'node:fs';
+// `comment` input (README.md, GitHub Actions; DESIGN.md, Decisions).
+// post-comment.mjs runs it; nothing here changes the job's result.
 import { relative, resolve, sep } from 'node:path';
-import { pathToFileURL } from 'node:url';
 
 // The login of comments written with a workflow's GITHUB_TOKEN. Only a comment
 // by it that starts with the marker is ever changed.
@@ -58,7 +55,8 @@ export function verdictOf({ exitCode, hasBlock, hasReview, hasOk }) {
  * pull request's head is no longer the one this run vetted.
  * @param {CommentJob} job
  * @param {typeof fetch} fetchImpl
- * @returns {Promise<string[]>} warnings
+ * @returns {Promise<string[]>} warnings, each one line of workflow command
+ *   data: they quote GitHub's answers, which anyone can write to
  */
 export async function runComment(job, fetchImpl) {
   if (job.event !== 'pull_request') return [];
@@ -96,7 +94,7 @@ export async function runComment(job, fetchImpl) {
   } catch (err) {
     const stale =
       writing && earlier.length ? ' A comment from an earlier run may be out of date.' : '';
-    return [`The comment may not have been posted: ${messageOf(err)}${stale}`];
+    return [escapeData(`The comment may not have been posted: ${messageOf(err)}${stale}`)];
   }
 }
 
@@ -106,7 +104,7 @@ export async function runComment(job, fetchImpl) {
  * @param {string} workspace
  * @param {string} workingDirectory
  */
-export function placeOf(workspace, workingDirectory) {
+function placeOf(workspace, workingDirectory) {
   const rel = relative(workspace, resolve(workspace, workingDirectory));
   return rel === '' ? '.' : rel.split(sep).join('/');
 }
@@ -115,7 +113,7 @@ export function placeOf(workspace, workingDirectory) {
  * @param {{ marker: string, place: string, job: CommentJob, updating: boolean, summary: string | undefined, tooLong?: boolean }} c
  * @returns {string}
  */
-export function commentBody({ marker, place, job, updating, summary, tooLong }) {
+function commentBody({ marker, place, job, updating, summary, tooLong }) {
   const label =
     job.verdict === 'error'
       ? 'error'
@@ -136,11 +134,11 @@ export function commentBody({ marker, place, job, updating, summary, tooLong }) 
 }
 
 /**
- * A warning's text as workflow command data: text from the API stays on one
- * line, so that it cannot start a command of its own.
+ * Text as workflow command data: it stays on one line, so that it cannot start
+ * a command of its own.
  * @param {string} message
  */
-export function escapeData(message) {
+function escapeData(message) {
   return message.replace(/%/g, '%25').replace(/\r/g, '%0D').replace(/\n/g, '%0A');
 }
 
@@ -265,41 +263,4 @@ function field(value, key) {
 function messageOf(err) {
   if (err instanceof Error && err.name === 'TimeoutError') return 'GitHub did not answer in time.';
   return err instanceof Error ? err.message : String(err);
-}
-
-/** @param {string | undefined} path */
-function readIfThere(path) {
-  try {
-    return path ? readFileSync(path, 'utf8') : undefined;
-  } catch {
-    return undefined;
-  }
-}
-
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  const env = process.env;
-  const repository = env.GITHUB_REPOSITORY ?? '';
-  const warnings = await runComment(
-    {
-      event: env.GITHUB_EVENT_NAME ?? '',
-      api: env.GITHUB_API_URL ?? 'https://api.github.com',
-      repository,
-      pullRequest: env.PULL_REQUEST ?? '',
-      headSha: env.HEAD_SHA ?? '',
-      baseSha: env.BASE_SHA ?? '',
-      verdict: verdictOf({
-        exitCode: env.EXIT_CODE ?? '',
-        hasBlock: env.HAS_BLOCK ?? '',
-        hasReview: env.HAS_REVIEW ?? '',
-        hasOk: env.HAS_OK ?? '',
-      }),
-      workspace: env.GITHUB_WORKSPACE ?? process.cwd(),
-      workingDirectory: env.WORKING_DIRECTORY ?? '.',
-      summary: readIfThere(env.SUMMARY),
-      runUrl: `${env.GITHUB_SERVER_URL ?? ''}/${repository}/actions/runs/${env.GITHUB_RUN_ID ?? ''}/attempts/${env.GITHUB_RUN_ATTEMPT ?? ''}`,
-      token: env.GITHUB_TOKEN ?? '',
-    },
-    fetch,
-  );
-  for (const w of warnings) appendFileSync(env.WARNINGS ?? '', `${escapeData(w)}\n`);
 }
