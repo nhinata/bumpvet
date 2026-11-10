@@ -8,6 +8,7 @@ on:
   pull_request:
     paths:
       - action.yml
+      - action/**
       - test/action/**
       - .github/workflows/test-action.yml
   # From release.yml, once the version action.yml names is on npm.
@@ -47,11 +48,13 @@ jobs:
             case: review
             exit-code: 0
             outcome: success
+            comment: true
           # ms 2.1.2 -> 2.1.3 with 2.1.2's integrity: integrity-mismatch
           - name: BLOCK
             case: block
             exit-code: 1
             outcome: failure
+            comment: true
           # HEAD^1 missing: bumpvet cannot vet, an error
           - name: no base commit
             case: no-parent
@@ -111,6 +114,11 @@ jobs:
           working-directory: ${{ runner.temp }}/repo
           # The default, HEAD^1, applies on pull_request only.
           base: ${{ github.event_name != 'pull_request' && 'HEAD^1' || '' }}
+          # This workflow cannot write to pull requests, so no comment is
+          # posted: the check below shows that the action's exit code and
+          # outcome stay as the verdict made them. Left out on the other rows,
+          # the default.
+          comment: ${{ matrix.comment || false }}
       - name: Check the outcome
         env:
           WANT_CODE: ${{ matrix.exit-code }}

@@ -7,7 +7,9 @@
     "noUncheckedIndexedAccess": true,
     "skipLibCheck": true,
     "outDir": "dist-eval",
-    "types": ["node"]
+    "types": ["node"],
+    "allowJs": true,
+    "checkJs": true
   },
-  "include": ["src", "test", "eval"]
+  "include": ["src", "test", "eval", "action"]
 }

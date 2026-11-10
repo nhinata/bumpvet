@@ -20,6 +20,13 @@ export default defineConfig(
     },
   },
   {
+    // The action's scripts, run by Node.js as plain JavaScript (action.yml).
+    files: ['action/*.mjs'],
+    languageOptions: {
+      globals: { AbortSignal: 'readonly', fetch: 'readonly', process: 'readonly' },
+    },
+  },
+  {
     // Shared definitions (CONTRIBUTING.md, Writing code).
     files: ['src/types/**'],
     rules: {

@@ -16,6 +16,12 @@ inputs:
     description: Directory of package-lock.json.
     required: false
     default: .
+  comment:
+    description: >-
+      true to also post the verdict as a comment on the pull request. See
+      README.md, GitHub Actions.
+    required: false
+    default: 'false'
 
 outputs:
   exit-code:
@@ -27,6 +33,13 @@ outputs:
 runs:
   using: composite
   steps:
+    # Files of this use of the action, so that two uses in one job never read
+    # each other's.
+    - name: Make a directory for the report
+      id: files
+      shell: bash
+      run: echo "dir=$(mktemp -d -p "$RUNNER_TEMP")" >> "$GITHUB_OUTPUT"
+
     # The bumpvet release that matches this action's version, so that verdicts
     # change only when the workflow pins another version of the action.
     # Installed outside the checkout with the registry named: an .npmrc in a
@@ -53,7 +66,8 @@ runs:
         BUMPVET_CLI: ${{ steps.install.outputs.cli }}
         BASE: ${{ inputs.base }}
         EVENT: ${{ github.event_name }}
-        REPORT: ${{ runner.temp }}/bumpvet-report.txt
+        REPORT: ${{ steps.files.outputs.dir }}/report.txt
+        SUMMARY: ${{ steps.files.outputs.dir }}/summary.md
         GUIDE: https://github.com/nhinata/bumpvet#when-bumpvet-says-block-or-review
       run: |
         if [[ -z "$BASE" ]]; then
@@ -67,17 +81,18 @@ runs:
           BASE='HEAD^1'
         fi
 
+        # The commit compared with, for the comment. bumpvet resolves the same
+        # ref and reports an error if it cannot.
+        if sha=$(git rev-parse --verify --quiet --end-of-options "$BASE^{commit}"); then
+          echo "base-sha=$sha" >> "$GITHUB_OUTPUT"
+        fi
+
         set +e
         node "$BUMPVET_CLI" --base "$BASE" > "$REPORT" 2>&1
         code=$?
         set -e
         echo "exit-code=$code" >> "$GITHUB_OUTPUT"
-        # The report quotes the lockfile and the registry, which can hold a
-        # line that the runner would take as a workflow command.
-        token=$(node -e "console.log(require('crypto').randomUUID())")
-        echo "::stop-commands::$token"
-        cat "$REPORT"
-        echo "::$token::"
+        bash "$GITHUB_ACTION_PATH/action/no-commands.sh" cat "$REPORT"
         # A fence longer than any run of backticks in the report, which
         # quotes text from the registry (install scripts) that anyone can publish.
         fence=$(node -e "const r = require('fs').readFileSync(process.argv[1], 'utf8'); console.log('\`'.repeat(Math.max(3, ...(r.match(/\`+/g) ?? []).map((m) => m.length + 1))))" "$REPORT")
@@ -89,9 +104,62 @@ runs:
           echo "$fence"
           echo
           echo "Exit code $code: 0 nothing to block, 1 at least one BLOCK, 2 error. What to check: $GUIDE"
-        } >> "$GITHUB_STEP_SUMMARY"
+        } > "$SUMMARY"
+        cat "$SUMMARY" >> "$GITHUB_STEP_SUMMARY"
+        # What the report says, read from its lines here only (src/report.ts
+        # writes them): the REVIEW warning below and the comment use these.
+        has() { if grep -qE "$1" "$REPORT"; then echo true; else echo false; fi; }
+        has_block=$(has '^BLOCK ')
+        has_review=$(has '^REVIEW ')
+        has_ok=$(has '^(OK |No dependency versions changed\.$)')
+        {
+          echo "has-block=$has_block"
+          echo "has-review=$has_review"
+          echo "has-ok=$has_ok"
+        } >> "$GITHUB_OUTPUT"
         # REVIEW exits 0; surface it in the pull request's checks anyway.
-        if grep -q '^REVIEW ' "$REPORT"; then
+        if [[ "$has_review" == true ]]; then
           echo "::warning title=bumpvet::REVIEW: see the job summary and $GUIDE"
         fi
         exit "$code"
+
+    - name: Comment on the pull request
+      # Empty, as from an unset variable, is the same as not set.
+      if: ${{ !cancelled() && inputs.comment != 'false' && inputs.comment != '' }}
+      shell: bash
+      env:
+        COMMENT: ${{ inputs.comment }}
+        DIR: ${{ steps.files.outputs.dir }}
+        GITHUB_TOKEN: ${{ github.token }}
+        PULL_REQUEST: ${{ github.event.pull_request.number }}
+        HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        BASE_SHA: ${{ steps.vet.outputs.base-sha }}
+        EXIT_CODE: ${{ steps.vet.outputs.exit-code }}
+        HAS_BLOCK: ${{ steps.vet.outputs.has-block }}
+        HAS_REVIEW: ${{ steps.vet.outputs.has-review }}
+        HAS_OK: ${{ steps.vet.outputs.has-ok }}
+        WORKING_DIRECTORY: ${{ inputs.working-directory }}
+      # No failure here changes the job's result: the step always exits 0, and
+      # what went wrong is a warning.
+      run: |
+        set +e
+        warn() { echo "::warning title=bumpvet::$1"; }
+        if [[ "$(printf %s "$COMMENT" | tr "[:upper:]" "[:lower:]")" != true ]]; then
+          warn "The comment input must be true or false."
+          exit 0
+        fi
+        if [[ -z "$DIR" ]]; then
+          warn "The comment was not posted: the action's working files are missing."
+          exit 0
+        fi
+        export SUMMARY="$DIR/summary.md" WARNINGS="$DIR/warnings.txt"
+        bash "$GITHUB_ACTION_PATH/action/no-commands.sh" \
+          node "$GITHUB_ACTION_PATH/action/post-comment.mjs"
+        code=$?
+        if [[ -f "$WARNINGS" ]]; then
+          while IFS= read -r line; do warn "$line"; done < "$WARNINGS"
+        fi
+        if [[ "$code" != 0 ]]; then
+          warn "The comment may not have been posted: the script exited with $code."
+        fi
+        exit 0

@@ -322,6 +322,44 @@ before the same checks are trusted for it.
 - **Packages bumpvet cannot vet are signals too.** A separate "not vetted"
   list outside the verdict table would break principle 2 and let them pass
   with exit code 0.
+- **The pull request comment never changes the job's result, nor writes over
+  a newer head.** With the action's `comment` input, the verdict is posted on
+  the pull request and updated by later runs. Before writing, the action reads
+  the pull request's head from GitHub's API and writes only if it is the head
+  the run vetted; the step does not start once the run is cancelled. Any
+  failure is a warning, and the step succeeds. It gives up after 120 seconds,
+  room for a few requests at 30 seconds each; the values are not measured.
+  Unlike registry requests, GitHub API requests are not tried again: a failure
+  leaves the verdict and the job as they are, and the next run writes again.
+  _Trade-off:_ a job whose `timeout-minutes` leaves less than that can time
+  out. The comment shows the last run that wrote it, which is not always the
+  pull request's current head or base: a newer head's run may not start, not
+  finish or fail to write, and a push can come between the check and the
+  write. It stays where it was first posted. Uses with the same
+  `working-directory` in other jobs or workflows, or with another `base`,
+  update the same comment. Runs that overlap before either has posted can
+  each post one; later runs update all of them. Only GitHub.com is covered.
+  What this relies on:
+  - The runner reads a step's standard output and standard error as workflow
+    commands, each line by line and with no order between the two, except
+    between `::stop-commands::` and its token (actions/runner,
+    `src/Runner.Sdk/ProcessInvoker.cs`,
+    `src/Runner.Worker/Handlers/ScriptHandler.cs`,
+    `src/Runner.Worker/Handlers/OutputManager.cs` and
+    `src/Runner.Worker/ActionCommandManager.cs`). `action/no-commands.sh`
+    prints the report, and runs the comment script, which quotes comments
+    anyone can write, through one stream between the two.
+  - The report is posted inside a fenced code block, whose content is literal
+    text, not inlines, so links and emphasis do not apply (GitHub Flavored
+    Markdown Spec, "Fenced code blocks" and "Autolinks (extension)").
+    GitHub's `@` mentions and `#` references are not in the spec; no official
+    source found says they are inactive in a fenced block.
+  - Listing comments needs `issues: read` or `pull-requests: read`, writing
+    them `issues: write` or `pull-requests: write`, and reading the pull
+    request `contents: read` or `pull-requests: read` (GitHub Docs, "REST
+    API endpoints for issue comments" and "REST API endpoints for pull
+    requests"). A pull request from a fork gets a read-only
+    token by default (GitHub Docs, "Events that trigger workflows").
 
 ## Known misses
 
