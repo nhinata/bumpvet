@@ -92,12 +92,7 @@ runs:
         code=$?
         set -e
         echo "exit-code=$code" >> "$GITHUB_OUTPUT"
-        # The report quotes the lockfile and the registry, which can hold a
-        # line that the runner would take as a workflow command.
-        token=$(node -e "console.log(require('crypto').randomUUID())")
-        echo "::stop-commands::$token"
-        cat "$REPORT"
-        echo "::$token::"
+        bash "$GITHUB_ACTION_PATH/action/no-commands.sh" cat "$REPORT"
         # A fence longer than any run of backticks in the report, which
         # quotes text from the registry (install scripts) that anyone can publish.
         fence=$(node -e "const r = require('fs').readFileSync(process.argv[1], 'utf8'); console.log('\`'.repeat(Math.max(3, ...(r.match(/\`+/g) ?? []).map((m) => m.length + 1))))" "$REPORT")
@@ -129,7 +124,8 @@ runs:
         exit "$code"
 
     - name: Comment on the pull request
-      if: ${{ !cancelled() && inputs.comment != 'false' }}
+      # Empty, as from an unset variable, is the same as not set.
+      if: ${{ !cancelled() && inputs.comment != 'false' && inputs.comment != '' }}
       shell: bash
       env:
         COMMENT: ${{ inputs.comment }}
@@ -156,20 +152,10 @@ runs:
           warn "The comment was not posted: the action's working files are missing."
           exit 0
         fi
-        if ! token=$(node -e "console.log(require('crypto').randomUUID())"); then
-          warn "The comment was not posted: Node.js could not run."
-          exit 0
-        fi
         export SUMMARY="$DIR/summary.md" WARNINGS="$DIR/warnings.txt"
-        # The script reads pull request comments and API responses that anyone
-        # can write to; nothing it prints may act as a workflow command. One
-        # stream, so that its lines come before the closing token.
-        echo "::stop-commands::$token"
-        node "$GITHUB_ACTION_PATH/action/post-comment.mjs" 2>&1
+        bash "$GITHUB_ACTION_PATH/action/no-commands.sh" \
+          node "$GITHUB_ACTION_PATH/action/post-comment.mjs"
         code=$?
-        # A line of its own, even if the script's output did not end with one.
-        echo
-        echo "::$token::"
         if [[ -f "$WARNINGS" ]]; then
           while IFS= read -r line; do warn "$line"; done < "$WARNINGS"
         fi

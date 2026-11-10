@@ -337,15 +337,18 @@ before the same checks are trusted for it.
   finish or fail to write, and a push can come between the check and the
   write. It stays where it was first posted. Uses with the same
   `working-directory` in other jobs or workflows, or with another `base`,
-  update the same comment. Only GitHub.com is covered. What this relies on:
+  update the same comment. Runs that overlap before either has posted can
+  each post one; later runs update all of them. Only GitHub.com is covered.
+  What this relies on:
   - The runner reads a step's standard output and standard error as workflow
     commands, each line by line and with no order between the two, except
     between `::stop-commands::` and its token (actions/runner,
     `src/Runner.Sdk/ProcessInvoker.cs`,
     `src/Runner.Worker/Handlers/ScriptHandler.cs`,
     `src/Runner.Worker/Handlers/OutputManager.cs` and
-    `src/Runner.Worker/ActionCommandManager.cs`). The script's output, which
-    quotes comments anyone can write, goes through one stream between the two.
+    `src/Runner.Worker/ActionCommandManager.cs`). `action/no-commands.sh`
+    prints the report, and runs the comment script, which quotes comments
+    anyone can write, through one stream between the two.
   - The report is posted inside a fenced code block, whose content is literal
     text, not inlines, so links and emphasis do not apply (GitHub Flavored
     Markdown Spec, "Fenced code blocks" and "Autolinks (extension)").
