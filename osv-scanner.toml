@@ -1,0 +1,79 @@
+# Known vulnerabilities in dev dependencies that cannot be reached here, for
+# osv-scanner, which OpenSSF Scorecard runs (Vulnerabilities). Ignored by ID,
+# so that a new advisory for the same package shows again, and each until a
+# date to look at it again. The key is `ignoreUntil` as osv-scanner v2.5.1
+# reads it; a key it does not know makes it ignore the whole file.
+#
+# tar 6.2.1 (`tar6`): test/tarball.test.ts runs node-tar's parser, `t()`, on
+# tarballs the tests build or keep in test/fixtures, and writes nothing to
+# disk. It is kept to read tarballs as npm up to 10.9.5 does (DESIGN.md, Threat
+# model), which Node.js 22 shipped; Node.js 22 reaches end of life on
+# 2027-04-30.
+
+[[IgnoredVulns]]
+id = "GHSA-23hp-3jrh-7fpw"
+ignoreUntil = 2027-04-30
+reason = "tar 6 parses only the tests' own tarballs, in memory."
+
+[[IgnoredVulns]]
+id = "GHSA-34x7-hfp2-rc4v"
+ignoreUntil = 2027-04-30
+reason = "tar 6 parses only the tests' own tarballs, in memory."
+
+[[IgnoredVulns]]
+id = "GHSA-83g3-92jg-28cx"
+ignoreUntil = 2027-04-30
+reason = "tar 6 parses only the tests' own tarballs, in memory."
+
+[[IgnoredVulns]]
+id = "GHSA-8qq5-rm4j-mr97"
+ignoreUntil = 2027-04-30
+reason = "tar 6 parses only the tests' own tarballs, in memory."
+
+[[IgnoredVulns]]
+id = "GHSA-8x88-c5mf-7j5w"
+ignoreUntil = 2027-04-30
+reason = "tar 6 parses only the tests' own tarballs, in memory."
+
+[[IgnoredVulns]]
+id = "GHSA-9ppj-qmqm-q256"
+ignoreUntil = 2027-04-30
+reason = "tar 6 parses only the tests' own tarballs, in memory."
+
+[[IgnoredVulns]]
+id = "GHSA-gvwx-54wh-qm9j"
+ignoreUntil = 2027-04-30
+reason = "tar 6 parses only the tests' own tarballs, in memory."
+
+[[IgnoredVulns]]
+id = "GHSA-qffp-2rhf-9h96"
+ignoreUntil = 2027-04-30
+reason = "tar 6 parses only the tests' own tarballs, in memory."
+
+[[IgnoredVulns]]
+id = "GHSA-r292-9mhp-454m"
+ignoreUntil = 2027-04-30
+reason = "tar 6 parses only the tests' own tarballs, in memory."
+
+[[IgnoredVulns]]
+id = "GHSA-r6q2-hw4h-h46w"
+ignoreUntil = 2027-04-30
+reason = "tar 6 parses only the tests' own tarballs, in memory."
+
+[[IgnoredVulns]]
+id = "GHSA-vmf3-w455-68vh"
+ignoreUntil = 2027-04-30
+reason = "tar 6 parses only the tests' own tarballs, in memory."
+
+[[IgnoredVulns]]
+id = "GHSA-w8wr-v893-vjvp"
+ignoreUntil = 2027-04-30
+reason = "tar 6 parses only the tests' own tarballs, in memory."
+
+# minimatch 10.2.6, through eslint and typescript-eslint: the advisory needs
+# `optimizationLevel` 2 or more; minimatch's default is 1, and none of them sets
+# it. eslint's latest release still requires minimatch 10.
+[[IgnoredVulns]]
+id = "GHSA-g3hv-75wg-m249"
+ignoreUntil = 2027-02-11
+reason = "Needs optimizationLevel 2 or more; eslint and typescript-eslint use the default, 1."
