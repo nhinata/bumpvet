@@ -6,15 +6,15 @@ name: Release
 # package-lock.json, .github/release-please-manifest.json and action.yml, and
 # CHANGELOG.md. Merging that tags v<version> and creates the GitHub release as
 # a draft (.github/release-please-config.json); the jobs below then build, test
-# and publish it to npm with provenance, attach that provenance to the release
-# and publish the release, and test the action with the version just
-# published. update-readme.yml then opens a pull request that points the action
-# example in README at it. Nothing is published from a laptop.
+# and publish it to npm with provenance, test the action with the version just
+# published, attach that provenance to the release and publish the release.
+# update-readme.yml then opens a pull request that points the action example in
+# README at it. Nothing is published from a laptop.
 #
 # Run by hand (Run workflow on main, with the tag) to publish a tag again after
-# a failure outside the tagged code, such as the npm settings. If only
-# release-assets failed, the version is on npm already: re-run that job (GitHub
-# allows it for 30 days), or run its commands by hand. If the tagged code is at
+# a failure outside the tagged code, such as the npm settings. Once the version
+# is on npm, publishing it again stops at build: re-run the failed jobs of the
+# first run instead (GitHub allows it for 30 days). If the tagged code is at
 # fault, release a new version instead, and delete the draft release and the
 # tag; a draft is not immutable yet.
 on:
@@ -27,6 +27,9 @@ on:
         required: true
 
 permissions: {}
+
+env:
+  NPM_REGISTRY: https://registry.npmjs.org
 
 # One release at a time, and never cancel one halfway.
 concurrency:
@@ -166,7 +169,7 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: ${{ needs.build.outputs.node }}
-          registry-url: https://registry.npmjs.org
+          registry-url: ${{ env.NPM_REGISTRY }}
           package-manager-cache: false
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
@@ -179,50 +182,6 @@ jobs:
           FILE: ${{ needs.build.outputs.file }}
           SHA256: ${{ needs.build.outputs.sha256 }}
 
-  # The repository's releases are immutable once published, so the provenance
-  # npm made for the tarball is attached while the release is a draft, and the
-  # release is published only once the version is on npm. OpenSSF Scorecard
-  # (Signed-Releases) counts a release asset named *.intoto.jsonl. The bundle
-  # is checked against the tarball npm serves and against this workflow and
-  # commit before it is attached. Needs only the tag and npm, so it can be run
-  # again after publish.
-  release-assets:
-    needs: [build, publish]
-    if: ${{ !cancelled() && needs.publish.result == 'success' }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    permissions:
-      contents: write
-    steps:
-      # No checkout, no dependency code: gh, curl and jq are the runner's.
-      - env:
-          GH_TOKEN: ${{ github.token }}
-          GH_REPO: ${{ github.repository }}
-          TAG: ${{ needs.build.outputs.tag }}
-          SHA: ${{ needs.build.outputs.sha }}
-        run: |
-          version=${TAG#v}
-          cd "$(mktemp -d -p "$RUNNER_TEMP")"
-          registry=https://registry.npmjs.org
-          # npm may serve the attestations a little after publishing.
-          tries=16
-          for try in $(seq "$tries"); do
-            curl -fsS -o attestations.json "$registry/-/npm/v1/attestations/bumpvet@$version" && break
-            if (( try == tries )); then exit 1; fi
-            echo "npm has no attestations for bumpvet@$version yet; trying again in 20 seconds"
-            sleep 20
-          done
-          curl -fsS -o tarball.tgz "$registry/bumpvet/-/bumpvet-$version.tgz"
-          jq -c '.attestations[] | select(.predicateType == "https://slsa.dev/provenance/v1") | .bundle' \
-            attestations.json > "bumpvet-$version.intoto.jsonl"
-          (( $(wc -l < "bumpvet-$version.intoto.jsonl") == 1 )) || { echo "not one SLSA provenance for bumpvet@$version"; exit 1; }
-          gh attestation verify tarball.tgz --bundle "bumpvet-$version.intoto.jsonl" \
-            --digest-alg sha512 --repo "$GITHUB_REPOSITORY" \
-            --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/release.yml" \
-            --source-digest "$SHA"
-          gh release upload "$TAG" "bumpvet-$version.intoto.jsonl" --clobber
-          gh release edit "$TAG" --draft=false
-
   # The action at the released commit, now that the version it names is on npm.
   test-action:
     name: test action
@@ -234,12 +193,50 @@ jobs:
     with:
       ref: ${{ needs.build.outputs.sha }}
 
+  # The repository's releases are immutable once published, so the provenance
+  # npm made for the tarball is attached while the release is a draft, and the
+  # release is published only once the version is on npm and the action works
+  # with it. OpenSSF Scorecard (Signed-Releases) counts a release asset named
+  # *.intoto.jsonl. Before it is attached, the provenance is checked against
+  # the tarball npm serves, this workflow and this run's commit, which npm
+  # publish recorded. Of build it uses only the tag, not the artifact (kept 7
+  # days), so that it can be re-run within GitHub's 30 days.
+  release-assets:
+    needs: [build, test-action]
+    if: ${{ !cancelled() && needs.test-action.result == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      # No checkout, no dependency code: gh, curl and jq are the runner's.
+      - env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ needs.build.outputs.tag }}
+        run: |
+          if [[ "$(gh release view "$TAG" --json isDraft --jq .isDraft)" == false ]]; then
+            echo "$TAG is published already"
+            exit 0
+          fi
+          version=${TAG#v}
+          cd "$(mktemp -d -p "$RUNNER_TEMP")"
+          curl -fsS -o attestations.json "$NPM_REGISTRY/-/npm/v1/attestations/bumpvet@$version"
+          curl -fsS -o tarball.tgz "$NPM_REGISTRY/bumpvet/-/bumpvet-$version.tgz"
+          jq -c '.attestations[] | select(.predicateType == "https://slsa.dev/provenance/v1") | .bundle' \
+            attestations.json > "bumpvet-$version.intoto.jsonl"
+          (( $(wc -l < "bumpvet-$version.intoto.jsonl") == 1 )) || { echo "not one SLSA provenance for bumpvet@$version"; exit 1; }
+          gh attestation verify tarball.tgz --bundle "bumpvet-$version.intoto.jsonl" \
+            --digest-alg sha512 --repo "$GITHUB_REPOSITORY" \
+            --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/release.yml" \
+            --source-digest "$GITHUB_SHA"
+          gh release upload "$TAG" "bumpvet-$version.intoto.jsonl" --clobber
+          gh release edit "$TAG" --draft=false
+
   # After release-assets, so that README never points at a draft release.
   readme:
-    needs: [build, test-action, release-assets]
-    if: >-
-      !cancelled() && needs.test-action.result == 'success' &&
-      needs.release-assets.result == 'success'
+    needs: [build, release-assets]
+    if: ${{ !cancelled() && needs.release-assets.result == 'success' }}
     permissions:
       contents: write
       pull-requests: write
