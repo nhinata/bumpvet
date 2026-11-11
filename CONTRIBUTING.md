@@ -66,7 +66,8 @@ of the packed tarball. Run them before pushing.
   messages. Leave out how the work went, such as what was tried first, and
   anything not yet public, such as the ID of a draft security advisory. The
   description may list review findings and what was done about them
-  ([AGENTS.md](AGENTS.md), item 6).
+  ([AGENTS.md](AGENTS.md), item 6). It follows the headings of
+  [the pull request template](.github/pull_request_template.md).
 - `main` is protected: every change goes through a pull request, and CI must
   pass.
 
