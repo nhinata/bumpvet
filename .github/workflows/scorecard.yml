@@ -6,7 +6,9 @@ name: Scorecard
 # permissions, and only approved actions in the job (ossf/scorecard-action,
 # README, Workflow Restrictions). A rejection does not fail the job: the action
 # only adds a warning annotation (ossf/scorecard-action v2.5.0,
-# signing/signing.go).
+# signing/signing.go). The API keeps the last result it receives as the latest
+# (ossf/scorecard-infra, api/app/server/post_results.go), so runs go one at a
+# time.
 on:
   push:
     branches: [main]
@@ -15,6 +17,10 @@ on:
 
 permissions:
   contents: read
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
 
 jobs:
   analysis:
