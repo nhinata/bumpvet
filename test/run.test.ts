@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { chmodSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { afterEach, beforeAll, describe, expect, it } from 'vitest';
@@ -19,6 +19,9 @@ const registry = fakeRegistry(
 const v1 = lockfile({ 'node_modules/a': { version: '1.0.0' } });
 const v11 = lockfile({ 'node_modules/a': { version: '1.1.0' } });
 const v12 = lockfile({ 'node_modules/a': { version: '1.2.0' } });
+const v11Elsewhere = lockfile({
+  'node_modules/a': { version: '1.1.0', resolved: 'https://evil.example/a.tgz' },
+});
 
 // Keep git in the temporary repositories away from the surrounding environment:
 // a git hook running the tests exports GIT_DIR and friends, and a developer's
@@ -94,10 +97,7 @@ describe('two lockfiles', () => {
   it('exits 1 when something is blocked', async () => {
     const dir = tempDir();
     writeFileSync(join(dir, 'old.json'), v11);
-    writeFileSync(
-      join(dir, 'new.json'),
-      lockfile({ 'node_modules/a': { version: '1.1.0', resolved: 'https://evil.example/a.tgz' } }),
-    );
+    writeFileSync(join(dir, 'new.json'), v11Elsewhere);
     const r = await run(['old.json', 'new.json'], dir);
     expect(r.code).toBe(1);
     expect(r.stdout).toContain('BLOCK   a 1.1.0 -> 1.1.0');
@@ -133,6 +133,35 @@ describe('two lockfiles', () => {
       'https://evil.example/a.tgz\\\\n\\nOK      1 package with no signals\\u001b[1A\\u202e\\u{e0001}',
     );
     expect(r.stdout).not.toMatch(/^OK/m);
+  });
+
+  // action.yml reads the verdict from these lines with grep -E: the REVIEW
+  // warning and the pull request comment depend on it.
+  it('writes the lines action.yml reads the verdict from', async () => {
+    const action = readFileSync(join(import.meta.dirname, '..', 'action.yml'), 'utf8');
+    const patterns = new Map<string, RegExp>();
+    for (const m of action.matchAll(/^ *has_(\w+)=\$\(has '(.+)'\)$/gm)) {
+      patterns.set(m[1]!, new RegExp(m[2]!));
+    }
+    expect([...patterns.keys()].sort()).toEqual(['block', 'ok', 'review']);
+    const dir = tempDir();
+    const cases = [
+      { old: v11, new: v11Elsewhere, found: 'block' },
+      { old: v1, new: v12, found: 'review' },
+      { old: v1, new: v11, found: 'ok' },
+      { old: v11, new: v11, found: 'ok' },
+    ];
+    for (const c of cases) {
+      writeFileSync(join(dir, 'old.json'), c.old);
+      writeFileSync(join(dir, 'new.json'), c.new);
+      // The action reads stdout and stderr together (2>&1).
+      const r = await run(['old.json', 'new.json'], dir);
+      const lines = (r.stdout + r.stderr).split('\n');
+      const found = [...patterns]
+        .filter(([, re]) => lines.some((line) => re.test(line)))
+        .map(([name]) => name);
+      expect(found, c.found).toEqual([c.found]);
+    }
   });
 
   it('prints JSON with --json', async () => {
