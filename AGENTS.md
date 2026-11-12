@@ -9,7 +9,8 @@ tend to get wrong.
    does not answer it. Propose it instead and wait for a decision.
 2. **Do not say "done" before the checks pass:** `npm run format:check`,
    `npm run lint`, `npm run typecheck`, `npm test`, `npm run build`. If a change
-   can alter a verdict, also run `npm run eval` and report the numbers before
+   can alter a verdict, also run the evaluation as
+   [Evaluation](CONTRIBUTING.md#evaluation) says and report the numbers before
    and after.
 3. **Do not edit numbers by hand.** Figures in `eval/README.md` and
    `DESIGN.md` come from the evaluations in
