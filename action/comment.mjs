@@ -12,7 +12,7 @@ const REQUEST_MS = 30_000;
 // The most comments the API returns on a page.
 const PAGE = 100;
 
-/** @typedef {'ok' | 'review' | 'block' | 'error'} Verdict */
+/** @typedef {import('../src/types/verdicts.js').Verdict | 'error'} Verdict */
 
 /**
  * The verdict to report, from bumpvet's exit code and what the vet step read
