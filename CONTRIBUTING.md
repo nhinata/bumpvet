@@ -14,8 +14,8 @@ what the tool deliberately does not do.
 In particular:
 
 - **A new signal or rule needs numbers.** Run the evaluation before and after
-  (see [Evaluation](#evaluation)) and put both in the pull request. A rule that
-  raises false positives without catching more is not merged.
+  (see [Evaluation](#evaluation)). A rule that raises false positives without
+  catching more is not merged.
 - **Features outside the question are declined**, even good ones. If you are
   unsure, open an issue first and ask.
 
@@ -60,13 +60,25 @@ of the packed tarball. Run them before pushing.
   | `feat!:` / `fix!:`                             | a change to verdicts or the JSON shape | major (minor while 0.x) |
   | `docs:`, `test:`, `refactor:`, `ci:`, `chore:` | everything else                        | none                    |
 
-- **Describe what changed and why, with numbers where you decided by
-  numbers.** Keep it to facts a reader can check, in the description and in
-  everything the pull request adds: documents, code and test comments, commit
-  messages. Leave out how the work went, such as what was tried first, and
-  anything not yet public, such as the ID of a draft security advisory. The
-  description may list review findings and what was done about them
-  ([AGENTS.md](AGENTS.md), item 6).
+- **The description follows the headings of
+  [the pull request template](.github/pull_request_template.md):**
+  - _Why_: the problem the change solves, with the numbers behind it when it
+    was decided by numbers, and the issue it closes, if any.
+  - _What changed_: what changed and how the behavior changes.
+  - _Checks_: what was run, what it showed, and what is not checked yet. For
+    a change that can change a verdict, the evaluation before and after
+    ([Evaluation](#evaluation)). For a fix to a review finding, the rule behind
+    it, every place that uses that rule, and what was checked there, including
+    DESIGN.md and earlier decisions.
+  - _Review findings and what was done_: each finding, from people or tools,
+    how it was sorted ([Review findings](#review-findings)) and what was done.
+    For a documentation-only change, the facts checked against the code
+    instead.
+- **Only facts a reader can check**, in the description and in everything the
+  pull request adds: documents, code and test comments, commit messages. Leave
+  out how the work went, such as what was tried first, and anything not yet
+  public, such as the ID of a draft security advisory. Review findings and
+  what was done about them belong in the description only.
 - `main` is protected: every change goes through a pull request, and CI must
   pass.
 
