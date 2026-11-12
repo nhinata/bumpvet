@@ -1,5 +1,7 @@
 # bumpvet
 
+[![npm version](https://img.shields.io/npm/v/bumpvet)](https://www.npmjs.com/package/bumpvet) [![Test package](https://github.com/nhinata/bumpvet/actions/workflows/test-package.yml/badge.svg?branch=main&event=push)](https://github.com/nhinata/bumpvet/actions/workflows/test-package.yml?query=branch%3Amain) [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/nhinata/bumpvet/badge)](https://scorecard.dev/viewer/?uri=github.com/nhinata/bumpvet)
+
 **Should a human look at this dependency update before it is merged?**
 
 bumpvet compares the packages a lockfile change brings in with the versions
