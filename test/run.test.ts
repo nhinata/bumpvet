@@ -9,13 +9,13 @@ import type { FetchPackument } from '../src/types/registry.js';
 import type { PackageResult } from '../src/types/verdicts.js';
 
 const now = new Date('2026-01-10T00:00:00Z');
-const registry = fakeRegistry(
-  packument('a', [
+const releases = (name: string) =>
+  packument(name, [
     { version: '1.0.0', time: '2025-01-01T00:00:00Z', publisher: 'alice' },
     { version: '1.1.0', time: '2025-06-01T00:00:00Z', publisher: 'alice' },
     { version: '1.2.0', time: '2025-12-01T00:00:00Z', publisher: 'mallory' },
-  ]),
-);
+  ]);
+const registry = fakeRegistry(releases('a'), releases('b'));
 const v1 = lockfile({ 'node_modules/a': { version: '1.0.0' } });
 const v11 = lockfile({ 'node_modules/a': { version: '1.1.0' } });
 const v12 = lockfile({ 'node_modules/a': { version: '1.2.0' } });
@@ -135,6 +135,55 @@ describe('two lockfiles', () => {
     expect(r.stdout).not.toMatch(/^OK/m);
   });
 
+  it('lists results that differ only by name one after another, under one set of signals', async () => {
+    // Platform packages of one release: each new, with the same signal.
+    const platform = (name: string, first: string) =>
+      packument(name, [
+        { version: '1.0.0', time: '2025-01-01T00:00:00Z', publisher: first },
+        { version: '1.1.0', time: '2025-06-01T00:00:00Z', publisher: 'mallory' },
+      ]);
+    const dir = tempDir();
+    writeFileSync(join(dir, 'old.json'), lockfile({}));
+    writeFileSync(
+      join(dir, 'new.json'),
+      lockfile({
+        'node_modules/@p/arm64': { version: '1.1.0' },
+        'node_modules/@p/x64': { version: '1.1.0' },
+        'node_modules/@p/x86': { version: '1.1.0' },
+        'node_modules/@p/y': { version: '1.2.0' },
+        'node_modules/q': { version: '1.1.0' },
+      }),
+    );
+    const r = await run(
+      ['old.json', 'new.json'],
+      dir,
+      fakeRegistry(
+        platform('@p/arm64', 'alice'),
+        platform('@p/x64', 'alice'),
+        platform('@p/x86', 'alice'),
+        packument('@p/y', [
+          { version: '1.0.0', time: '2025-01-01T00:00:00Z', publisher: 'alice' },
+          { version: '1.2.0', time: '2025-06-01T00:00:00Z', publisher: 'mallory' },
+        ]),
+        platform('q', 'bob'),
+      ),
+    );
+    expect(r.stdout).toBe(
+      [
+        'REVIEW  @p/arm64 (new) -> 1.1.0',
+        '        @p/x64 (new) -> 1.1.0',
+        '        @p/x86 (new) -> 1.1.0',
+        '        publisher-changed  alice -> mallory',
+        // Another version, and another `before`, are not listed with them.
+        'REVIEW  @p/y (new) -> 1.2.0',
+        '        publisher-changed  alice -> mallory',
+        'REVIEW  q (new) -> 1.1.0',
+        '        publisher-changed  bob -> mallory',
+        '',
+      ].join('\n'),
+    );
+  });
+
   // action.yml reads the verdict from these lines with grep -E: the REVIEW
   // warning and the pull request comment depend on it.
   it('writes the lines action.yml reads the verdict from', async () => {
@@ -148,6 +197,18 @@ describe('two lockfiles', () => {
     const cases = [
       { old: v11, new: v11Elsewhere, found: 'block' },
       { old: v1, new: v12, found: 'review' },
+      // Two results listed under one set of signals.
+      {
+        old: lockfile({
+          'node_modules/a': { version: '1.0.0' },
+          'node_modules/b': { version: '1.0.0' },
+        }),
+        new: lockfile({
+          'node_modules/a': { version: '1.2.0' },
+          'node_modules/b': { version: '1.2.0' },
+        }),
+        found: 'review',
+      },
       { old: v1, new: v11, found: 'ok' },
       { old: v11, new: v11, found: 'ok' },
     ];

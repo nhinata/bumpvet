@@ -322,6 +322,14 @@ before the same checks are trusted for it.
 - **Packages bumpvet cannot vet are signals too.** A separate "not vetted"
   list outside the verdict table would break principle 2 and let them pass
   with exit code 0.
+- **Results that differ only by package name are listed together in the
+  text report.** Packages of one release, such as the platform packages of
+  `typescript` 7, can get the same signals; next to each other in the
+  report, under the same verdict, they are listed one per line above a single
+  copy of the signals. Every other field of the result must be equal: whether
+  packages belong to one release is not guessed from their names, which the
+  lockfile controls. The JSON output keeps one entry per package, so that
+  `summary` still counts packages; a program can compare the entries itself.
 - **The pull request comment never changes the job's result, nor writes over
   a newer head.** With the action's `comment` input, the verdict is posted on
   the pull request and updated by later runs. Before writing, the action reads

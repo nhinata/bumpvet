@@ -132,7 +132,8 @@ packages, **97.5% were OK**.
 ## When bumpvet says BLOCK or REVIEW
 
 Do not merge first and look later. What to check depends on the signals listed
-under the package.
+under the package. A package line without a verdict label has the same verdict
+and signals as the line above it.
 
 **BLOCK because of a tamper signal** (`integrity-mismatch`, `tarball-mismatch`,
 `source-changed`, `not-in-registry`): the lockfile installs something other
