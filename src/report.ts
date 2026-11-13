@@ -20,6 +20,18 @@ export const printable = (text: string): string =>
     return ESCAPES[c] ?? (hex.length > 4 ? `\\u{${hex}}` : `\\u${hex.padStart(4, '0')}`);
   });
 
+const INDENT = ' '.repeat(8);
+
+/**
+ * What two results that differ only by package name have in common: the text
+ * report lists such results one after another under one set of signals (many
+ * packages of one release, such as platform packages, otherwise repeat the
+ * same lines). Every other field is in the key, including any added later, as
+ * long as it is JSON data like the rest of the result, so that results that
+ * differ in anything are never listed together.
+ */
+const allButName = (r: PackageResult) => JSON.stringify({ ...r, name: undefined });
+
 export function formatText(results: PackageResult[]): string {
   if (results.length === 0) return 'No dependency versions changed.\n';
   const lines: string[] = [];
@@ -32,14 +44,16 @@ export function formatText(results: PackageResult[]): string {
         );
       continue;
     }
-    for (const r of group) {
-      lines.push(
-        printable(`${LABEL[verdict]}  ${r.name} ${shown(r.from) ?? '(new)'} -> ${shown(r.to)}`),
-      );
+    const keys = group.map(allButName);
+    group.forEach((r, i) => {
+      const sameAsNext = keys[i] === keys[i + 1];
+      const label = keys[i] === keys[i - 1] ? INDENT : `${LABEL[verdict]}  `;
+      lines.push(printable(`${label}${r.name} ${shown(r.from) ?? '(new)'} -> ${shown(r.to)}`));
+      if (sameAsNext) return;
       const width = Math.max(...r.signals.map((s) => s.id.length));
       for (const s of r.signals)
-        lines.push(printable(`        ${s.id.padEnd(width)}  ${s.before} -> ${s.after}`));
-    }
+        lines.push(printable(`${INDENT}${s.id.padEnd(width)}  ${s.before} -> ${s.after}`));
+    });
   }
   return lines.join('\n') + '\n';
 }
