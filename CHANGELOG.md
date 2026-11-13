@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.1](https://github.com/nhinata/bumpvet/compare/v0.7.0...v0.7.1) (2026-11-13)
+
+
+### Bug Fixes
+
+* list results that differ only by package name together in the text report ([#111](https://github.com/nhinata/bumpvet/issues/111)) ([6000d16](https://github.com/nhinata/bumpvet/commit/6000d166c26b4464ba1b0b454e96eefcab071f30))
+
 ## [0.7.0](https://github.com/nhinata/bumpvet/compare/v0.6.0...v0.7.0) (2026-11-10)
 
 
