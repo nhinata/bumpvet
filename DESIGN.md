@@ -39,6 +39,7 @@ what it deliberately does not do, and why.
 | `dist.tarball`   | registry             | the version's own tarball URL                                                                      |
 | `dist.integrity` | registry             | a hash of the version's tarball, sha512 for all but some old versions                              |
 | `dist.shasum`    | registry             | the version's sha1 hash, the older field                                                           |
+| package          | bumpvet's output     | a version from one source that a lockfile change brings in, and what it is compared with           |
 
 A hash has an algorithm (sha1, sha512) and a notation. `integrity` fields use
 SRI notation, the algorithm and the base64 hash (`sha1-q47ODEBi2l9tL6HQf8TNtfi5sls=`);
