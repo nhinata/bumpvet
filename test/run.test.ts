@@ -137,7 +137,7 @@ describe('two lockfiles', () => {
     expect(r.stdout).not.toMatch(/^OK/m);
   });
 
-  it('lists results that differ only by name one after another, under one set of signals', async () => {
+  it('lists results that differ only by name and paths one after another, under one set of signals', async () => {
     // Platform packages of one release: each new, with the same signal.
     const platform = (name: string, first: string) =>
       packument(name, [
@@ -173,13 +173,18 @@ describe('two lockfiles', () => {
     expect(r.stdout).toBe(
       [
         'REVIEW  @p/arm64 (new) -> 1.1.0',
+        '            in node_modules/@p/arm64',
         '      + @p/x64 (new) -> 1.1.0',
+        '            in node_modules/@p/x64',
         '      + @p/x86 (new) -> 1.1.0',
+        '            in node_modules/@p/x86',
         '          publisher-changed  alice -> mallory',
         // Another version, and another `before`, are not listed with them.
         'REVIEW  @p/y (new) -> 1.2.0',
+        '            in node_modules/@p/y',
         '          publisher-changed  alice -> mallory',
         'REVIEW  q (new) -> 1.1.0',
+        '            in node_modules/q',
         '          publisher-changed  bob -> mallory',
         '',
       ].join('\n'),
@@ -192,6 +197,7 @@ describe('two lockfiles', () => {
       LINE_START.review,
       LINE_START.ok,
       LINE_START.sameAsAbove,
+      LINE_START.path,
       ...Object.keys(SIGNALS).map((id) => `${LINE_START.signal}${id} `),
     ];
     // Text that looks like the start of a line, or starts with a space or `+`.
@@ -214,6 +220,8 @@ describe('two lockfiles', () => {
     };
     hostile.forEach((text, i) => {
       packages[`node_modules/${text}`] = { version: '1.0.0' };
+      // A path line has the key right after `in `.
+      packages[`${text}node_modules/z${i}`] = { version: '1.0.0' };
       packages[`node_modules/v${i}`] = { version: text };
       packages[`node_modules/r${i}`] = { version: '1.0.0', resolved: text };
       packages[`node_modules/n${i}`] = { version: '1.0.0', resolved: text };
@@ -229,23 +237,29 @@ describe('two lockfiles', () => {
     for (const id of ['source-changed', 'not-from-registry', 'not-in-registry'] as const)
       expect(ids, id).toContain(id);
 
+    const flagged = results.filter((r) => r.verdict !== 'ok');
+    const g1 = results.find((r) => r.name === 'g1')!;
+    const paths = flagged.reduce((n, r) => n + (r.paths?.length ?? 0), 0);
+    expect(paths).toBeGreaterThan(0);
     const kinds = text.stdout
       .trimEnd()
       .split('\n')
       .map((line) => {
         const start = lineStarts.find((s) => line.startsWith(s));
         expect(start, line).toBeDefined();
-        return start!.startsWith(LINE_START.signal) ? LINE_START.signal : start;
+        // A path line starts with the spaces a signal line starts with.
+        return start === LINE_START.path || !start!.startsWith(LINE_START.signal)
+          ? start
+          : LINE_START.signal;
       });
     const count = (start: string) => kinds.filter((k) => k === start).length;
-    const flagged = results.filter((r) => r.verdict !== 'ok');
-    const g1 = results.find((r) => r.name === 'g1')!;
     expect(count(LINE_START.ok)).toBe(1);
     expect(count(LINE_START.sameAsAbove)).toBe(1);
     expect(count(LINE_START.block) + count(LINE_START.review)).toBe(flagged.length - 1);
     expect(count(LINE_START.signal)).toBe(
       flagged.reduce((n, r) => n + r.signals.length, 0) - g1.signals.length,
     );
+    expect(count(LINE_START.path)).toBe(paths);
   });
 
   // action.yml reads the verdict from these lines with grep -E: the REVIEW
@@ -298,6 +312,92 @@ describe('two lockfiles', () => {
       summary: { block: 0, review: 1, ok: 0 },
       packages: [{ name: 'a', from: '1.0.0', to: '1.2.0', verdict: 'review' }],
     });
+  });
+});
+
+describe('lockfile paths', () => {
+  /** Runs on the two lockfiles, with --json if `json`. */
+  async function compare(oldLock: string, newLock: string, json = false) {
+    const dir = tempDir();
+    writeFileSync(join(dir, 'old.json'), oldLock);
+    writeFileSync(join(dir, 'new.json'), newLock);
+    return run([...(json ? ['--json'] : []), 'old.json', 'new.json'], dir);
+  }
+
+  it('lists the paths of each REVIEW and BLOCK package under it', async () => {
+    const r = await compare(
+      lockfile({
+        'node_modules/a': { version: '1.0.0' },
+        'node_modules/x/node_modules/a': { version: '1.0.0' },
+        'node_modules/b': { version: '1.0.0' },
+      }),
+      lockfile({
+        'node_modules/x/node_modules/a': { version: '1.2.0' },
+        'node_modules/a': { version: '1.2.0' },
+        'node_modules/b': { version: '1.1.0' },
+      }),
+    );
+    expect(r.stdout).toBe(
+      [
+        'REVIEW  a 1.0.0 -> 1.2.0',
+        '            in node_modules/a',
+        '            in node_modules/x/node_modules/a',
+        '          publisher-changed  alice -> mallory',
+        'OK      1 package with no signals',
+        '',
+      ].join('\n'),
+    );
+  });
+
+  it('lists the paths of each package of results listed together', async () => {
+    const before = lockfile({
+      'node_modules/a': { version: '1.0.0' },
+      'node_modules/b': { version: '1.0.0' },
+    });
+    const after = lockfile({
+      'node_modules/a': { version: '1.2.0' },
+      'node_modules/b': { version: '1.2.0' },
+      'node_modules/x/node_modules/b': { version: '1.2.0' },
+    });
+    expect((await compare(before, after)).stdout).toBe(
+      [
+        'REVIEW  a 1.0.0 -> 1.2.0',
+        '            in node_modules/a',
+        '      + b 1.0.0 -> 1.2.0',
+        '            in node_modules/b',
+        '            in node_modules/x/node_modules/b',
+        '          publisher-changed  alice -> mallory',
+        '',
+      ].join('\n'),
+    );
+  });
+
+  it('tells apart, by their paths, two results whose package lines are the same', async () => {
+    const r = await compare(
+      lockfile({}),
+      lockfile({
+        'node_modules/a': { version: '1.2.0', integrity: 'sha512-one' },
+        'node_modules/x/node_modules/a': { version: '1.2.0', integrity: 'sha512-two' },
+      }),
+    );
+    expect(r.stdout).toBe(
+      [
+        'BLOCK   a (new) -> 1.2.0',
+        '            in node_modules/a',
+        '          integrity-mismatch  sha512-a-1.2.0 -> sha512-one',
+        '          publisher-changed   alice -> mallory',
+        'BLOCK   a (new) -> 1.2.0',
+        '            in node_modules/x/node_modules/a',
+        '          integrity-mismatch  sha512-a-1.2.0 -> sha512-two',
+        '          publisher-changed   alice -> mallory',
+        '',
+      ].join('\n'),
+    );
+  });
+
+  it('gives each package its paths with --json', async () => {
+    const r = await compare(v1, v12, true);
+    expect(firstPackage(r.stdout)?.paths).toEqual(['node_modules/a']);
   });
 });
 

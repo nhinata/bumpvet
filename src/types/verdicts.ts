@@ -12,4 +12,6 @@ export interface PackageResult {
   to: string;
   verdict: Verdict;
   signals: Signal[];
+  /** The paths in the new lockfile the result is for (see Change). */
+  paths?: string[];
 }

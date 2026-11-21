@@ -39,6 +39,7 @@ what it deliberately does not do, and why.
 | `dist.tarball`   | registry             | the version's own tarball URL                                                                      |
 | `dist.integrity` | registry             | a hash of the version's tarball, sha512 for all but some old versions                              |
 | `dist.shasum`    | registry             | the version's sha1 hash, the older field                                                           |
+| package          | bumpvet's output     | a version from one source that a lockfile change brings in, and what it is compared with           |
 
 A hash has an algorithm (sha1, sha512) and a notation. `integrity` fields use
 SRI notation, the algorithm and the base64 hash (`sha1-q47ODEBi2l9tL6HQf8TNtfi5sls=`);
@@ -322,14 +323,16 @@ before the same checks are trusted for it.
 - **Packages bumpvet cannot vet are signals too.** A separate "not vetted"
   list outside the verdict table would break principle 2 and let them pass
   with exit code 0.
-- **Results that differ only by package name are listed together in the
-  text report.** Packages of one release, such as the platform packages of
-  `typescript` 7, can get the same signals; next to each other in the
-  report, under the same verdict, they are listed one per line above a single
-  copy of the signals. Every other field of the result must be equal: whether
-  packages belong to one release is not guessed from their names, which the
-  lockfile controls. The JSON output keeps one entry per package, so that
-  `summary` still counts packages; a program can compare the entries itself.
+- **Results that differ only by package name and lockfile paths are listed
+  together in the text report.** Packages of one release, such as the
+  platform packages of `typescript` 7, can get the same signals; next to each
+  other in the report, under the same verdict, each package and its paths
+  are listed above one copy of the signals. Every other field of the result
+  must be equal: whether packages belong to one release is not guessed from
+  their names, which the lockfile controls. The paths may differ, as the text
+  report lists them under each package. The JSON output keeps one entry per
+  package, so that `summary` still counts packages; a program can compare the
+  entries itself, leaving out `name` and `paths`.
 - **The pull request comment never changes the job's result, nor writes over
   a newer head.** With the action's `comment` input, the verdict is posted on
   the pull request and updated by later runs. Before writing, the action reads

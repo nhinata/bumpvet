@@ -4,11 +4,12 @@ import { VERDICTS, type PackageResult, type Verdict } from './types/verdicts.js'
  * How each line of a text report that lists packages starts, taking lines as
  * split at `\n`. Each start differs from every other at some fixed column: a
  * verdict line has its label at column 0, a package listed with the one above
- * has `+` at column 6, and a signal line has spaces up to column 10 and then a
- * signal id (one of SIGNALS). Text from the lockfile or the registry (names,
- * versions, signal values) comes only after the start of its own line, and
- * printable keeps it from starting a new one, so a package cannot make a line
- * look like a line of another kind.
+ * has `+` at column 6, a signal line has spaces up to column 10 and then a
+ * signal id (one of SIGNALS), and a path line has spaces up to column 12 and
+ * then `in `. Text from the lockfile or the registry (names, versions, paths,
+ * signal values) comes only after the start of its own line, and printable
+ * keeps it from starting a new one, so a package cannot make a line look like
+ * a line of another kind.
  */
 export const LINE_START = {
   block: 'BLOCK   ',
@@ -16,6 +17,7 @@ export const LINE_START = {
   ok: 'OK      ',
   sameAsAbove: '      + ',
   signal: ' '.repeat(10),
+  path: `${' '.repeat(12)}in `,
 } as const;
 
 /** A lockfile entry without a version has '' (see LockPackage). */
@@ -38,15 +40,27 @@ export const printable = (text: string): string =>
   });
 
 /**
- * What two results that differ only by package name have in common: the text
+ * The fields in which results listed together may differ: the text report
+ * shows them for each package.
+ */
+const PER_PACKAGE = { name: undefined, paths: undefined } satisfies Partial<
+  Record<keyof PackageResult, undefined>
+>;
+
+/**
+ * What two results that differ only in PER_PACKAGE have in common: the text
  * report lists such results one after another under one set of signals (many
  * packages of one release, such as platform packages, otherwise repeat the
  * same lines). Every other field is in the key, including any added later, as
  * long as it is JSON data like the rest of the result, so that results that
- * differ in anything are never listed together.
+ * differ in anything else are never listed together.
  */
-const allButName = (r: PackageResult) => JSON.stringify({ ...r, name: undefined });
+const shared = (r: PackageResult) => JSON.stringify({ ...r, ...PER_PACKAGE });
 
+/**
+ * The text report. Each REVIEW and BLOCK package is followed by the lockfile
+ * paths it was found at, one per line.
+ */
 export function formatText(results: PackageResult[]): string {
   if (results.length === 0) return 'No dependency versions changed.\n';
   const lines: string[] = [];
@@ -59,11 +73,12 @@ export function formatText(results: PackageResult[]): string {
         );
       continue;
     }
-    const keys = group.map(allButName);
+    const keys = group.map(shared);
     group.forEach((r, i) => {
       const sameAsNext = keys[i] === keys[i + 1];
       const start = keys[i] === keys[i - 1] ? LINE_START.sameAsAbove : LINE_START[verdict];
       lines.push(printable(`${start}${r.name} ${shown(r.from) ?? '(new)'} -> ${shown(r.to)}`));
+      for (const path of r.paths ?? []) lines.push(printable(`${LINE_START.path}${path}`));
       if (sameAsNext) return;
       const width = Math.max(...r.signals.map((s) => s.id.length));
       for (const s of r.signals)

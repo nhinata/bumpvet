@@ -17,4 +17,6 @@ export interface Change {
   fromSource?: string;
   /** The old lockfile's integrity for this same version, when it differs. */
   fromIntegrity?: string;
+  /** The paths in the new lockfile (`node_modules/...`) the change was found at, the least nested first. */
+  paths?: string[];
 }
