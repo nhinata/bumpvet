@@ -3,9 +3,11 @@ import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync 
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { afterEach, beforeAll, describe, expect, it } from 'vitest';
+import { LINE_START } from '../src/report.js';
 import { runCli, type CliEnv } from '../src/run.js';
 import { fakeRegistry, lockfile, packument, tarballsAsPublished } from './helpers.js';
 import type { FetchPackument } from '../src/types/registry.js';
+import { SIGNALS } from '../src/types/signals.js';
 import type { PackageResult } from '../src/types/verdicts.js';
 
 const now = new Date('2026-01-10T00:00:00Z');
@@ -171,16 +173,78 @@ describe('two lockfiles', () => {
     expect(r.stdout).toBe(
       [
         'REVIEW  @p/arm64 (new) -> 1.1.0',
-        '        @p/x64 (new) -> 1.1.0',
-        '        @p/x86 (new) -> 1.1.0',
-        '        publisher-changed  alice -> mallory',
+        '      + @p/x64 (new) -> 1.1.0',
+        '      + @p/x86 (new) -> 1.1.0',
+        '          publisher-changed  alice -> mallory',
         // Another version, and another `before`, are not listed with them.
         'REVIEW  @p/y (new) -> 1.2.0',
-        '        publisher-changed  alice -> mallory',
+        '          publisher-changed  alice -> mallory',
         'REVIEW  q (new) -> 1.1.0',
-        '        publisher-changed  bob -> mallory',
+        '          publisher-changed  bob -> mallory',
         '',
       ].join('\n'),
+    );
+  });
+
+  it('starts every line with the start of its kind, whatever the lockfile says', async () => {
+    const lineStarts = [
+      LINE_START.block,
+      LINE_START.review,
+      LINE_START.ok,
+      LINE_START.sameAsAbove,
+      ...Object.keys(SIGNALS).map((id) => `${LINE_START.signal}${id} `),
+    ];
+    // Text that looks like the start of a line, or starts with a space or `+`.
+    const hostile = [
+      ...[...lineStarts, ' ', '+ '].map((start) => `${start}x -> y`),
+      '          publisher-changed  alice -> mallory',
+    ].flatMap((text) => [text, `x\n${text}`]);
+    const packages: Parameters<typeof lockfile>[0] = {
+      'node_modules/a': { version: '1.1.0' },
+      'node_modules/b': { version: '1.2.0' },
+      // Listed together, under one set of signals.
+      'node_modules/g1': { version: '1.0.0', resolved: hostile.join('') },
+      'node_modules/g2': { version: '1.0.0', resolved: hostile.join('') },
+    };
+    // r* were installed from the registry before (source-changed); n* are new, with a resolved off
+    // the registry (not-from-registry).
+    const before: Parameters<typeof lockfile>[0] = {
+      'node_modules/a': { version: '1.0.0' },
+      'node_modules/b': { version: '1.0.0' },
+    };
+    hostile.forEach((text, i) => {
+      packages[`node_modules/${text}`] = { version: '1.0.0' };
+      packages[`node_modules/v${i}`] = { version: text };
+      packages[`node_modules/r${i}`] = { version: '1.0.0', resolved: text };
+      packages[`node_modules/n${i}`] = { version: '1.0.0', resolved: text };
+      before[`node_modules/r${i}`] = { version: '1.0.0' };
+    });
+    const dir = tempDir();
+    writeFileSync(join(dir, 'old.json'), lockfile(before));
+    writeFileSync(join(dir, 'new.json'), lockfile(packages));
+    const text = await run(['old.json', 'new.json'], dir);
+    const json = await run(['--json', 'old.json', 'new.json'], dir);
+    const results = (JSON.parse(json.stdout) as { packages: PackageResult[] }).packages;
+    const ids = new Set(results.flatMap((r) => r.signals.map((s) => s.id)));
+    for (const id of ['source-changed', 'not-from-registry', 'not-in-registry'] as const)
+      expect(ids, id).toContain(id);
+
+    const kinds = text.stdout
+      .trimEnd()
+      .split('\n')
+      .map((line) => {
+        const start = lineStarts.find((s) => line.startsWith(s));
+        expect(start, line).toBeDefined();
+        return start!.startsWith(LINE_START.signal) ? LINE_START.signal : start;
+      });
+    const count = (start: string) => kinds.filter((k) => k === start).length;
+    const flagged = results.filter((r) => r.verdict !== 'ok');
+    const g1 = results.find((r) => r.name === 'g1')!;
+    expect(count(LINE_START.ok)).toBe(1);
+    expect(count(LINE_START.sameAsAbove)).toBe(1);
+    expect(count(LINE_START.block) + count(LINE_START.review)).toBe(flagged.length - 1);
+    expect(count(LINE_START.signal)).toBe(
+      flagged.reduce((n, r) => n + r.signals.length, 0) - g1.signals.length,
     );
   });
 
