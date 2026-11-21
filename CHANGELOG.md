@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.8.0](https://github.com/nhinata/bumpvet/compare/v0.7.1...v0.8.0) (2026-11-21)
+
+
+### ⚠ BREAKING CHANGES
+
+* show the lockfile paths of each REVIEW and BLOCK package ([#119](https://github.com/nhinata/bumpvet/issues/119))
+
+### Features
+
+* show the lockfile paths of each REVIEW and BLOCK package ([#119](https://github.com/nhinata/bumpvet/issues/119)) ([566a6da](https://github.com/nhinata/bumpvet/commit/566a6da06b864517eeb1cf32475570fbe8c5352a))
+
+
+### Bug Fixes
+
+* give each kind of line in the text report its own start ([#117](https://github.com/nhinata/bumpvet/issues/117)) ([cd4bef3](https://github.com/nhinata/bumpvet/commit/cd4bef31e40508f794f94bbbcb44e57d63971073)), closes [#116](https://github.com/nhinata/bumpvet/issues/116)
+
 ## [0.7.1](https://github.com/nhinata/bumpvet/compare/v0.7.0...v0.7.1) (2026-11-13)
 
 
