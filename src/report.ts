@@ -1,6 +1,22 @@
 import { VERDICTS, type PackageResult, type Verdict } from './types/verdicts.js';
 
-const LABEL: Record<Verdict, string> = { block: 'BLOCK ', review: 'REVIEW', ok: 'OK    ' };
+/**
+ * How each line of a text report that lists packages starts, taking lines as
+ * split at `\n`. Each start differs from every other at some fixed column: a
+ * verdict line has its label at column 0, a package listed with the one above
+ * has `+` at column 6, and a signal line has spaces up to column 10 and then a
+ * signal id (one of SIGNALS). Text from the lockfile or the registry (names,
+ * versions, signal values) comes only after the start of its own line, and
+ * printable keeps it from starting a new one, so a package cannot make a line
+ * look like a line of another kind.
+ */
+export const LINE_START = {
+  block: 'BLOCK   ',
+  review: 'REVIEW  ',
+  ok: 'OK      ',
+  sameAsAbove: '      + ',
+  signal: ' '.repeat(10),
+} as const;
 
 /** A lockfile entry without a version has '' (see LockPackage). */
 const shown = (version: string | null) => (version === '' ? '(no version)' : version);
@@ -10,17 +26,16 @@ const ESCAPES: Record<string, string> = { '\\': '\\\\', '\n': '\\n', '\r': '\\r'
 /**
  * `text` with control and format characters escaped, so that text from the
  * lockfile or the registry (install scripts, which anyone can publish) cannot
- * start a line of its own, move the cursor over the report, or reorder how a
- * line looks (bidi controls such as U+202E). Backslashes are escaped as well,
- * so that a newline and the two characters `\n` do not look the same.
+ * start a line of its own (see LINE_START), move the cursor over the report,
+ * or reorder how a line looks (bidi controls such as U+202E). Backslashes are
+ * escaped as well, so that a newline and the two characters `\n` do not look
+ * the same.
  */
 export const printable = (text: string): string =>
   text.replace(/[\\\p{Cc}\p{Cf}]/gu, (c) => {
     const hex = c.codePointAt(0)!.toString(16);
     return ESCAPES[c] ?? (hex.length > 4 ? `\\u{${hex}}` : `\\u${hex.padStart(4, '0')}`);
   });
-
-const INDENT = ' '.repeat(8);
 
 /**
  * What two results that differ only by package name have in common: the text
@@ -40,19 +55,21 @@ export function formatText(results: PackageResult[]): string {
     if (verdict === 'ok') {
       if (group.length)
         lines.push(
-          `${LABEL.ok}  ${group.length} package${group.length === 1 ? '' : 's'} with no signals`,
+          `${LINE_START.ok}${group.length} package${group.length === 1 ? '' : 's'} with no signals`,
         );
       continue;
     }
     const keys = group.map(allButName);
     group.forEach((r, i) => {
       const sameAsNext = keys[i] === keys[i + 1];
-      const label = keys[i] === keys[i - 1] ? INDENT : `${LABEL[verdict]}  `;
-      lines.push(printable(`${label}${r.name} ${shown(r.from) ?? '(new)'} -> ${shown(r.to)}`));
+      const start = keys[i] === keys[i - 1] ? LINE_START.sameAsAbove : LINE_START[verdict];
+      lines.push(printable(`${start}${r.name} ${shown(r.from) ?? '(new)'} -> ${shown(r.to)}`));
       if (sameAsNext) return;
       const width = Math.max(...r.signals.map((s) => s.id.length));
       for (const s of r.signals)
-        lines.push(printable(`${INDENT}${s.id.padEnd(width)}  ${s.before} -> ${s.after}`));
+        lines.push(
+          printable(`${LINE_START.signal}${s.id.padEnd(width)}  ${s.before} -> ${s.after}`),
+        );
     });
   }
   return lines.join('\n') + '\n';
