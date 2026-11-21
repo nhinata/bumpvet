@@ -41,13 +41,15 @@ export async function vetChanges(
         stop.abort();
         throw err;
       }
-      results[i] = {
+      const result: PackageResult = {
         name: change.name,
         from: change.from,
         to: change.to,
         verdict: decide(signals),
         signals,
       };
+      if (change.paths) result.paths = change.paths;
+      results[i] = result;
     }
   };
   await Promise.all(Array.from({ length: Math.min(concurrency, changes.length) }, worker));

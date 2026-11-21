@@ -4,6 +4,25 @@ import type { FetchTarball } from '../src/types/tarball.js';
 import { fakeRegistry, lockfile, packument, tarballsAsPublished } from './helpers.js';
 
 describe('vetChanges', () => {
+  it('gives each result the paths of its change', async () => {
+    const changes = [
+      {
+        name: 'a',
+        from: null,
+        to: '1.0.0',
+        paths: ['node_modules/a', 'node_modules/x/node_modules/a'],
+      },
+      { name: 'b', from: null, to: '1.0.0' },
+    ];
+    const results = await vetChanges(changes, () => Promise.resolve(null), tarballsAsPublished, {
+      now: new Date(),
+    });
+    expect(results.map((r) => r.paths)).toEqual([
+      ['node_modules/a', 'node_modules/x/node_modules/a'],
+      undefined,
+    ]);
+  });
+
   it('starts no more fetches after one fails', async () => {
     const changes = Array.from({ length: 20 }, (_, i) => ({
       name: `p${i}`,

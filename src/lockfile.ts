@@ -129,12 +129,12 @@ function artifactKey(p: LockPackage): string {
   ]);
 }
 
-/** The entries of a lockfile, the least nested first (the sort is stable). */
-function shallowFirst(entries: Map<string, LockPackage>): [string, LockPackage][] {
-  return [...entries]
-    .map((entry) => ({ entry, depth: entry[0].split('node_modules/').length }))
+/** `items` with the least nested path first, in their order otherwise (the sort is stable). */
+function shallowFirst<T>(items: Iterable<T>, pathOf: (item: T) => string): T[] {
+  return [...items]
+    .map((item) => ({ item, depth: pathOf(item).split('node_modules/').length }))
     .sort((a, b) => a.depth - b.depth)
-    .map(({ entry }) => entry);
+    .map(({ item }) => item);
 }
 
 /**
@@ -152,6 +152,7 @@ function shallowFirst(entries: Map<string, LockPackage>): [string, LockPackage][
  * Without an old copy of the same version, the second is used for both. A new
  * artifact is listed once per distinct comparison: two paths that replaced
  * different versions give two changes, so that neither comparison is lost.
+ * Each change has the paths it was found at (see Change).
  *
  * A link has no version to compare, so it is compared only with the old entry
  * at its path, and no other entry is compared with a link.
@@ -160,15 +161,14 @@ export function diffLockfiles(oldText: string | null, newText: string): Change[]
   const before =
     oldText === null ? new Map<string, LockPackage>() : parseLockfile(oldText, 'the old lockfile');
   const byName = new Map<string, LockPackage[]>();
-  for (const [, p] of shallowFirst(before)) {
+  for (const [, p] of shallowFirst(before, ([path]) => path)) {
     if (p.link) continue;
     const list = byName.get(p.name);
     if (list) list.push(p);
     else byName.set(p.name, [p]);
   }
-  const seen = new Set<string>();
-  const changes: Change[] = [];
-  const add = (change: Change, artifact: string) => {
+  const seen = new Map<string, Change & { paths: string[] }>();
+  const add = (path: string, change: Change, artifact: string) => {
     const key = JSON.stringify([
       change.name,
       change.to,
@@ -177,9 +177,9 @@ export function diffLockfiles(oldText: string | null, newText: string): Change[]
       change.fromSource,
       change.fromIntegrity,
     ]);
-    if (seen.has(key)) return;
-    seen.add(key);
-    changes.push(change);
+    const listed = seen.get(key);
+    if (listed) listed.paths.push(path);
+    else seen.set(key, { ...change, paths: [path] });
   };
   for (const [path, pkg] of parseLockfile(newText, 'the new lockfile')) {
     const old = before.get(path);
@@ -189,7 +189,7 @@ export function diffLockfiles(oldText: string | null, newText: string): Change[]
       const change: Change = { name: pkg.name, from: old?.version ?? null, to: pkg.version };
       if (pkg.elsewhere) change.source = pkg.elsewhere;
       if (old?.elsewhere) change.fromSource = old.elsewhere;
-      add(change, artifact);
+      add(path, change, artifact);
       continue;
     }
     const named = byName.get(pkg.name) ?? [];
@@ -212,7 +212,9 @@ export function diffLockfiles(oldText: string | null, newText: string): Change[]
     if (copy?.integrity && pkg.integrity && copy.integrity !== pkg.integrity) {
       change.fromIntegrity = copy.integrity;
     }
-    add(change, artifact);
+    add(path, change, artifact);
   }
+  const changes = [...seen.values()];
+  for (const change of changes) change.paths = shallowFirst(change.paths, (path) => path);
   return changes.sort((a, b) => a.name.localeCompare(b.name) || a.to.localeCompare(b.to));
 }

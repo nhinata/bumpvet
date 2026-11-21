@@ -227,6 +227,7 @@ describe('diffLockfiles', () => {
         to: '1.1.0',
         integrity: 'sha512-a-1.1.0',
         resolved: 'https://registry.npmjs.org/a/-/x-1.1.0.tgz',
+        paths: ['node_modules/a'],
       },
       {
         name: 'c',
@@ -234,7 +235,34 @@ describe('diffLockfiles', () => {
         to: '3.0.0',
         integrity: 'sha512-c-3.0.0',
         resolved: 'https://registry.npmjs.org/c/-/x-3.0.0.tgz',
+        paths: ['node_modules/c'],
       },
+    ]);
+  });
+
+  it('gives each change the paths it was found at, the least nested first', () => {
+    const after = lockfile({
+      'node_modules/x/node_modules/a': { version: '1.0.0' },
+      'node_modules/a': { version: '1.0.0' },
+      'node_modules/y/node_modules/a': { version: '1.0.0' },
+    });
+    expect(diffLockfiles(null, after).map((c) => c.paths)).toEqual([
+      ['node_modules/a', 'node_modules/x/node_modules/a', 'node_modules/y/node_modules/a'],
+    ]);
+  });
+
+  it('gives two changes of the same version the paths of each, not of both', () => {
+    const before = lockfile({
+      'node_modules/a': { version: '1.0.0' },
+      'node_modules/x/node_modules/a': { version: '2.0.0' },
+    });
+    const after = lockfile({
+      'node_modules/a': { version: '3.0.0' },
+      'node_modules/x/node_modules/a': { version: '3.0.0' },
+    });
+    expect(diffLockfiles(before, after).map((c) => [c.from, c.paths])).toEqual([
+      ['1.0.0', ['node_modules/a']],
+      ['2.0.0', ['node_modules/x/node_modules/a']],
     ]);
   });
 
@@ -376,6 +404,7 @@ describe('diffLockfiles', () => {
           integrity: 'sha512-evil',
           resolved: 'https://registry.npmjs.org/ms/-/x-2.1.3.tgz',
           fromIntegrity: 'sha512-good',
+          paths: ['node_modules/ms'],
         },
       ]);
     });

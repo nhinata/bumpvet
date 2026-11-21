@@ -10,9 +10,11 @@ before them, and answers with one of three verdicts:
 ```
 $ bumpvet
 BLOCK   @ctrl/tinycolor 4.1.0 -> 4.1.1
+            in node_modules/@ctrl/tinycolor
           fresh-publish    >= 72h old -> 1h old
           install-scripts  postinstall: none -> postinstall: node bundle.js
 REVIEW  chalk 5.6.0 -> 5.6.1
+            in node_modules/chalk
           publisher-changed  sindresorhus -> qix
           fresh-publish      >= 72h old -> 1h old
 OK      41 packages with no signals
@@ -40,7 +42,7 @@ npx bumpvet --base "$(git merge-base origin/main HEAD)"
 # Two lockfiles on disk
 npx bumpvet old/package-lock.json new/package-lock.json
 
-# Machine-readable output
+# Machine-readable output; each package has the lockfile paths it was found at
 npx bumpvet --json
 ```
 
@@ -132,8 +134,9 @@ packages, **97.5% were OK**.
 ## When bumpvet says BLOCK or REVIEW
 
 Do not merge first and look later. What to check depends on the signals listed
-under the package. A package line marked with `+` has the same verdict
-and signals as the line above it.
+under the package. The `in` lines under a package are where the lockfile
+installs it. A package line marked with `+` has the same verdict and signals
+as the package listed above it.
 
 **BLOCK because of a tamper signal** (`integrity-mismatch`, `tarball-mismatch`,
 `source-changed`, `not-in-registry`): the lockfile installs something other
