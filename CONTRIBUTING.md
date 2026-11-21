@@ -213,12 +213,14 @@ positives workflow, not on your machine:
 pull request from one).
 
 Run it for any change that can change a verdict. If the numbers move, update
-[eval/README.md](eval/README.md) and, when a decision rests on them,
-[DESIGN.md](DESIGN.md), in the same pull request.
+[eval/README.md](eval/README.md), the figures [README.md](README.md) takes
+from it, and, when a decision rests on them, [DESIGN.md](DESIGN.md), in the
+same pull request.
 
 Detection is measured by `npm test`: `test/incidents.test.ts` fixes the
 verdict of each incident. If a change moves one, update the table and the
-totals in eval/README.md, "Detection: incidents", in the same pull request.
+totals in eval/README.md, "Detection: incidents", and the totals in
+[README.md](README.md), in the same pull request.
 
 Figures taken from a workflow run name the run they come from.
 
