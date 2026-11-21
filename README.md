@@ -27,6 +27,11 @@ It looks at **how a release was published** (by whom, how recently, with or
 without provenance) and **what changed in it** (its install scripts), and
 combines the two with a small table. Nothing from a package is ever executed.
 
+From [eval/](eval/README.md): of 18 past malicious npm releases, rebuilt
+as bumpvet would have seen them one hour after they were published, **13 were
+`BLOCK` or `REVIEW`**. Of 597 recent releases of 60 popular packages, **97.5%
+were `OK`**.
+
 ## Usage
 
 Requires Node.js 22 or later.
@@ -127,9 +132,7 @@ jobs:
 | nothing, or only a fresh release (**timing**)                                                                                                                                                                                                                                                                                | OK      |
 
 The signals, the thresholds and the measurements behind them are in
-[DESIGN.md](DESIGN.md). How often bumpvet speaks up on ordinary updates is
-measured in [eval/](eval/README.md): on 597 recent releases of 60 popular
-packages, **97.5% were OK**.
+[DESIGN.md](DESIGN.md).
 
 ## When bumpvet says BLOCK or REVIEW
 
