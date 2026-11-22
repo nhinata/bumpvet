@@ -82,7 +82,7 @@ jobs:
         with:
           fetch-depth: 2
           persist-credentials: false
-      - uses: nhinata/bumpvet@e78d13643c586f57c19860aaf8f46cc05bb911c8 # v0.8.0
+      - uses: nhinata/bumpvet@71888310c204fe70cfd860445361299da7290407 # v0.8.1
 ```
 
 - On `pull_request` it compares `package-lock.json` in the merge commit GitHub
