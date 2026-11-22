@@ -177,13 +177,19 @@ that release again, use its
 [`ignore` commands](https://docs.github.com/en/code-security/reference/supply-chain-security/dependabot-pull-request-comment-commands).
 For `REVIEW`, check each signal listed before merging.
 
-To read a release's files, `npm pack <pkg>@<version>` downloads its tarball
-and checks it against the registry's hash, and `tar -xzf` unpacks it; npm
-10.9.9 runs none of the package's scripts for a name and version number. Use
-only a name and version number, not a git, folder or URL spec: npm runs the
-`prepare` script of a git or folder spec, and a URL is not the registry's
-release. Run it, like `npm diff`, in an empty folder outside the pull
-request's checkout: the checkout's `.npmrc` can point npm at another registry.
+To read a release's files, run `npm pack <pkg>@<version> --json` in an empty
+folder outside the pull request's checkout, whose `.npmrc` can point npm at
+another registry. npm 10.9.9 runs none of the package's scripts for a name and
+version number. Use only a name and version number, not a git, folder or URL
+spec: npm runs the `prepare` script of a git or folder spec, and a URL is not
+the registry's release. Check that the `integrity` npm prints is the
+`integrity` of the lockfile entry for the package you packed: your own npm
+configuration can name another registry for the package or its scope. If they
+differ, the tarball is not what the lockfile installs; if that entry has no
+`sha512-` integrity, this check cannot tell. `tar -xzf <file>`,
+with the `filename` npm prints, unpacks it. Before `npm diff`, pack the new
+version this way in the same folder: npm picks the registry by the package's
+name or scope, so both versions come from the one you checked.
 
 When a `BLOCK` or `REVIEW` turns out to be wrong, open an issue.
 
