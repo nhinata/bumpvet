@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.1](https://github.com/nhinata/bumpvet/compare/v0.8.0...v0.8.1) (2026-11-22)
+
+
+### Bug Fixes
+
+* escape every character but letters, marks, numbers, punctuation, symbols and spaces in the text report ([#127](https://github.com/nhinata/bumpvet/issues/127)) ([6ed41a9](https://github.com/nhinata/bumpvet/commit/6ed41a9592a32b37d84aaf8bbb908e7a59cc6729))
+
 ## [0.8.0](https://github.com/nhinata/bumpvet/compare/v0.7.1...v0.8.0) (2026-11-21)
 
 
