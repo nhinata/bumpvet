@@ -26,15 +26,20 @@ const shown = (version: string | null) => (version === '' ? '(no version)' : ver
 const ESCAPES: Record<string, string> = { '\\': '\\\\', '\n': '\\n', '\r': '\\r', '\t': '\\t' };
 
 /**
- * `text` with control and format characters escaped, so that text from the
- * lockfile or the registry (install scripts, which anyone can publish) cannot
- * start a line of its own (see LINE_START), move the cursor over the report,
- * or reorder how a line looks (bidi controls such as U+202E). Backslashes are
- * escaped as well, so that a newline and the two characters `\n` do not look
- * the same.
+ * `text` with every character escaped but letters, marks, numbers,
+ * punctuation, symbols and spaces (Unicode categories L, M, N, P, S and Zs),
+ * so that text from the lockfile or the registry (install scripts, which
+ * anyone can publish) cannot start a line of its own (see LINE_START), move
+ * the cursor over the report, or reorder how a line looks (bidi controls such
+ * as U+202E). Among them are the line and paragraph separators U+2028 and
+ * U+2029: Unicode line breaking (UAX #14) breaks lines there, although
+ * LINE_START splits lines only at `\n`. Characters unassigned in the Unicode
+ * of the running Node are escaped too, as a newer Unicode may make them
+ * format characters. Backslashes are escaped as well, so that a newline and
+ * the two characters `\n` do not look the same.
  */
 export const printable = (text: string): string =>
-  text.replace(/[\\\p{Cc}\p{Cf}]/gu, (c) => {
+  text.replace(/\\|[^\p{L}\p{M}\p{N}\p{P}\p{S}\p{Zs}]/gu, (c) => {
     const hex = c.codePointAt(0)!.toString(16);
     return ESCAPES[c] ?? (hex.length > 4 ? `\\u{${hex}}` : `\\u${hex.padStart(4, '0')}`);
   });
