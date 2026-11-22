@@ -143,31 +143,31 @@ lockfile installs it. A package line marked with `+` has the same verdict and
 signals as the package listed above it.
 
 **Tamper signals** (`BLOCK`): the lockfile installs something other than the
-registry's release. A lockfile npm or Dependabot generated from the registry
-does this only for a private package or a version a package bundles, and npm
-does it when a dependency moves into a workspace, so one of these happened:
+registry's release, or the release's tarball could not be read. bumpvet cannot
+tell the causes below apart, and there may be others; check which one it is:
 
-| Signal                                                     | Cause                                                   | How to tell                                                                                                 | What to do                                                                                  |
-| ---------------------------------------------------------- | ------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
-| `not-in-registry`                                          | the registry removed the version                        | the package's npm page and security advisories                                                              | treat the version as malicious; close the pull request and wait for the next release        |
-| `not-in-registry`                                          | a private package on registry.npmjs.org                 | the package is yours or your organization's; bumpvet does not log in, so the registry answers 404           | expected: bumpvet cannot vet private packages (see DESIGN.md, Known limitations)            |
-| `not-in-registry`                                          | a package bundles a version that is not on the registry | the entry sits under that package and has no `resolved`; the version is missing from the package's npm page | expected: the bundled files come from that package's tarball (see DESIGN.md, Decisions)     |
-| `source-changed`                                           | a dependency moved into a workspace or `file:` folder   | the signal says `link to <folder>`, and `package.json` names that folder in `workspaces` or as `file:`      | expected if the move was meant; if `package.json` does not name it, the lockfile was edited |
-| `integrity-mismatch`, `tarball-mismatch`, `source-changed` | the lockfile was edited by hand or by a pull request    | the `version`, `resolved` and `integrity` lines in the diff                                                 | regenerate the lockfile with `npm install` instead of merging the edit                      |
-| `tarball-not-read`                                         | bumpvet did not read the new version's tarball          | the reason shown with the signal                                                                            | see DESIGN.md, Decisions                                                                    |
-| any                                                        | a bumpvet bug                                           | none of the above                                                                                           | open an issue with the two lockfiles                                                        |
+| Signal                                                     | Cause                                                                                                           | How to tell                                                                                                                                              | What to do                                                                                                                                                                                                                    |
+| ---------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `not-in-registry`                                          | the registry removed the version                                                                                | the package's npm page and security advisories                                                                                                           | treat the version as malicious; close the pull request and wait for the next release                                                                                                                                          |
+| `not-in-registry`                                          | a private package on registry.npmjs.org                                                                         | the package is yours or your organization's; bumpvet does not log in, so the registry answers 404                                                        | bumpvet cannot vet it (see DESIGN.md, Known limitations); check the change yourself                                                                                                                                           |
+| `not-in-registry`                                          | a package bundles a version that is not on the registry                                                         | the entry sits under that package and has no `resolved`, and that package's tarball (see below) has `node_modules/<name>/package.json` with this version | bumpvet does not read bundled files (see DESIGN.md, Known limitations); read them in that tarball                                                                                                                             |
+| `not-in-registry`                                          | `.npmrc` names another registry for the package                                                                 | the entry has no `resolved`, and `.npmrc` names another registry for the package or its scope                                                            | bumpvet compared the entry with the public registry, not the one npm fetches it from (see DESIGN.md, Known limitations); if the pull request changed `.npmrc`, treat it as an edit                                            |
+| `source-changed`                                           | `package.json` or `.npmrc` now takes the dependency from a workspace, a `file:` folder, git or another registry | the signal shows `npm registry ->` and the new source, and `package.json` or `.npmrc` names it                                                           | expected if the change was meant; npm runs the install hooks of a linked folder and the `prepare` script of a git dependency. If neither names it, the lockfile was edited                                                    |
+| `integrity-mismatch`, `tarball-mismatch`, `source-changed` | the lockfile was edited by hand or by a pull request                                                            | the `version`, `resolved` and `integrity` lines in the diff                                                                                              | do not merge the edit or run npm on it; close the pull request. If the update is needed, have it opened again with a lockfile npm generated from the registry; `@dependabot recreate` does this for a Dependabot pull request |
+| `tarball-not-read`                                         | bumpvet did not read the new version's tarball                                                                  | the reason shown with the signal (see DESIGN.md, Decisions)                                                                                              | bumpvet could not check what npm would install, and a release can be made to cause this; merging takes in code bumpvet did not check. Close the pull request or wait for the next release                                     |
+| any                                                        | a bumpvet bug                                                                                                   | none of the above                                                                                                                                        | open an issue with the two lockfiles                                                                                                                                                                                          |
 
 **Other signals**:
 
-| Signal              | Check                                                                                                             |
-| ------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| `install-scripts`   | read the change: `npm diff --diff=<pkg>@<old> --diff=<pkg>@<new>`, starting with the script and the files it runs |
-| `publisher-changed` | the new publisher is a maintainer of the project, according to its repository and release notes                   |
-| `provenance-lost`   | the project's release notes or workflow: did it stop publishing from CI on purpose?                               |
-| `not-from-registry` | the `resolved` URL is the git repository, file or registry you meant to use                                       |
-| `not-from-registry` | `link to <folder>` is a folder `package.json` names in `workspaces` or as `file:`; npm runs its install hooks     |
-| `not-from-registry` | `link to nothing`, "no version in the lockfile" or "invalid ...": the entry was edited; regenerate the lockfile   |
-| `fresh-publish`     | nothing on its own                                                                                                |
+| Signal              | Check                                                                                                                                                                                                                                                                  |
+| ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `install-scripts`   | read the change: `npm diff --diff=<pkg>@<old> --diff=<pkg>@<new>`, starting with the script and the files it runs. For a package shown as `(new)`, read every install hook and any root `binding.gyp` in the new version's tarball (see below), and the files they run |
+| `publisher-changed` | the new publisher is a maintainer of the project, according to its repository and release notes                                                                                                                                                                        |
+| `provenance-lost`   | the project's release notes or workflow: did it stop publishing from CI on purpose?                                                                                                                                                                                    |
+| `not-from-registry` | the `resolved` URL is the git repository, file or registry you meant to use                                                                                                                                                                                            |
+| `not-from-registry` | `link to <folder>` is a folder `package.json` names in `workspaces` or as `file:`; npm runs its install hooks                                                                                                                                                          |
+| `not-from-registry` | `link to nothing`, "no version in the lockfile" or "invalid ...": the entry was edited; do what the first table says for an edited lockfile                                                                                                                            |
+| `fresh-publish`     | nothing on its own                                                                                                                                                                                                                                                     |
 
 `install-scripts` with an origin signal or `fresh-publish` is `BLOCK`, the
 shape of a worm release: do the checks for `install-scripts` and
@@ -176,6 +176,20 @@ why in the pull request. Otherwise close it; to keep Dependabot from proposing
 that release again, use its
 [`ignore` commands](https://docs.github.com/en/code-security/reference/supply-chain-security/dependabot-pull-request-comment-commands).
 For `REVIEW`, check each signal listed before merging.
+
+To read a release's files, run `npm pack <pkg>@<version> --json` in an empty
+folder outside the pull request's checkout, whose `.npmrc` can point npm at
+another registry. npm 10.9.9 runs none of the package's scripts for a name and
+version number. Use only a name and version number, not a git, folder or URL
+spec: npm runs the `prepare` script of a git or folder spec, and a URL is not
+the registry's release. Check that the `integrity` npm prints is the
+`integrity` of the lockfile entry for the package you packed: your own npm
+configuration can name another registry for the package or its scope. If they
+differ, the tarball is not what the lockfile installs; if that entry has no
+`sha512-` integrity, this check cannot tell. `tar -xzf <file>`,
+with the `filename` npm prints, unpacks it. Before `npm diff`, pack the new
+version this way in the same folder: npm picks the registry by the package's
+name or scope, so both versions come from the one you checked.
 
 When a `BLOCK` or `REVIEW` turns out to be wrong, open an issue.
 
