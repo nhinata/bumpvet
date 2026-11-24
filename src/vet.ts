@@ -1,5 +1,5 @@
 import { diffLockfiles } from './lockfile.js';
-import { computeSignals, tarballSignals, tarballsToRead } from './signals.js';
+import { computeSignals, isComparable, tarballSignals, tarballsToRead } from './signals.js';
 import { decide } from './verdict.js';
 import type { Change } from './types/lockfile.js';
 import type { FetchPackument, VersionManifest } from './types/registry.js';
@@ -26,7 +26,7 @@ export async function vetChanges(
       let packument = null;
       let signals;
       try {
-        if (!change.source) packument = await fetchPackument(change.name, stop.signal);
+        if (isComparable(change)) packument = await fetchPackument(change.name, stop.signal);
         signals = computeSignals(change, packument, opts);
         const toRead = tarballsToRead(change, packument, signals);
         if (toRead) {

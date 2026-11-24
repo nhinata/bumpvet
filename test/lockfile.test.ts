@@ -17,7 +17,7 @@ describe('parseLockfile', () => {
         {
           name: 'lib',
           version: 'link to packages/lib',
-          elsewhere: 'link to packages/lib',
+          source: 'link to packages/lib',
           link: true,
         },
       ],
@@ -34,16 +34,19 @@ describe('parseLockfile', () => {
     });
   });
 
-  it('reads a link without a target as coming from elsewhere', () => {
+  it('cannot vet a link without a target', () => {
     const text = raw({ 'node_modules/lib': { link: true } });
-    expect(parseLockfile(text).get('node_modules/lib')?.elsewhere).toBe('link to nothing');
+    expect(parseLockfile(text).get('node_modules/lib')).toMatchObject({
+      source: undefined,
+      problem: 'link to nothing',
+    });
   });
 
   it.each([[1], ['yes'], ['false'], [0], [''], [false]])(
     'reads a `link` of %j as a field of the wrong type',
     (link) => {
       const text = raw({ 'node_modules/a': { version: '1.0.0', link } });
-      expect(parseLockfile(text).get('node_modules/a')?.elsewhere).toBe(
+      expect(parseLockfile(text).get('node_modules/a')?.problem).toBe(
         `invalid link ${JSON.stringify(link)}`,
       );
     },
@@ -51,12 +54,12 @@ describe('parseLockfile', () => {
 
   it('reads a `link` of null as missing, as it does other fields', () => {
     const text = raw({ 'node_modules/a': { version: '1.0.0', link: null } });
-    expect(parseLockfile(text).get('node_modules/a')?.elsewhere).toBeUndefined();
+    expect(parseLockfile(text).get('node_modules/a')?.problem).toBeUndefined();
   });
 
   it('reads a link whose target has the wrong type as a field of the wrong type', () => {
     const text = raw({ 'node_modules/lib': { link: true, resolved: 1 } });
-    expect(parseLockfile(text).get('node_modules/lib')?.elsewhere).toBe('invalid resolved 1');
+    expect(parseLockfile(text).get('node_modules/lib')?.problem).toBe('invalid resolved 1');
   });
 
   it('reads scoped names from the path', () => {
@@ -76,8 +79,9 @@ describe('parseLockfile', () => {
 
   describe('where a package comes from', () => {
     const from = (entry: Record<string, unknown>) =>
-      parseLockfile(raw({ 'node_modules/a': { version: '1.0.0', ...entry } })).get('node_modules/a')
-        ?.elsewhere;
+      parseLockfile(raw({ 'node_modules/a': { version: '1.0.0', ...entry } })).get(
+        'node_modules/a',
+      );
 
     // npm fetches such an entry's version from the registry (DESIGN.md, threat model);
     // omit-lockfile-registry-resolved writes them with an integrity.
@@ -86,11 +90,11 @@ describe('parseLockfile', () => {
       ['neither `resolved` nor an integrity', {}],
       ['an empty `resolved`', { resolved: '' }],
     ])('is the registry with %s', (_, entry) => {
-      expect(from(entry)).toBeUndefined();
+      expect(from(entry)).toMatchObject({ source: undefined, problem: undefined });
     });
 
     it('is the URL for git and other non-registry sources', () => {
-      expect(from({ resolved: 'git+ssh://git@github.com/x/y.git#abc' })).toBe(
+      expect(from({ resolved: 'git+ssh://git@github.com/x/y.git#abc' })?.source).toBe(
         'git+ssh://git@github.com/x/y.git#abc',
       );
     });
@@ -98,7 +102,7 @@ describe('parseLockfile', () => {
     it.each(['x/y/../lodash', '%2e%2e', 'foo#bar', 'foo?x=1', 'foo\\bar', '.hidden', '@scope/a/b'])(
       'is not trusted for the name %j, which would not look itself up in the registry',
       (name) => {
-        expect(from({ name, integrity: 'sha512-x' })).toBe(
+        expect(from({ name, integrity: 'sha512-x' })?.problem).toBe(
           `invalid package name ${JSON.stringify(name)}`,
         );
       },
@@ -107,7 +111,7 @@ describe('parseLockfile', () => {
     it.each(['lodash', '@ctrl/tinycolor', 'JSONStream', 'a.b_c-d~e'])(
       'accepts the name %j',
       (name) => {
-        expect(from({ name, integrity: 'sha512-x' })).toBeUndefined();
+        expect(from({ name, integrity: 'sha512-x' })?.problem).toBeUndefined();
       },
     );
   });
@@ -127,7 +131,7 @@ describe('parseLockfile', () => {
     const text = raw({
       'node_modules/ms': { version: '2.1.3', integrity: 'sha512-x', [field]: value },
     });
-    expect(parseLockfile(text).get('node_modules/ms')?.elsewhere).toBe(
+    expect(parseLockfile(text).get('node_modules/ms')?.problem).toBe(
       `invalid ${field} ${JSON.stringify(value)}`,
     );
   });
@@ -141,7 +145,8 @@ describe('parseLockfile', () => {
       version: '2.1.3',
       integrity: undefined,
       resolved: undefined,
-      elsewhere: undefined,
+      source: undefined,
+      problem: undefined,
     });
   });
 
@@ -155,13 +160,16 @@ describe('parseLockfile', () => {
     const text = raw({ 'node_modules/ms': { ...entry, integrity: 'sha512-x' } });
     expect(parseLockfile(text).get('node_modules/ms')).toMatchObject({
       version: '',
-      elsewhere: 'no version in the lockfile',
+      problem: 'no version in the lockfile',
     });
   });
 
   it('names the tarball of a local entry without a version', () => {
     const text = raw({ 'node_modules/t': { resolved: 'file:../t.tgz', integrity: 'sha512-x' } });
-    expect(parseLockfile(text).get('node_modules/t')?.elsewhere).toBe('file:../t.tgz');
+    expect(parseLockfile(text).get('node_modules/t')).toMatchObject({
+      source: 'file:../t.tgz',
+      problem: undefined,
+    });
   });
 
   // npm decides what is bundled without the lockfile's `inBundle` flag, and
@@ -192,7 +200,8 @@ describe('parseLockfile', () => {
       version: '2.1.3',
       integrity: undefined,
       resolved: undefined,
-      elsewhere: undefined,
+      source: undefined,
+      problem: undefined,
     });
   });
 
@@ -413,6 +422,22 @@ describe('diffLockfiles', () => {
       const evil = 'https://evil.example/ms.tgz';
       expect(diffLockfiles(one({}), one({ resolved: evil }))).toMatchObject([
         { name: 'ms', from: '2.1.3', to: '2.1.3', source: evil },
+      ]);
+    });
+
+    it('when an entry it cannot read now comes from another source', () => {
+      const entry = (resolved: string) =>
+        raw({ 'node_modules/ms': { version: '2.1.3', name: 5, resolved, integrity: 'sha512-x' } });
+      expect(
+        diffLockfiles(entry('git+ssh://x/ms.git#aaa'), entry('git+ssh://x/ms.git#bbb')),
+      ).toMatchObject([
+        {
+          name: 'ms',
+          source: 'git+ssh://x/ms.git#bbb',
+          problem: 'invalid name 5',
+          fromSource: 'git+ssh://x/ms.git#aaa',
+          fromProblem: 'invalid name 5',
+        },
       ]);
     });
 
