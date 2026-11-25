@@ -33,7 +33,7 @@ const fetchPackument = createPackumentFetcher();
 
 /** A packument as bumpvet fetches it, kept in eval/.cache/ (as parsePackument leaves it) for later runs. */
 export async function fetchCachedPackument(name: string): Promise<Packument> {
-  const file = join(cacheDir, name.replace('/', '__') + '.json');
+  const file = join(cacheDir, name.replaceAll('/', '__') + '.json');
   if (existsSync(file)) return parsePackument(JSON.parse(readFileSync(file, 'utf8')), name);
   const packument = await fetchPackument(name);
   if (!packument) throw new Error(`${name}: not in the registry`);

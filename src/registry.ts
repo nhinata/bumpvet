@@ -9,7 +9,7 @@ import {
 } from './types/registry.js';
 
 /** Where the registry serves a package's packument: a scoped name keeps its `@` and encodes its `/`. */
-const computePackumentUrl = (name: string) => REGISTRY + name.replace('/', '%2f');
+const computePackumentUrl = (name: string) => REGISTRY + name.replaceAll('/', '%2f');
 
 /**
  * npm's defaults (`fetch-retries` 2, `fetch-retry-mintimeout` 10 s,
