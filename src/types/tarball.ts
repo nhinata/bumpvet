@@ -18,13 +18,13 @@ export interface Tarball {
 }
 
 /** Why a tarball was not read. */
-export interface NotChecked {
-  notChecked: string;
+export interface UnreadTarball {
+  unreadReason: string;
 }
 
 /** Reads the tarball `manifest` names; `what` names the version in errors. */
-export type FetchTarball = (
+export type TarballFetcher = (
   manifest: VersionManifest,
   what: string,
   signal?: AbortSignal,
-) => Promise<Tarball | NotChecked>;
+) => Promise<Tarball | UnreadTarball>;

@@ -5,25 +5,30 @@ import { dirname, join } from 'node:path';
 import { afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { LINE_START } from '../src/report.js';
 import { runCli, type CliEnv } from '../src/run.js';
-import { fakeRegistry, lockfile, packument, tarballsAsPublished } from './helpers.js';
-import type { FetchPackument } from '../src/types/registry.js';
+import {
+  createFakeRegistry,
+  createLockfile,
+  createPackument,
+  fetchPublishedTarball,
+} from './helpers.js';
+import type { PackumentFetcher } from '../src/types/registry.js';
 import { SIGNALS } from '../src/types/signals.js';
 import type { PackageResult } from '../src/types/verdicts.js';
 
-const now = new Date('2026-01-10T00:00:00Z');
-const releases = (name: string) =>
-  packument(name, [
+const NOW = new Date('2026-01-10T00:00:00Z');
+const createPublisherChangePackument = (name: string) =>
+  createPackument(name, [
     { version: '1.0.0', time: '2025-01-01T00:00:00Z', publisher: 'alice' },
     { version: '1.1.0', time: '2025-06-01T00:00:00Z', publisher: 'alice' },
     { version: '1.2.0', time: '2025-12-01T00:00:00Z', publisher: 'mallory' },
   ]);
-const registry = fakeRegistry(releases('a'), releases('b'));
-const v1 = lockfile({ 'node_modules/a': { version: '1.0.0' } });
-const v11 = lockfile({ 'node_modules/a': { version: '1.1.0' } });
-const v12 = lockfile({ 'node_modules/a': { version: '1.2.0' } });
-const v11Elsewhere = lockfile({
-  'node_modules/a': { version: '1.1.0', resolved: 'https://evil.example/a.tgz' },
-});
+const fetchReleases = createFakeRegistry(
+  createPublisherChangePackument('a'),
+  createPublisherChangePackument('b'),
+);
+const V1 = createLockfile({ 'node_modules/a': { version: '1.0.0' } });
+const V11 = createLockfile({ 'node_modules/a': { version: '1.1.0' } });
+const V12 = createLockfile({ 'node_modules/a': { version: '1.2.0' } });
 
 // Keep git in the temporary repositories away from the surrounding environment:
 // a git hook running the tests exports GIT_DIR and friends, and a developer's
@@ -41,13 +46,13 @@ afterEach(() => {
   for (const d of dirs.splice(0)) rmSync(d, { recursive: true, force: true });
 });
 
-function tempDir(): string {
+function createTempDir(): string {
   const dir = mkdtempSync(join(tmpdir(), 'bumpvet-test-'));
   dirs.push(dir);
   return dir;
 }
 
-function git(cwd: string, ...args: string[]): void {
+function runGit(cwd: string, ...args: string[]): void {
   execFileSync('git', ['-c', 'user.name=t', '-c', 'user.email=t@example.com', ...args], {
     cwd,
     stdio: 'ignore',
@@ -55,74 +60,82 @@ function git(cwd: string, ...args: string[]): void {
 }
 
 /** A git repository whose HEAD has `committed` as package-lock.json (if given). */
-function repo(committed?: string): string {
-  const dir = tempDir();
-  git(dir, 'init', '-q');
+function createRepo(committed?: string): string {
+  const dir = createTempDir();
+  runGit(dir, 'init', '-q');
   if (committed !== undefined) {
     writeFileSync(join(dir, 'package-lock.json'), committed);
-    git(dir, 'add', 'package-lock.json');
-    git(dir, 'commit', '-q', '-m', 'lockfile');
+    runGit(dir, 'add', 'package-lock.json');
+    runGit(dir, 'commit', '-q', '-m', 'lockfile');
   }
   return dir;
 }
 
-function firstPackage(stdout: string): PackageResult | undefined {
+function parseFirstPackage(stdout: string): PackageResult | undefined {
   return (JSON.parse(stdout) as { packages: PackageResult[] }).packages[0];
 }
 
-async function run(argv: string[], cwd: string, fetchPackument: FetchPackument = registry) {
+async function runArgs(
+  argv: string[],
+  cwd: string,
+  fetchPackument: PackumentFetcher = fetchReleases,
+) {
   let stdout = '';
   let stderr = '';
   const env: CliEnv = {
     cwd,
-    stdout: (t) => (stdout += t),
-    stderr: (t) => (stderr += t),
+    writeStdout: (t) => (stdout += t),
+    writeStderr: (t) => (stderr += t),
     fetchPackument,
-    fetchTarball: tarballsAsPublished,
-    now,
+    fetchTarball: fetchPublishedTarball,
+    now: NOW,
   };
   const code = await runCli(argv, env);
   return { code, stdout, stderr };
 }
 
 describe('two lockfiles', () => {
+  const v11Elsewhere = createLockfile({
+    'node_modules/a': { version: '1.1.0', resolved: 'https://evil.example/a.tgz' },
+  });
+
   it('prints the verdicts and exits 0 when nothing is blocked', async () => {
-    const dir = tempDir();
-    writeFileSync(join(dir, 'old.json'), v1);
-    writeFileSync(join(dir, 'new.json'), v12);
-    const r = await run(['old.json', 'new.json'], dir);
+    const dir = createTempDir();
+    writeFileSync(join(dir, 'old.json'), V1);
+    writeFileSync(join(dir, 'new.json'), V12);
+    const r = await runArgs(['old.json', 'new.json'], dir);
     expect(r).toMatchObject({ code: 0, stderr: '' });
     expect(r.stdout).toContain('REVIEW  a 1.0.0 -> 1.2.0');
     expect(r.stdout).toContain('publisher-changed  alice -> mallory');
   });
 
   it('exits 1 when something is blocked', async () => {
-    const dir = tempDir();
-    writeFileSync(join(dir, 'old.json'), v11);
+    const dir = createTempDir();
+    writeFileSync(join(dir, 'old.json'), V11);
     writeFileSync(join(dir, 'new.json'), v11Elsewhere);
-    const r = await run(['old.json', 'new.json'], dir);
+    const r = await runArgs(['old.json', 'new.json'], dir);
     expect(r.code).toBe(1);
     expect(r.stdout).toContain('BLOCK   a 1.1.0 -> 1.1.0');
   });
 
   it('shows an entry without a version as such', async () => {
-    const dir = tempDir();
-    const noVersion = JSON.parse(v11) as { packages: Record<string, Record<string, unknown>> };
+    const dir = createTempDir();
+    const noVersion = JSON.parse(V11) as { packages: Record<string, Record<string, unknown>> };
     delete noVersion.packages['node_modules/a']!.version;
-    writeFileSync(join(dir, 'old.json'), v11);
+    writeFileSync(join(dir, 'old.json'), V11);
     writeFileSync(join(dir, 'new.json'), JSON.stringify(noVersion));
-    const r = await run(['old.json', 'new.json'], dir);
+    const r = await runArgs(['old.json', 'new.json'], dir);
     expect(r.code).toBe(1);
     expect(r.stdout).toContain('BLOCK   a 1.1.0 -> (no version)');
     expect(r.stdout).toContain('source-changed  npm registry -> no version in the lockfile');
   });
 
   it('escapes backslashes and all but letters, marks, numbers, punctuation, symbols and spaces, so that quoted text cannot add lines or reorder one', async () => {
-    const dir = tempDir();
-    writeFileSync(join(dir, 'old.json'), v11);
+    const dir = createTempDir();
+    writeFileSync(join(dir, 'old.json'), V11);
     writeFileSync(
       join(dir, 'new.json'),
-      lockfile({
+      createLockfile({
         'node_modules/a': {
           version: '1.1.0',
           resolved:
@@ -131,7 +144,7 @@ describe('two lockfiles', () => {
         },
       }),
     );
-    const r = await run(['old.json', 'new.json'], dir);
+    const r = await runArgs(['old.json', 'new.json'], dir);
     expect(r.stdout).toContain(
       'https://evil.example/a.tgz\\\\n\\nOK      1 package with no signals\\u001b[1A\\u202e\\u{e0001}\\u000bOK      0\\u000cOK      1\\rOK      2\\u0085OK      3\\u2028OK      4\\u2029OK      5\\uffff\\ue000',
     );
@@ -140,16 +153,16 @@ describe('two lockfiles', () => {
 
   it('lists results that differ only by name and paths one after another, under one set of signals', async () => {
     // Platform packages of one release: each new, with the same signal.
-    const platform = (name: string, first: string) =>
-      packument(name, [
+    const createPlatformPackument = (name: string, first: string) =>
+      createPackument(name, [
         { version: '1.0.0', time: '2025-01-01T00:00:00Z', publisher: first },
         { version: '1.1.0', time: '2025-06-01T00:00:00Z', publisher: 'mallory' },
       ]);
-    const dir = tempDir();
-    writeFileSync(join(dir, 'old.json'), lockfile({}));
+    const dir = createTempDir();
+    writeFileSync(join(dir, 'old.json'), createLockfile({}));
     writeFileSync(
       join(dir, 'new.json'),
-      lockfile({
+      createLockfile({
         'node_modules/@p/arm64': { version: '1.1.0' },
         'node_modules/@p/x64': { version: '1.1.0' },
         'node_modules/@p/x86': { version: '1.1.0' },
@@ -157,18 +170,18 @@ describe('two lockfiles', () => {
         'node_modules/q': { version: '1.1.0' },
       }),
     );
-    const r = await run(
+    const r = await runArgs(
       ['old.json', 'new.json'],
       dir,
-      fakeRegistry(
-        platform('@p/arm64', 'alice'),
-        platform('@p/x64', 'alice'),
-        platform('@p/x86', 'alice'),
-        packument('@p/y', [
+      createFakeRegistry(
+        createPlatformPackument('@p/arm64', 'alice'),
+        createPlatformPackument('@p/x64', 'alice'),
+        createPlatformPackument('@p/x86', 'alice'),
+        createPackument('@p/y', [
           { version: '1.0.0', time: '2025-01-01T00:00:00Z', publisher: 'alice' },
           { version: '1.2.0', time: '2025-06-01T00:00:00Z', publisher: 'mallory' },
         ]),
-        platform('q', 'bob'),
+        createPlatformPackument('q', 'bob'),
       ),
     );
     expect(r.stdout).toBe(
@@ -206,7 +219,7 @@ describe('two lockfiles', () => {
       ...[...lineStarts, ' ', '+ '].map((start) => `${start}x -> y`),
       '          publisher-changed  alice -> mallory',
     ].flatMap((text) => [text, `x\n${text}`]);
-    const packages: Parameters<typeof lockfile>[0] = {
+    const packages: Parameters<typeof createLockfile>[0] = {
       'node_modules/a': { version: '1.1.0' },
       'node_modules/b': { version: '1.2.0' },
       // Listed together, under one set of signals.
@@ -215,7 +228,7 @@ describe('two lockfiles', () => {
     };
     // r* were installed from the registry before (source-changed); n* are new, with a resolved off
     // the registry (not-from-registry).
-    const before: Parameters<typeof lockfile>[0] = {
+    const before: Parameters<typeof createLockfile>[0] = {
       'node_modules/a': { version: '1.0.0' },
       'node_modules/b': { version: '1.0.0' },
     };
@@ -228,11 +241,11 @@ describe('two lockfiles', () => {
       packages[`node_modules/n${i}`] = { version: '1.0.0', resolved: text };
       before[`node_modules/r${i}`] = { version: '1.0.0' };
     });
-    const dir = tempDir();
-    writeFileSync(join(dir, 'old.json'), lockfile(before));
-    writeFileSync(join(dir, 'new.json'), lockfile(packages));
-    const text = await run(['old.json', 'new.json'], dir);
-    const json = await run(['--json', 'old.json', 'new.json'], dir);
+    const dir = createTempDir();
+    writeFileSync(join(dir, 'old.json'), createLockfile(before));
+    writeFileSync(join(dir, 'new.json'), createLockfile(packages));
+    const text = await runArgs(['old.json', 'new.json'], dir);
+    const json = await runArgs(['--json', 'old.json', 'new.json'], dir);
     const results = (JSON.parse(json.stdout) as { packages: PackageResult[] }).packages;
     const ids = new Set(results.flatMap((r) => r.signals.map((s) => s.id)));
     for (const id of ['source-changed', 'not-from-registry', 'not-in-registry'] as const)
@@ -253,14 +266,14 @@ describe('two lockfiles', () => {
           ? start
           : LINE_START.signal;
       });
-    const count = (start: string) => kinds.filter((k) => k === start).length;
-    expect(count(LINE_START.ok)).toBe(1);
-    expect(count(LINE_START.sameAsAbove)).toBe(1);
-    expect(count(LINE_START.block) + count(LINE_START.review)).toBe(flagged.length - 1);
-    expect(count(LINE_START.signal)).toBe(
+    const countLines = (start: string) => kinds.filter((k) => k === start).length;
+    expect(countLines(LINE_START.ok)).toBe(1);
+    expect(countLines(LINE_START.sameAsAbove)).toBe(1);
+    expect(countLines(LINE_START.block) + countLines(LINE_START.review)).toBe(flagged.length - 1);
+    expect(countLines(LINE_START.signal)).toBe(
       flagged.reduce((n, r) => n + r.signals.length, 0) - g1.signals.length,
     );
-    expect(count(LINE_START.path)).toBe(paths);
+    expect(countLines(LINE_START.path)).toBe(paths);
   });
 
   // action.yml reads the verdict from these lines with grep -E: the REVIEW
@@ -272,30 +285,30 @@ describe('two lockfiles', () => {
       patterns.set(m[1]!, new RegExp(m[2]!));
     }
     expect([...patterns.keys()].sort()).toEqual(['block', 'ok', 'review']);
-    const dir = tempDir();
+    const dir = createTempDir();
     const cases = [
-      { old: v11, new: v11Elsewhere, found: 'block' },
-      { old: v1, new: v12, found: 'review' },
+      { old: V11, new: v11Elsewhere, found: 'block' },
+      { old: V1, new: V12, found: 'review' },
       // Two results listed under one set of signals.
       {
-        old: lockfile({
+        old: createLockfile({
           'node_modules/a': { version: '1.0.0' },
           'node_modules/b': { version: '1.0.0' },
         }),
-        new: lockfile({
+        new: createLockfile({
           'node_modules/a': { version: '1.2.0' },
           'node_modules/b': { version: '1.2.0' },
         }),
         found: 'review',
       },
-      { old: v1, new: v11, found: 'ok' },
-      { old: v11, new: v11, found: 'ok' },
+      { old: V1, new: V11, found: 'ok' },
+      { old: V11, new: V11, found: 'ok' },
     ];
     for (const c of cases) {
       writeFileSync(join(dir, 'old.json'), c.old);
       writeFileSync(join(dir, 'new.json'), c.new);
       // The action reads stdout and stderr together (2>&1).
-      const r = await run(['old.json', 'new.json'], dir);
+      const r = await runArgs(['old.json', 'new.json'], dir);
       const lines = (r.stdout + r.stderr).split('\n');
       const found = [...patterns]
         .filter(([, re]) => lines.some((line) => re.test(line)))
@@ -305,10 +318,10 @@ describe('two lockfiles', () => {
   });
 
   it('prints JSON with --json', async () => {
-    const dir = tempDir();
-    writeFileSync(join(dir, 'old.json'), v1);
-    writeFileSync(join(dir, 'new.json'), v12);
-    const r = await run(['--json', 'old.json', 'new.json'], dir);
+    const dir = createTempDir();
+    writeFileSync(join(dir, 'old.json'), V1);
+    writeFileSync(join(dir, 'new.json'), V12);
+    const r = await runArgs(['--json', 'old.json', 'new.json'], dir);
     expect(JSON.parse(r.stdout)).toMatchObject({
       summary: { block: 0, review: 1, ok: 0 },
       packages: [{ name: 'a', from: '1.0.0', to: '1.2.0', verdict: 'review' }],
@@ -318,21 +331,21 @@ describe('two lockfiles', () => {
 
 describe('lockfile paths', () => {
   /** Runs on the two lockfiles, with --json if `json`. */
-  async function compare(oldLock: string, newLock: string, json = false) {
-    const dir = tempDir();
+  async function runLockfiles(oldLock: string, newLock: string, json = false) {
+    const dir = createTempDir();
     writeFileSync(join(dir, 'old.json'), oldLock);
     writeFileSync(join(dir, 'new.json'), newLock);
-    return run([...(json ? ['--json'] : []), 'old.json', 'new.json'], dir);
+    return runArgs([...(json ? ['--json'] : []), 'old.json', 'new.json'], dir);
   }
 
   it('lists the paths of each REVIEW and BLOCK package under it', async () => {
-    const r = await compare(
-      lockfile({
+    const r = await runLockfiles(
+      createLockfile({
         'node_modules/a': { version: '1.0.0' },
         'node_modules/x/node_modules/a': { version: '1.0.0' },
         'node_modules/b': { version: '1.0.0' },
       }),
-      lockfile({
+      createLockfile({
         'node_modules/x/node_modules/a': { version: '1.2.0' },
         'node_modules/a': { version: '1.2.0' },
         'node_modules/b': { version: '1.1.0' },
@@ -351,16 +364,16 @@ describe('lockfile paths', () => {
   });
 
   it('lists the paths of each package of results listed together', async () => {
-    const before = lockfile({
+    const before = createLockfile({
       'node_modules/a': { version: '1.0.0' },
       'node_modules/b': { version: '1.0.0' },
     });
-    const after = lockfile({
+    const after = createLockfile({
       'node_modules/a': { version: '1.2.0' },
       'node_modules/b': { version: '1.2.0' },
       'node_modules/x/node_modules/b': { version: '1.2.0' },
     });
-    expect((await compare(before, after)).stdout).toBe(
+    expect((await runLockfiles(before, after)).stdout).toBe(
       [
         'REVIEW  a 1.0.0 -> 1.2.0',
         '            in node_modules/a',
@@ -374,9 +387,9 @@ describe('lockfile paths', () => {
   });
 
   it('tells apart, by their paths, two results whose package lines are the same', async () => {
-    const r = await compare(
-      lockfile({}),
-      lockfile({
+    const r = await runLockfiles(
+      createLockfile({}),
+      createLockfile({
         'node_modules/a': { version: '1.2.0', integrity: 'sha512-one' },
         'node_modules/x/node_modules/a': { version: '1.2.0', integrity: 'sha512-two' },
       }),
@@ -397,61 +410,61 @@ describe('lockfile paths', () => {
   });
 
   it('gives each package its paths with --json', async () => {
-    const r = await compare(v1, v12, true);
-    expect(firstPackage(r.stdout)?.paths).toEqual(['node_modules/a']);
+    const r = await runLockfiles(V1, V12, true);
+    expect(parseFirstPackage(r.stdout)?.paths).toEqual(['node_modules/a']);
   });
 });
 
 describe('git mode', () => {
   it('compares package-lock.json with the one at HEAD', async () => {
-    const dir = repo(v1);
-    writeFileSync(join(dir, 'package-lock.json'), v11);
-    const r = await run([], dir);
+    const dir = createRepo(V1);
+    writeFileSync(join(dir, 'package-lock.json'), V11);
+    const r = await runArgs([], dir);
     expect(r).toMatchObject({ code: 0, stderr: '' });
     expect(r.stdout).toBe('OK      1 package with no signals\n');
   });
 
   it('reports no changes when the lockfile matches HEAD', async () => {
-    const r = await run([], repo(v1));
+    const r = await runArgs([], createRepo(V1));
     expect(r.stdout).toBe('No dependency versions changed.\n');
   });
 
   it('compares with another ref given by --base', async () => {
-    const dir = repo(v1);
-    writeFileSync(join(dir, 'package-lock.json'), v11);
-    git(dir, 'commit', '-q', '-am', 'bump');
-    writeFileSync(join(dir, 'package-lock.json'), v12);
-    const r = await run(['--base', 'HEAD~1', '--json'], dir);
-    expect(firstPackage(r.stdout)).toMatchObject({ from: '1.0.0', to: '1.2.0' });
+    const dir = createRepo(V1);
+    writeFileSync(join(dir, 'package-lock.json'), V11);
+    runGit(dir, 'commit', '-q', '-am', 'bump');
+    writeFileSync(join(dir, 'package-lock.json'), V12);
+    const r = await runArgs(['--base', 'HEAD~1', '--json'], dir);
+    expect(parseFirstPackage(r.stdout)).toMatchObject({ from: '1.0.0', to: '1.2.0' });
   });
 
   it('finds the lockfile of a package in a subdirectory of the repository', async () => {
-    const dir = repo();
+    const dir = createRepo();
     const sub = join(dir, 'packages', 'app');
     mkdirSync(sub, { recursive: true });
-    writeFileSync(join(sub, 'package-lock.json'), v1);
-    git(dir, 'add', '.');
-    git(dir, 'commit', '-q', '-m', 'lockfile');
-    writeFileSync(join(sub, 'package-lock.json'), v12);
-    const r = await run(['--json'], sub);
-    expect(firstPackage(r.stdout)).toMatchObject({ from: '1.0.0', to: '1.2.0' });
+    writeFileSync(join(sub, 'package-lock.json'), V1);
+    runGit(dir, 'add', '.');
+    runGit(dir, 'commit', '-q', '-m', 'lockfile');
+    writeFileSync(join(sub, 'package-lock.json'), V12);
+    const r = await runArgs(['--json'], sub);
+    expect(parseFirstPackage(r.stdout)).toMatchObject({ from: '1.0.0', to: '1.2.0' });
   });
 
   it('treats every package as new when there are no commits yet', async () => {
-    const dir = repo();
-    writeFileSync(join(dir, 'package-lock.json'), v12);
-    const r = await run(['--json'], dir);
-    expect(firstPackage(r.stdout)).toMatchObject({ from: null, to: '1.2.0' });
+    const dir = createRepo();
+    writeFileSync(join(dir, 'package-lock.json'), V12);
+    const r = await runArgs(['--json'], dir);
+    expect(parseFirstPackage(r.stdout)).toMatchObject({ from: null, to: '1.2.0' });
   });
 
   it('treats every package as new when the lockfile is not committed', async () => {
-    const dir = repo();
+    const dir = createRepo();
     writeFileSync(join(dir, 'README'), 'x');
-    git(dir, 'add', 'README');
-    git(dir, 'commit', '-q', '-m', 'readme');
-    writeFileSync(join(dir, 'package-lock.json'), v12);
-    const r = await run(['--json'], dir);
-    expect(firstPackage(r.stdout)).toMatchObject({ from: null, to: '1.2.0' });
+    runGit(dir, 'add', 'README');
+    runGit(dir, 'commit', '-q', '-m', 'readme');
+    writeFileSync(join(dir, 'package-lock.json'), V12);
+    const r = await runArgs(['--json'], dir);
+    expect(parseFirstPackage(r.stdout)).toMatchObject({ from: null, to: '1.2.0' });
   });
 });
 
@@ -462,28 +475,28 @@ describe('errors exit 2 with a message', () => {
     [['only-one.json'], /either no lockfiles or two/],
     [['missing.json', 'also-missing.json'], /cannot read missing\.json \(in .+\): ENOENT/],
   ])('%j', async (argv, message) => {
-    const r = await run(argv, tempDir());
+    const r = await runArgs(argv, createTempDir());
     expect(r.code).toBe(2);
     expect(r.stderr).toMatch(message);
     expect(r.stdout).toBe('');
   });
 
   it('saying why a lockfile cannot be read', async () => {
-    const dir = tempDir();
+    const dir = createTempDir();
     mkdirSync(join(dir, 'new.json'));
-    writeFileSync(join(dir, 'old.json'), v1);
-    const r = await run(['old.json', 'new.json'], dir);
+    writeFileSync(join(dir, 'old.json'), V1);
+    const r = await runArgs(['old.json', 'new.json'], dir);
     expect(r.code).toBe(2);
     expect(r.stderr).toMatch(/cannot read new\.json \(in .+\): EISDIR/);
   });
 
   it('outside a git repository', async () => {
-    const dir = tempDir();
-    writeFileSync(join(dir, 'package-lock.json'), v1);
+    const dir = createTempDir();
+    writeFileSync(join(dir, 'package-lock.json'), V1);
     // Stop git from finding a repository above the temporary directory.
     process.env.GIT_CEILING_DIRECTORIES = dirname(dir);
     try {
-      const r = await run([], dir);
+      const r = await runArgs([], dir);
       expect(r.code).toBe(2);
       expect(r.stderr).toMatch(/not inside a git repository/);
     } finally {
@@ -492,12 +505,12 @@ describe('errors exit 2 with a message', () => {
   });
 
   it('when git is not installed, pointing to the two-file form', async () => {
-    const dir = tempDir();
-    writeFileSync(join(dir, 'package-lock.json'), v1);
+    const dir = createTempDir();
+    writeFileSync(join(dir, 'package-lock.json'), V1);
     const path = process.env.PATH;
     process.env.PATH = dir; // a directory with no git in it
     try {
-      const r = await run([], dir);
+      const r = await runArgs([], dir);
       expect(r.code).toBe(2);
       expect(r.stderr).toMatch(/git not found; compare two files instead/);
     } finally {
@@ -507,46 +520,46 @@ describe('errors exit 2 with a message', () => {
   });
 
   it('when HEAD points at a commit that does not exist', async () => {
-    const dir = repo(v1);
+    const dir = createRepo(V1);
     // Delete the commit object itself; this works whatever ref storage git uses.
     const sha = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: dir, encoding: 'utf8' }).trim();
     rmSync(join(dir, '.git', 'objects', sha.slice(0, 2), sha.slice(2)));
-    const r = await run([], dir);
+    const r = await runArgs([], dir);
     expect(r.code).toBe(2);
     expect(r.stderr).toMatch(/HEAD does not name a commit in this repository/);
   });
 
   it('when the working directory does not exist', async () => {
-    const r = await run([], join(tempDir(), 'gone'));
+    const r = await runArgs([], join(createTempDir(), 'gone'));
     expect(r.code).toBe(2);
     expect(r.stderr).toMatch(/working directory .+ does not exist/);
   });
 
   it('when the working directory is a file', async () => {
-    const file = join(tempDir(), 'file');
+    const file = join(createTempDir(), 'file');
     writeFileSync(file, '');
-    const r = await run([], file);
+    const r = await runArgs([], file);
     expect(r.code).toBe(2);
     expect(r.stderr).toMatch(/working directory .+ is not a directory/);
   });
 
   it('with a shallow-clone hint when the commit was not fetched', async () => {
-    const origin = repo(v1);
-    writeFileSync(join(origin, 'package-lock.json'), v11);
-    git(origin, 'commit', '-q', '-am', 'bump');
-    const clone = tempDir();
-    git(clone, 'clone', '-q', '--depth', '1', `file://${origin}`, '.');
-    const r = await run(['--base', 'HEAD~1'], clone);
+    const origin = createRepo(V1);
+    writeFileSync(join(origin, 'package-lock.json'), V11);
+    runGit(origin, 'commit', '-q', '-am', 'bump');
+    const clone = createTempDir();
+    runGit(clone, 'clone', '-q', '--depth', '1', `file://${origin}`, '.');
+    const r = await runArgs(['--base', 'HEAD~1'], clone);
     expect(r.code).toBe(2);
     expect(r.stderr).toMatch(/HEAD~1 does not name a commit .+this is a shallow clone/);
   });
 
   it('when the working directory cannot be reached (EACCES)', async () => {
-    const locked = join(tempDir(), 'locked');
+    const locked = join(createTempDir(), 'locked');
     mkdirSync(join(locked, 'app'), { recursive: true });
     chmodSync(locked, 0o000);
     try {
-      const r = await run([], join(locked, 'app'));
+      const r = await runArgs([], join(locked, 'app'));
       expect(r.code).toBe(2);
       expect(r.stderr).toMatch(/working directory .+ cannot be used: EACCES/);
     } finally {
@@ -555,39 +568,39 @@ describe('errors exit 2 with a message', () => {
   });
 
   it('without a shallow-clone hint when the ref is just wrong', async () => {
-    const r = await run(['--base', 'mian'], repo(v1));
+    const r = await runArgs(['--base', 'mian'], createRepo(V1));
     expect(r.stderr).toMatch(/mian does not name a commit/);
     expect(r.stderr).not.toMatch(/shallow/);
   });
 
   it('for a --base ref that does not exist', async () => {
-    const r = await run(['--base', 'nope'], repo(v1));
+    const r = await runArgs(['--base', 'nope'], createRepo(V1));
     expect(r.code).toBe(2);
     expect(r.stderr).toMatch(/nope does not name a commit in this repository/);
   });
 
   it('when the registry fails', async () => {
-    const dir = tempDir();
-    writeFileSync(join(dir, 'old.json'), v1);
-    writeFileSync(join(dir, 'new.json'), v12);
-    const r = await run(['old.json', 'new.json'], dir, () =>
+    const dir = createTempDir();
+    writeFileSync(join(dir, 'old.json'), V1);
+    writeFileSync(join(dir, 'new.json'), V12);
+    const r = await runArgs(['old.json', 'new.json'], dir, () =>
       Promise.reject(new Error('registry returned 503 for a')),
     );
     expect(r).toMatchObject({ code: 2, stderr: 'bumpvet: registry returned 503 for a\n' });
   });
 
   it('with control characters escaped', async () => {
-    const dir = tempDir();
-    writeFileSync(join(dir, 'old.json'), v1);
-    writeFileSync(join(dir, 'new.json'), v12);
-    const r = await run(['old.json', 'new.json'], dir, () =>
+    const dir = createTempDir();
+    writeFileSync(join(dir, 'old.json'), V1);
+    writeFileSync(join(dir, 'new.json'), V12);
+    const r = await runArgs(['old.json', 'new.json'], dir, () =>
       Promise.reject(new Error('registry returned 404 for a\x1b[2K')),
     );
     expect(r.stderr).toBe('bumpvet: registry returned 404 for a\\u001b[2K\n');
   });
 
   it('for a --base value that would reach git as an option', async () => {
-    const r = await run(['--base', '--output=/tmp/x'], repo(v1));
+    const r = await runArgs(['--base', '--output=/tmp/x'], createRepo(V1));
     expect(r.code).toBe(2);
     expect(r.stderr).toMatch(/--base: not a git ref: --output=\/tmp\/x/);
   });
@@ -596,7 +609,7 @@ describe('errors exit 2 with a message', () => {
 it.each([[['--help']], [['-h']], [['old.json', '--help']], [['--help', '--nope']]])(
   'prints usage for %j',
   async (argv) => {
-    const r = await run(argv, tempDir());
+    const r = await runArgs(argv, createTempDir());
     expect(r.code).toBe(0);
     expect(r.stdout).toMatch(/^Usage:/);
   },

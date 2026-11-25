@@ -1,15 +1,15 @@
 import { setTimeout as delay } from 'node:timers/promises';
-import { messageWithCause } from './utils/errors.js';
-import { isObject, str } from './utils/json.js';
+import { formatErrorChain } from './utils/errors.js';
+import { isObject, parseString } from './utils/json.js';
 import {
   REGISTRY,
-  type FetchPackument,
+  type PackumentFetcher,
   type Packument,
   type VersionManifest,
 } from './types/registry.js';
 
 /** Where the registry serves a package's packument: a scoped name keeps its `@` and encodes its `/`. */
-const packumentUrl = (name: string) => REGISTRY + name.replace('/', '%2f');
+const computePackumentUrl = (name: string) => REGISTRY + name.replace('/', '%2f');
 
 /**
  * npm's defaults (`fetch-retries` 2, `fetch-retry-mintimeout` 10 s,
@@ -27,10 +27,10 @@ const RETRY_WAITS = Array.from({ length: NPM_RETRY.retries }, (_, i) =>
   Math.min(NPM_RETRY.minTimeout * NPM_RETRY.factor ** i, NPM_RETRY.maxTimeout),
 );
 /** The statuses npm retries (make-fetch-happen). 404 is an answer: the package is not there. */
-const retried = (status: number) => [408, 420, 429].includes(status) || status >= 500;
+const isRetryable = (status: number) => [408, 420, 429].includes(status) || status >= 500;
 
 /** A failure that may pass if the request is made again: a status above, or the network. */
-export class Transient extends Error {
+export class TransientError extends Error {
   constructor(
     message: string,
     options?: { cause?: unknown },
@@ -41,37 +41,40 @@ export class Transient extends Error {
   }
 }
 
-export type Wait = (ms: number, signal?: AbortSignal) => Promise<unknown>;
-export const wait: Wait = (ms, signal) => delay(ms, undefined, { signal });
+export type Waiter = (ms: number, signal?: AbortSignal) => Promise<unknown>;
+export const waitDelay: Waiter = (ms, signal) => delay(ms, undefined, { signal });
 
 /**
  * Runs `attempt`, and again after each of RETRY_WAITS while it fails with
- * Transient. `signal` stops it, including a wait.
+ * TransientError. `signal` stops it, including a wait.
  */
-export async function withRetries<T>(
+export async function retry<T>(
   attempt: () => Promise<T>,
   signal: AbortSignal | undefined,
-  waitImpl: Wait,
+  waitDelayImpl: Waiter,
 ): Promise<T> {
   for (let n = 1; ; n++) {
     try {
       return await attempt();
     } catch (err) {
-      if (!(err instanceof Transient) || signal?.aborted) throw err;
+      if (!(err instanceof TransientError) || signal?.aborted) throw err;
       const next = RETRY_WAITS[n - 1];
       if (next === undefined) {
         throw new Error(`${err.message}; gave up after ${n} attempts`, { cause: err });
       }
-      await waitImpl(Math.min(Math.max(next, err.retryAfter ?? 0), NPM_RETRY.maxTimeout), signal);
+      await waitDelayImpl(
+        Math.min(Math.max(next, err.retryAfter ?? 0), NPM_RETRY.maxTimeout),
+        signal,
+      );
     }
   }
 }
 
 /**
  * One GET to the registry, for `what` (named in errors): the response when it
- * is OK, null for a 404. A failure reading the body is `bodyFailed`.
+ * is OK, null for a 404. A failure reading the body is `createBodyError`.
  */
-export async function request(
+export async function fetchRegistry(
   fetchImpl: typeof fetch,
   url: string,
   what: string,
@@ -87,15 +90,17 @@ export async function request(
       signal: signal ? AbortSignal.any([signal, timeout]) : timeout,
     });
   } catch (err) {
-    const reason = messageWithCause(err);
-    throw new Transient(`fetching ${what} from the registry failed: ${reason}`, { cause: err });
+    const reason = formatErrorChain(err);
+    throw new TransientError(`fetching ${what} from the registry failed: ${reason}`, {
+      cause: err,
+    });
   }
   if (!res.ok) {
-    await discard(res);
+    await discardBody(res);
     if (res.status === 404) return null;
     const message = `registry returned ${res.status} for ${what}`;
-    if (!retried(res.status)) throw new Error(message);
-    throw new Transient(message, undefined, retryAfter(res.headers.get('retry-after')));
+    if (!isRetryable(res.status)) throw new Error(message);
+    throw new TransientError(message, undefined, parseRetryAfter(res.headers.get('retry-after')));
   }
   return res;
 }
@@ -105,14 +110,14 @@ export async function request(
  * connection until garbage collection. A body that already failed rejects the
  * cancel; the caller has what it needs from the response.
  */
-export async function discard(res: Response): Promise<void> {
+export async function discardBody(res: Response): Promise<void> {
   await res.body?.cancel().catch(() => undefined);
 }
 
 /** A failure while a response's body is read: a timeout or reset may pass on a retry. */
-export function bodyFailed(err: unknown, what: string): Transient {
-  const reason = messageWithCause(err);
-  return new Transient(`reading the registry response for ${what} failed: ${reason}`, {
+export function createBodyError(err: unknown, what: string): TransientError {
+  const reason = formatErrorChain(err);
+  return new TransientError(`reading the registry response for ${what} failed: ${reason}`, {
     cause: err,
   });
 }
@@ -120,38 +125,48 @@ export function bodyFailed(err: unknown, what: string): Transient {
 /**
  * Fetches full packuments from the public registry. Returns null for a package
  * the registry does not have. Network errors and the statuses npm retries are
- * tried again (withRetries).
+ * tried again (retry).
  *
  * Each name is fetched once, and later calls share that fetch, whatever signal
  * they pass: give one fetcher one signal, as a run does.
  */
-export function registryFetcher(fetchImpl: typeof fetch = fetch, waitImpl = wait): FetchPackument {
+export function createPackumentFetcher(
+  fetchImpl: typeof fetch = fetch,
+  waitDelayImpl = waitDelay,
+): PackumentFetcher {
   const cache = new Map<string, Promise<Packument | null>>();
   return (name, signal) => {
     let p = cache.get(name);
     if (!p) {
-      p = withRetries(() => fetchOnce(fetchImpl, name, signal), signal, waitImpl);
+      p = retry(() => fetchPackumentOnce(fetchImpl, name, signal), signal, waitDelayImpl);
       cache.set(name, p);
     }
     return p;
   };
 }
 
-async function fetchOnce(
+async function fetchPackumentOnce(
   fetchImpl: typeof fetch,
   name: string,
   signal: AbortSignal | undefined,
 ): Promise<Packument | null> {
-  const res = await request(fetchImpl, packumentUrl(name), name, signal, PACKUMENT_TIMEOUT, {
-    accept: 'application/json',
-  });
+  const res = await fetchRegistry(
+    fetchImpl,
+    computePackumentUrl(name),
+    name,
+    signal,
+    PACKUMENT_TIMEOUT,
+    {
+      accept: 'application/json',
+    },
+  );
   if (!res) return null;
   // Read first, then parse: a timeout or reset mid-body is not "invalid JSON".
   let text: string;
   try {
     text = await res.text();
   } catch (err) {
-    throw bodyFailed(err, name);
+    throw createBodyError(err, name);
   }
   let json: unknown;
   try {
@@ -159,11 +174,11 @@ async function fetchOnce(
   } catch (err) {
     throw new Error(`registry sent invalid JSON for ${name}`, { cause: err });
   }
-  return slim(json, name);
+  return parsePackument(json, name);
 }
 
 /** A `Retry-After` value, seconds or an HTTP date, in milliseconds from now. */
-function retryAfter(value: string | null): number | undefined {
+function parseRetryAfter(value: string | null): number | undefined {
   if (!value) return undefined;
   if (/^\d+$/.test(value.trim())) return Number(value.trim()) * 1000;
   const at = Date.parse(value);
@@ -177,7 +192,7 @@ function retryAfter(value: string | null): number | undefined {
  * packuments of large packages are tens of megabytes, and every one stays
  * cached for the whole run.
  */
-export function slim(raw: unknown, name: string): Packument {
+export function parsePackument(raw: unknown, name: string): Packument {
   // Anything else (null, an array, `{"error": ...}`) is a broken registry, not a package to block.
   if (!isObject(raw) || (!isObject(raw.versions) && !isObject(raw.time))) {
     throw new Error(`registry sent something that is not a packument for ${name}`);
@@ -191,27 +206,27 @@ export function slim(raw: unknown, name: string): Packument {
   if (isObject(raw.versions)) {
     for (const [v, m] of Object.entries(raw.versions)) {
       if (!isObject(m)) continue;
-      const user = isObject(m._npmUser) ? str(m._npmUser.name) : undefined;
+      const user = isObject(m._npmUser) ? parseString(m._npmUser.name) : undefined;
       const dist = isObject(m.dist) ? m.dist : {};
       versions[v] = {
         version: v,
         _npmUser: user ? { name: user } : undefined,
         dist: {
-          integrity: str(dist.integrity),
-          shasum: sha1Hex(dist.shasum),
-          tarball: str(dist.tarball),
+          integrity: parseString(dist.integrity),
+          shasum: parseSha1Hex(dist.shasum),
+          tarball: parseString(dist.tarball),
           attestations: dist.attestations ? true : undefined,
-          unpackedSize: count(dist.unpackedSize),
-          fileCount: count(dist.fileCount),
+          unpackedSize: parseCount(dist.unpackedSize),
+          fileCount: parseCount(dist.fileCount),
         },
       };
     }
   }
-  return { name: str(raw.name) || name, time, versions };
+  return { name: parseString(raw.name) || name, time, versions };
 }
 
-const sha1Hex = (v: unknown) =>
+const parseSha1Hex = (v: unknown) =>
   typeof v === 'string' && /^[0-9a-f]{40}$/i.test(v) ? v.toLowerCase() : undefined;
 
-const count = (v: unknown) =>
+const parseCount = (v: unknown) =>
   typeof v === 'number' && Number.isSafeInteger(v) && v >= 0 ? v : undefined;

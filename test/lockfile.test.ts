@@ -1,12 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { diffLockfiles, parseLockfile } from '../src/lockfile.js';
-import { lockfile } from './helpers.js';
+import { createLockfile } from './helpers.js';
 
-const raw = (packages: Record<string, unknown>) => JSON.stringify({ lockfileVersion: 3, packages });
+const createRawLockfile = (packages: Record<string, unknown>) =>
+  JSON.stringify({ lockfileVersion: 3, packages });
 
 describe('parseLockfile', () => {
   it('reads a link as coming from elsewhere, and skips the folder it points at', () => {
-    const text = raw({
+    const text = createRawLockfile({
       '': { name: 'app' },
       'packages/lib': { name: 'lib', version: '1.0.0' },
       'node_modules/lib': { resolved: 'packages/lib', link: true },
@@ -25,7 +26,7 @@ describe('parseLockfile', () => {
   });
 
   it('reads a link by its path and target, whatever name and version its entry gives', () => {
-    const text = raw({
+    const text = createRawLockfile({
       'node_modules/lib': { resolved: 'packages/lib', link: true, name: 'other', version: '1.0.0' },
     });
     expect(parseLockfile(text).get('node_modules/lib')).toMatchObject({
@@ -35,7 +36,7 @@ describe('parseLockfile', () => {
   });
 
   it('cannot vet a link without a target', () => {
-    const text = raw({ 'node_modules/lib': { link: true } });
+    const text = createRawLockfile({ 'node_modules/lib': { link: true } });
     expect(parseLockfile(text).get('node_modules/lib')).toMatchObject({
       source: undefined,
       problem: 'link to nothing',
@@ -45,7 +46,7 @@ describe('parseLockfile', () => {
   it.each([[1], ['yes'], ['false'], [0], [''], [false]])(
     'reads a `link` of %j as a field of the wrong type',
     (link) => {
-      const text = raw({ 'node_modules/a': { version: '1.0.0', link } });
+      const text = createRawLockfile({ 'node_modules/a': { version: '1.0.0', link } });
       expect(parseLockfile(text).get('node_modules/a')?.problem).toBe(
         `invalid link ${JSON.stringify(link)}`,
       );
@@ -53,33 +54,33 @@ describe('parseLockfile', () => {
   );
 
   it('reads a `link` of null as missing, as it does other fields', () => {
-    const text = raw({ 'node_modules/a': { version: '1.0.0', link: null } });
+    const text = createRawLockfile({ 'node_modules/a': { version: '1.0.0', link: null } });
     expect(parseLockfile(text).get('node_modules/a')?.problem).toBeUndefined();
   });
 
   it('reads a link whose target has the wrong type as a field of the wrong type', () => {
-    const text = raw({ 'node_modules/lib': { link: true, resolved: 1 } });
+    const text = createRawLockfile({ 'node_modules/lib': { link: true, resolved: 1 } });
     expect(parseLockfile(text).get('node_modules/lib')?.problem).toBe('invalid resolved 1');
   });
 
   it('reads scoped names from the path', () => {
-    const text = lockfile({ 'node_modules/@ctrl/tinycolor': { version: '4.1.1' } });
+    const text = createLockfile({ 'node_modules/@ctrl/tinycolor': { version: '4.1.1' } });
     expect(parseLockfile(text).get('node_modules/@ctrl/tinycolor')?.name).toBe('@ctrl/tinycolor');
   });
 
   it('reads the name from `name` when there is one, as npm aliases have', () => {
-    const text = lockfile({ 'node_modules/my-alias': { version: '5.3.0', name: 'chalk' } });
+    const text = createLockfile({ 'node_modules/my-alias': { version: '5.3.0', name: 'chalk' } });
     expect(parseLockfile(text).get('node_modules/my-alias')?.name).toBe('chalk');
   });
 
   it('uses the path when `name` is empty', () => {
-    const text = lockfile({ 'node_modules/a': { version: '1.0.0', name: '' } });
+    const text = createLockfile({ 'node_modules/a': { version: '1.0.0', name: '' } });
     expect(parseLockfile(text).get('node_modules/a')?.name).toBe('a');
   });
 
   describe('where a package comes from', () => {
-    const from = (entry: Record<string, unknown>) =>
-      parseLockfile(raw({ 'node_modules/a': { version: '1.0.0', ...entry } })).get(
+    const parseEntry = (entry: Record<string, unknown>) =>
+      parseLockfile(createRawLockfile({ 'node_modules/a': { version: '1.0.0', ...entry } })).get(
         'node_modules/a',
       );
 
@@ -90,11 +91,11 @@ describe('parseLockfile', () => {
       ['neither `resolved` nor an integrity', {}],
       ['an empty `resolved`', { resolved: '' }],
     ])('is the registry with %s', (_, entry) => {
-      expect(from(entry)).toMatchObject({ source: undefined, problem: undefined });
+      expect(parseEntry(entry)).toMatchObject({ source: undefined, problem: undefined });
     });
 
     it('is the URL for git and other non-registry sources', () => {
-      expect(from({ resolved: 'git+ssh://git@github.com/x/y.git#abc' })?.source).toBe(
+      expect(parseEntry({ resolved: 'git+ssh://git@github.com/x/y.git#abc' })?.source).toBe(
         'git+ssh://git@github.com/x/y.git#abc',
       );
     });
@@ -102,7 +103,7 @@ describe('parseLockfile', () => {
     it.each(['x/y/../lodash', '%2e%2e', 'foo#bar', 'foo?x=1', 'foo\\bar', '.hidden', '@scope/a/b'])(
       'is not trusted for the name %j, which would not look itself up in the registry',
       (name) => {
-        expect(from({ name, integrity: 'sha512-x' })?.problem).toBe(
+        expect(parseEntry({ name, integrity: 'sha512-x' })?.problem).toBe(
           `invalid package name ${JSON.stringify(name)}`,
         );
       },
@@ -111,13 +112,16 @@ describe('parseLockfile', () => {
     it.each(['lodash', '@ctrl/tinycolor', 'JSONStream', 'a.b_c-d~e'])(
       'accepts the name %j',
       (name) => {
-        expect(from({ name, integrity: 'sha512-x' })?.problem).toBeUndefined();
+        expect(parseEntry({ name, integrity: 'sha512-x' })?.problem).toBeUndefined();
       },
     );
   });
 
   it('skips entries that are not objects', () => {
-    const text = raw({ 'node_modules/null-entry': null, 'node_modules/ok': { version: '1.0.0' } });
+    const text = createRawLockfile({
+      'node_modules/null-entry': null,
+      'node_modules/ok': { version: '1.0.0' },
+    });
     expect([...parseLockfile(text).keys()]).toEqual(['node_modules/ok']);
   });
 
@@ -128,7 +132,7 @@ describe('parseLockfile', () => {
     ['resolved', 5],
     ['integrity', {}],
   ])('cannot vet an entry whose %s is not a string', (field, value) => {
-    const text = raw({
+    const text = createRawLockfile({
       'node_modules/ms': { version: '2.1.3', integrity: 'sha512-x', [field]: value },
     });
     expect(parseLockfile(text).get('node_modules/ms')?.problem).toBe(
@@ -137,7 +141,7 @@ describe('parseLockfile', () => {
   });
 
   it('reads a null field as missing, as npm does', () => {
-    const text = raw({
+    const text = createRawLockfile({
       'node_modules/ms': { version: '2.1.3', name: null, resolved: null, integrity: null },
     });
     expect(parseLockfile(text).get('node_modules/ms')).toEqual({
@@ -157,7 +161,7 @@ describe('parseLockfile', () => {
     ['no version', {}],
     ['an empty version', { version: '' }],
   ])('cannot vet a registry entry with %s', (_, entry) => {
-    const text = raw({ 'node_modules/ms': { ...entry, integrity: 'sha512-x' } });
+    const text = createRawLockfile({ 'node_modules/ms': { ...entry, integrity: 'sha512-x' } });
     expect(parseLockfile(text).get('node_modules/ms')).toMatchObject({
       version: '',
       problem: 'no version in the lockfile',
@@ -165,7 +169,9 @@ describe('parseLockfile', () => {
   });
 
   it('names the tarball of a local entry without a version', () => {
-    const text = raw({ 'node_modules/t': { resolved: 'file:../t.tgz', integrity: 'sha512-x' } });
+    const text = createRawLockfile({
+      'node_modules/t': { resolved: 'file:../t.tgz', integrity: 'sha512-x' },
+    });
     expect(parseLockfile(text).get('node_modules/t')).toMatchObject({
       source: 'file:../t.tgz',
       problem: undefined,
@@ -176,7 +182,7 @@ describe('parseLockfile', () => {
   // downloads what it does not take from a bundle (DESIGN.md, threat model).
   it('keeps entries flagged inBundle, wherever they are', () => {
     const evil = { version: '2.1.3', resolved: 'https://evil.example/ms.tgz', inBundle: true };
-    const text = raw({
+    const text = createRawLockfile({
       'node_modules/ms': evil,
       'node_modules/bundler': { version: '1.0.0', bundleDependencies: ['ms'] },
       'node_modules/bundler/node_modules/ms': evil,
@@ -192,7 +198,7 @@ describe('parseLockfile', () => {
   });
 
   it('vets a bundled entry, which has no `resolved`, as the registry version it names', () => {
-    const text = raw({
+    const text = createRawLockfile({
       'node_modules/bundler/node_modules/ms': { version: '2.1.3', inBundle: true },
     });
     expect(parseLockfile(text).get('node_modules/bundler/node_modules/ms')).toEqual({
@@ -220,11 +226,11 @@ describe('parseLockfile', () => {
 
 describe('diffLockfiles', () => {
   it('reports upgraded and added packages, not unchanged ones', () => {
-    const before = lockfile({
+    const before = createLockfile({
       'node_modules/a': { version: '1.0.0' },
       'node_modules/b': { version: '2.0.0' },
     });
-    const after = lockfile({
+    const after = createLockfile({
       'node_modules/a': { version: '1.1.0' },
       'node_modules/b': { version: '2.0.0' },
       'node_modules/c': { version: '3.0.0' },
@@ -250,7 +256,7 @@ describe('diffLockfiles', () => {
   });
 
   it('gives each change the paths it was found at, the least nested first', () => {
-    const after = lockfile({
+    const after = createLockfile({
       'node_modules/x/node_modules/a': { version: '1.0.0' },
       'node_modules/a': { version: '1.0.0' },
       'node_modules/y/node_modules/a': { version: '1.0.0' },
@@ -261,11 +267,11 @@ describe('diffLockfiles', () => {
   });
 
   it('gives two changes of the same version the paths of each, not of both', () => {
-    const before = lockfile({
+    const before = createLockfile({
       'node_modules/a': { version: '1.0.0' },
       'node_modules/x/node_modules/a': { version: '2.0.0' },
     });
-    const after = lockfile({
+    const after = createLockfile({
       'node_modules/a': { version: '3.0.0' },
       'node_modules/x/node_modules/a': { version: '3.0.0' },
     });
@@ -276,14 +282,14 @@ describe('diffLockfiles', () => {
   });
 
   it('ignores a version that only moved to another path', () => {
-    const before = lockfile({ 'node_modules/x/node_modules/a': { version: '1.0.0' } });
-    const after = lockfile({ 'node_modules/a': { version: '1.0.0' } });
+    const before = createLockfile({ 'node_modules/x/node_modules/a': { version: '1.0.0' } });
+    const after = createLockfile({ 'node_modules/a': { version: '1.0.0' } });
     expect(diffLockfiles(before, after)).toEqual([]);
   });
 
   it('compares a package that moved path with the version installed elsewhere', () => {
-    const before = lockfile({ 'node_modules/x/node_modules/a': { version: '1.0.0' } });
-    const after = lockfile({ 'node_modules/a': { version: '1.1.0' } });
+    const before = createLockfile({ 'node_modules/x/node_modules/a': { version: '1.0.0' } });
+    const after = createLockfile({ 'node_modules/a': { version: '1.1.0' } });
     expect(diffLockfiles(before, after)[0]).toMatchObject({
       name: 'a',
       from: '1.0.0',
@@ -292,18 +298,18 @@ describe('diffLockfiles', () => {
   });
 
   it('compares a git dependency that moved with the git entry at its path', () => {
-    const git = (sha: string) => ({
+    const createGitEntry = (sha: string) => ({
       version: '2.1.3',
       resolved: `git+ssh://git@github.com/x/ms.git#${sha}`,
       integrity: undefined,
     });
-    const before = lockfile({
+    const before = createLockfile({
       'node_modules/ms': { version: '2.1.3' },
-      'node_modules/x/node_modules/ms': git('aaa'),
+      'node_modules/x/node_modules/ms': createGitEntry('aaa'),
     });
-    const after = lockfile({
+    const after = createLockfile({
       'node_modules/ms': { version: '2.1.3' },
-      'node_modules/x/node_modules/ms': git('bbb'),
+      'node_modules/x/node_modules/ms': createGitEntry('bbb'),
     });
     expect(diffLockfiles(before, after)).toMatchObject([
       { fromSource: 'git+ssh://git@github.com/x/ms.git#aaa' },
@@ -321,11 +327,11 @@ describe('diffLockfiles', () => {
       resolved: 'https://evil.example/ms.tgz',
       integrity: undefined,
     };
-    const before = lockfile({
+    const before = createLockfile({
       'node_modules/ms': { version: '2.0.0' },
       'node_modules/a/node_modules/ms': git,
     });
-    const after = lockfile({
+    const after = createLockfile({
       'node_modules/ms': { version: '2.0.0' },
       'node_modules/a/node_modules/ms': evil,
       'node_modules/b/node_modules/ms': evil,
@@ -338,11 +344,11 @@ describe('diffLockfiles', () => {
   });
 
   it('compares a package that moved path with its least nested earlier copy', () => {
-    const before = lockfile({
+    const before = createLockfile({
       'node_modules/npm/node_modules/semver': { version: '7.6.0' },
       'node_modules/semver': { version: '6.3.1' },
     });
-    const after = lockfile({
+    const after = createLockfile({
       'node_modules/npm/node_modules/semver': { version: '7.6.0' },
       'node_modules/foo/node_modules/semver': { version: '6.3.2' },
     });
@@ -350,7 +356,7 @@ describe('diffLockfiles', () => {
   });
 
   it('keeps the integrity comparison of one path when another path had no integrity', () => {
-    const before = lockfile({
+    const before = createLockfile({
       'node_modules/a/node_modules/ms': {
         version: '2.0.0',
         integrity: undefined,
@@ -358,7 +364,7 @@ describe('diffLockfiles', () => {
       },
       'node_modules/b/node_modules/ms': { version: '2.0.0', integrity: 'sha512-old' },
     });
-    const after = lockfile({
+    const after = createLockfile({
       'node_modules/a/node_modules/ms': { version: '2.0.0' },
       'node_modules/b/node_modules/ms': { version: '2.0.0' },
     });
@@ -371,11 +377,11 @@ describe('diffLockfiles', () => {
   // Each earlier version is what install-scripts and provenance-lost compare with,
   // so none of them is dropped.
   it('lists a new version once per earlier version it replaces', () => {
-    const before = lockfile({
+    const before = createLockfile({
       'node_modules/a': { version: '1.0.0' },
       'node_modules/b/node_modules/a': { version: '0.9.0' },
     });
-    const after = lockfile({
+    const after = createLockfile({
       'node_modules/a': { version: '2.0.0' },
       'node_modules/b/node_modules/a': { version: '2.0.0' },
       'node_modules/c/node_modules/a': { version: '2.0.0' },
@@ -384,7 +390,7 @@ describe('diffLockfiles', () => {
   });
 
   it('lists a new version once when its paths record different URLs for the same integrity', () => {
-    const after = lockfile({
+    const after = createLockfile({
       'node_modules/a': { version: '1.0.0' },
       'node_modules/b/node_modules/a': { version: '1.0.0', resolved: undefined },
     });
@@ -392,19 +398,24 @@ describe('diffLockfiles', () => {
   });
 
   it('names the file that is not JSON', () => {
-    expect(() => diffLockfiles('{', lockfile({}))).toThrow('the old lockfile is not valid JSON');
+    expect(() => diffLockfiles('{', createLockfile({}))).toThrow(
+      'the old lockfile is not valid JSON',
+    );
     expect(() => diffLockfiles(null, 'not json')).toThrow('the new lockfile is not valid JSON');
   });
 
   // The same version is a change when what npm installs for it may differ (DESIGN.md:
   // integrity-mismatch, source-changed, tarball-mismatch). A missing field matches nothing.
   describe('the same version counts as changed', () => {
-    const one = (entry: Record<string, unknown>) =>
-      lockfile({ 'node_modules/ms': { version: '2.1.3', ...entry } });
+    const createMsLockfile = (entry: Record<string, unknown>) =>
+      createLockfile({ 'node_modules/ms': { version: '2.1.3', ...entry } });
 
     it('when its integrity changed', () => {
       expect(
-        diffLockfiles(one({ integrity: 'sha512-good' }), one({ integrity: 'sha512-evil' })),
+        diffLockfiles(
+          createMsLockfile({ integrity: 'sha512-good' }),
+          createMsLockfile({ integrity: 'sha512-evil' }),
+        ),
       ).toEqual([
         {
           name: 'ms',
@@ -420,16 +431,21 @@ describe('diffLockfiles', () => {
 
     it('when it moved off the registry', () => {
       const evil = 'https://evil.example/ms.tgz';
-      expect(diffLockfiles(one({}), one({ resolved: evil }))).toMatchObject([
-        { name: 'ms', from: '2.1.3', to: '2.1.3', source: evil },
-      ]);
+      expect(
+        diffLockfiles(createMsLockfile({}), createMsLockfile({ resolved: evil })),
+      ).toMatchObject([{ name: 'ms', from: '2.1.3', to: '2.1.3', source: evil }]);
     });
 
     it('when an entry it cannot read now comes from another source', () => {
-      const entry = (resolved: string) =>
-        raw({ 'node_modules/ms': { version: '2.1.3', name: 5, resolved, integrity: 'sha512-x' } });
+      const createBrokenLockfile = (resolved: string) =>
+        createRawLockfile({
+          'node_modules/ms': { version: '2.1.3', name: 5, resolved, integrity: 'sha512-x' },
+        });
       expect(
-        diffLockfiles(entry('git+ssh://x/ms.git#aaa'), entry('git+ssh://x/ms.git#bbb')),
+        diffLockfiles(
+          createBrokenLockfile('git+ssh://x/ms.git#aaa'),
+          createBrokenLockfile('git+ssh://x/ms.git#bbb'),
+        ),
       ).toMatchObject([
         {
           name: 'ms',
@@ -445,15 +461,15 @@ describe('diffLockfiles', () => {
       const other = 'https://registry.npmjs.org/ms/-/ms-0.7.1.tgz';
       expect(
         diffLockfiles(
-          one({ integrity: undefined }),
-          one({ integrity: undefined, resolved: other }),
+          createMsLockfile({ integrity: undefined }),
+          createMsLockfile({ integrity: undefined, resolved: other }),
         ),
       ).toMatchObject([{ name: 'ms', from: '2.1.3', to: '2.1.3', resolved: other }]);
     });
 
     it('when it dropped its integrity, even if the old entry had no `resolved`', () => {
-      const before = one({ resolved: undefined });
-      const after = one({
+      const before = createMsLockfile({ resolved: undefined });
+      const after = createMsLockfile({
         integrity: undefined,
         resolved: 'https://registry.npmjs.org/evil/-/e.tgz',
       });
@@ -461,7 +477,7 @@ describe('diffLockfiles', () => {
     });
 
     it('when it lost its version', () => {
-      const before = one({});
+      const before = createMsLockfile({});
       const after = JSON.parse(before) as { packages: Record<string, Record<string, unknown>> };
       delete after.packages['node_modules/ms']!.version;
       expect(diffLockfiles(before, JSON.stringify(after))).toMatchObject([
@@ -470,20 +486,25 @@ describe('diffLockfiles', () => {
     });
 
     it('when a git dependency moved to another commit', () => {
-      const at = (sha: string) =>
-        one({ resolved: `git+ssh://git@github.com/x/ms.git#${sha}`, integrity: undefined });
-      expect(diffLockfiles(at('abc'), at('def'))).toHaveLength(1);
+      const createGitLockfile = (sha: string) =>
+        createMsLockfile({
+          resolved: `git+ssh://git@github.com/x/ms.git#${sha}`,
+          integrity: undefined,
+        });
+      expect(diffLockfiles(createGitLockfile('abc'), createGitLockfile('def'))).toHaveLength(1);
     });
   });
 
   describe('the same version counts as unchanged', () => {
-    const one = (entry: Record<string, unknown>) =>
-      lockfile({ 'node_modules/ms': { version: '2.1.3', ...entry } });
+    const createMsLockfile = (entry: Record<string, unknown>) =>
+      createLockfile({ 'node_modules/ms': { version: '2.1.3', ...entry } });
 
     it('when only `resolved` changed and the integrity is the same: npm checks the content', () => {
-      const after = one({ resolved: 'https://registry.npmjs.org/ms/-/other.tgz' });
-      expect(diffLockfiles(one({}), after)).toEqual([]);
-      expect(diffLockfiles(one({}), one({ resolved: undefined }))).toEqual([]);
+      const after = createMsLockfile({ resolved: 'https://registry.npmjs.org/ms/-/other.tgz' });
+      expect(diffLockfiles(createMsLockfile({}), after)).toEqual([]);
+      expect(
+        diffLockfiles(createMsLockfile({}), createMsLockfile({ resolved: undefined })),
+      ).toEqual([]);
     });
 
     it.each([
@@ -491,7 +512,7 @@ describe('diffLockfiles', () => {
       ['a file: dependency', { resolved: 'file:../ms' }],
       ['an entry with neither `resolved` nor an integrity', { resolved: undefined }],
     ])('for %s that did not change', (_, entry) => {
-      const text = one({ ...entry, integrity: undefined });
+      const text = createMsLockfile({ ...entry, integrity: undefined });
       expect(diffLockfiles(text, text)).toEqual([]);
     });
   });

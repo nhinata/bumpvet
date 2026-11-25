@@ -32,4 +32,4 @@ export const NO_TARBALL = 'no tarball URL in the registry';
  * Fetches a package's packument, or null if the registry does not have it.
  * `signal` stops it, including any wait before a retry.
  */
-export type FetchPackument = (name: string, signal?: AbortSignal) => Promise<Packument | null>;
+export type PackumentFetcher = (name: string, signal?: AbortSignal) => Promise<Packument | null>;

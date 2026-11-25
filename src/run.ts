@@ -1,13 +1,13 @@
 import { execFileSync } from 'node:child_process';
 import { readFileSync, statSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { messageOf } from './utils/errors.js';
-import { registryFetcher } from './registry.js';
-import { tarballFetcher } from './tarball.js';
-import { formatJson, formatText, printable } from './report.js';
+import { getErrorMessage } from './utils/errors.js';
+import { createPackumentFetcher } from './registry.js';
+import { createTarballFetcher } from './tarball.js';
+import { formatJson, formatText, escapeText } from './report.js';
 import { vetLockfiles } from './vet.js';
-import type { FetchPackument } from './types/registry.js';
-import type { FetchTarball } from './types/tarball.js';
+import type { PackumentFetcher } from './types/registry.js';
+import type { TarballFetcher } from './types/tarball.js';
 
 const USAGE = `Usage:
   bumpvet [--base <git-ref>] [--json]     compare ./package-lock.json with the one at <git-ref> (default HEAD)
@@ -19,20 +19,20 @@ Exit codes: 0 nothing to block, 1 at least one BLOCK, 2 error.
 /** Everything the CLI touches outside its arguments, so tests can replace it. */
 export interface CliEnv {
   cwd: string;
-  stdout: (text: string) => void;
-  stderr: (text: string) => void;
-  fetchPackument: FetchPackument;
-  fetchTarball: FetchTarball;
+  writeStdout: (text: string) => void;
+  writeStderr: (text: string) => void;
+  fetchPackument: PackumentFetcher;
+  fetchTarball: TarballFetcher;
   now: Date;
 }
 
-export function defaultEnv(): CliEnv {
+export function createDefaultEnv(): CliEnv {
   return {
     cwd: process.cwd(),
-    stdout: (text) => process.stdout.write(text),
-    stderr: (text) => process.stderr.write(text),
-    fetchPackument: registryFetcher(),
-    fetchTarball: tarballFetcher(),
+    writeStdout: (text) => process.stdout.write(text),
+    writeStderr: (text) => process.stderr.write(text),
+    fetchPackument: createPackumentFetcher(),
+    fetchTarball: createTarballFetcher(),
     now: new Date(),
   };
 }
@@ -64,7 +64,7 @@ function parseArgs(argv: string[]): Args {
   return args;
 }
 
-function git(cwd: string, args: string[]): string {
+function runGit(cwd: string, args: string[]): string {
   // LC_ALL=C keeps git's messages in English so the checks below can read them.
   return execFileSync('git', args, {
     cwd,
@@ -81,49 +81,51 @@ interface GitError {
   code?: string;
 }
 
-const stderrOf = (err: unknown) => (err as GitError).stderr ?? '';
+const getStderr = (err: unknown) => (err as GitError).stderr ?? '';
 
 /** Why a git command failed: its own message, and how it ended if not by itself. */
-function whyGitFailed(err: unknown): string {
+function formatGitFailure(err: unknown): string {
   const e = err as GitError;
-  const parts = [stderrOf(err).trim()];
+  const parts = [getStderr(err).trim()];
   if (e.signal) parts.push(`killed by ${e.signal}`);
   if (e.code === 'ENOBUFS') parts.push('output too large');
-  return parts.filter(Boolean).join('; ') || messageOf(err);
+  return parts.filter(Boolean).join('; ') || getErrorMessage(err);
 }
 
 /** The lockfile at `ref`, or null when it did not exist there (every package is then new). */
-function lockfileAt(cwd: string, ref: string): string | null {
+function readRefLockfile(cwd: string, ref: string): string | null {
   // Spawning git in a missing directory fails with ENOENT too; say which it is.
   let stat;
   try {
     stat = statSync(cwd, { throwIfNoEntry: false });
   } catch (err) {
     // EACCES and the like: throwIfNoEntry only keeps statSync quiet about a missing entry.
-    const code = (err as { code?: string }).code ?? messageOf(err);
+    const code = (err as { code?: string }).code ?? getErrorMessage(err);
     throw new Error(`working directory ${cwd} cannot be used: ${code}`, { cause: err });
   }
   if (!stat) throw new Error(`working directory ${cwd} does not exist`);
   if (!stat.isDirectory()) throw new Error(`working directory ${cwd} is not a directory`);
   let prefix: string;
   try {
-    prefix = git(cwd, ['rev-parse', '--show-prefix']).trim();
+    prefix = runGit(cwd, ['rev-parse', '--show-prefix']).trim();
   } catch (err) {
     const hint = 'compare two files instead: bumpvet <old-lock> <new-lock>';
-    if (/not a git repository/.test(stderrOf(err))) {
+    if (/not a git repository/.test(getStderr(err))) {
       throw new Error(`not inside a git repository; ${hint}`, { cause: err });
     }
     if ((err as GitError).code === 'ENOENT') {
       throw new Error(`git not found; ${hint}`, { cause: err });
     }
-    throw new Error(`git rev-parse failed: ${whyGitFailed(err)}`, { cause: err });
+    throw new Error(`git rev-parse failed: ${formatGitFailure(err)}`, { cause: err });
   }
   if (ref === 'HEAD') {
     try {
-      git(cwd, ['rev-parse', '--verify', 'HEAD']);
+      runGit(cwd, ['rev-parse', '--verify', 'HEAD']);
     } catch (err) {
-      if (/Needed a single revision/.test(stderrOf(err))) return null; // no commits yet
-      throw new Error(`git rev-parse --verify HEAD failed: ${whyGitFailed(err)}`, { cause: err });
+      if (/Needed a single revision/.test(getStderr(err))) return null; // no commits yet
+      throw new Error(`git rev-parse --verify HEAD failed: ${formatGitFailure(err)}`, {
+        cause: err,
+      });
     }
   }
   // Resolve the ref to a commit that is really there, once, and read from that.
@@ -131,17 +133,17 @@ function lockfileAt(cwd: string, ref: string): string | null {
   // in 'HEAD'"), which would look like "no lockfile at that ref".
   let commit: string;
   try {
-    commit = git(cwd, ['rev-parse', '--verify', `${ref}^{commit}`]).trim();
+    commit = runGit(cwd, ['rev-parse', '--verify', `${ref}^{commit}`]).trim();
   } catch (err) {
     let shallow = false;
     try {
-      shallow = git(cwd, ['rev-parse', '--is-shallow-repository']).trim() === 'true';
+      shallow = runGit(cwd, ['rev-parse', '--is-shallow-repository']).trim() === 'true';
     } catch {
       // Not knowing whether the clone is shallow only loses the hint below.
     }
     const hint = shallow ? ' (this is a shallow clone: fetch the commit first)' : '';
     throw new Error(
-      `${ref} does not name a commit in this repository: ${whyGitFailed(err)}${hint}`,
+      `${ref} does not name a commit in this repository: ${formatGitFailure(err)}${hint}`,
       {
         cause: err,
       },
@@ -149,10 +151,10 @@ function lockfileAt(cwd: string, ref: string): string | null {
   }
   const object = `${commit}:${prefix}package-lock.json`;
   try {
-    return git(cwd, ['show', object]);
+    return runGit(cwd, ['show', object]);
   } catch (err) {
-    if (/does not exist|exists on disk, but not in/.test(stderrOf(err))) return null;
-    throw new Error(`git show ${object} (${ref}) failed: ${whyGitFailed(err)}`, { cause: err });
+    if (/does not exist|exists on disk, but not in/.test(getStderr(err))) return null;
+    throw new Error(`git show ${object} (${ref}) failed: ${formatGitFailure(err)}`, { cause: err });
   }
 }
 
@@ -171,20 +173,20 @@ export async function runCli(argv: string[], env: CliEnv): Promise<number> {
   try {
     const args = parseArgs(argv);
     if (args.help) {
-      env.stdout(USAGE);
+      env.writeStdout(USAGE);
       return 0;
     }
     const [oldText, newText] =
       args.files.length === 2
         ? [readLockfile(env.cwd, args.files[0]!), readLockfile(env.cwd, args.files[1]!)]
-        : [lockfileAt(env.cwd, args.base), readLockfile(env.cwd, 'package-lock.json')];
+        : [readRefLockfile(env.cwd, args.base), readLockfile(env.cwd, 'package-lock.json')];
     const results = await vetLockfiles(oldText, newText, env.fetchPackument, env.fetchTarball, {
       now: env.now,
     });
-    env.stdout(args.json ? formatJson(results) : formatText(results));
+    env.writeStdout(args.json ? formatJson(results) : formatText(results));
     return results.some((r) => r.verdict === 'block') ? 1 : 0;
   } catch (err) {
-    env.stderr(`bumpvet: ${printable(messageOf(err))}\n`);
+    env.writeStderr(`bumpvet: ${escapeText(getErrorMessage(err))}\n`);
     return 2;
   }
 }

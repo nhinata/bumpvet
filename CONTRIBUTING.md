@@ -107,9 +107,9 @@ rest is here.
 
 **Outside data is untrusted.** Registry JSON and lockfiles come from the
 network or from a pull request. Type them as data where nothing is guaranteed
-(`slim()` in `src/registry.ts` takes the registry response as `unknown` and
-keeps each field only if it has the expected type). Look entries up with
-`Object.hasOwn`, never a plain index: a key from outside data such as
+(`parsePackument()` in `src/registry.ts` takes the registry response as
+`unknown` and keeps each field only if it has the expected type). Look entries
+up with `Object.hasOwn`, never a plain index: a key from outside data such as
 `constructor` would otherwise find an inherited member.
 
 **No runtime dependencies.** `dependencies` in `package.json` stays empty. A
@@ -139,10 +139,52 @@ that is not obvious from the code: a threshold, a registry quirk, a trade-off.
 _content_, _timing_, _tamper_. Signal ids are kebab-case and describe what was
 observed (`publisher-changed`), not what to do about it.
 
+A function is named for what it does: a verb, then what it acts on or makes,
+with no preposition (`findEarlierVersions`, not `findVersionsBefore`). This
+holds for small local functions and for functions held in parameters, fields
+and variables. A function that runs work it is handed, and a parameter that
+holds such work, may be a verb alone (`retry`, `attempt`). A name that an
+outside interface fixes stays as it is (a stream's `transform`, node-tar's
+`onentry`). Before naming a function, look for functions that do the same kind
+of work and take their verb, so that one kind of work has one verb. When two
+names need telling apart, the added word has the same form in both
+(`fetchRegistry`, `fetchGitHub`). The verbs in use:
+
+- `fetch`: sends a request over the network, or to a fake of it, and returns
+  the answer.
+- `read`: returns the contents of a file or of git.
+- `write`: changes something outside: a file, the output, a comment.
+- `run`: runs a process, a program, or work given to it.
+- `parse`: reads a value out of text, bytes or an `unknown` value.
+- `get`: returns a field as it is, or a default when it is missing, or that
+  field of each item (`getIds`).
+- `find`: looks for something in a value or a collection and returns it, or
+  nothing (`findEarlierVersions`, `findEntryProblem`).
+- `format`: builds text for people to read: a report, a message, a comment.
+- `compute`: works out a value from values: a key, a URL, a list of signals.
+- `create`: makes something new: a function, an error, a signal; in tests,
+  data for a test, whatever its type.
+- `is`, `has`: answers yes or no.
+- `vet`: judges lockfile changes and returns their results.
+- `diff`: compares two lockfiles and returns the changes.
+- `decide`: returns a verdict.
+
+Other verbs are used where they say exactly what is done (`sort`, `count`,
+`escape`, `wait`). A type or a class is a noun (`LockPackage`, `TarScanner`), a
+type of function too (`PackumentFetcher`), and an error class ends in `Error`.
+Types and classes are PascalCase, and functions and variables camelCase,
+except that a value that is not a function, at the top of a module, is
+UPPER_SNAKE_CASE when it comes from the source alone (values written in the
+code, and what is computed only from them, such as `1024 * 1024`) and its
+contents are not changed after it is made. A value that depends on a file, an
+argument, the environment, the time or where the code runs, and a value inside
+a function, are camelCase.
+
 **One rule, one place.** A rule the code relies on, such as what counts as the
-same artifact (`artifactKey()` in `src/lockfile.ts`), is written once, in one
-function, and every place that needs it calls that function. Code that looks different
-can still encode the same rule: a comparison and a lookup key, for example.
+same artifact (`computeArtifactKey()` in `src/lockfile.ts`), is written once,
+in one function, and every place that needs it calls that function. Code that
+looks different can still encode the same rule: a comparison and a lookup key,
+for example.
 Before writing a rule, look for code that already encodes it; before changing
 one, find every place that uses it. If you are about to write a comment such
 as "as in X" or "keep in sync with Y", move the rule into one place instead.
@@ -185,9 +227,12 @@ A test that protects none of these is not added. When a behavior is removed,
 its tests go with it.
 
 - Group tests by the public function they exercise (`parseLockfile`,
-  `diffLockfiles`, `computeSignals`, `decide`, `vetChanges`, `runCli`, and the
-  action's `verdictOf` and `runComment`), not
+  `diffLockfiles`, `computeSignals`, `decideVerdict`, `vetChanges`, `runCli`,
+  and the action's `decideReportedVerdict` and `runComment`), not
   private helpers, and put a new test in the group of the function it calls.
+- Put what only one `describe` uses, directly or through the functions it
+  calls, inside that `describe`; the same holds for a `describe` inside
+  another. What is outside a `describe` is used by more than one.
 - Build fixtures that could really occur: a signal with its real group, a
   lockfile entry npm could write, input an attacker could write under the
   [threat model](DESIGN.md#threat-model) (adversarial or malformed lockfile
