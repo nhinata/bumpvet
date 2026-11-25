@@ -48,7 +48,7 @@ runs:
       id: install
       shell: bash
       env:
-        BUMPVET_VERSION: 0.8.1 # x-release-please-version
+        BUMPVET_VERSION: 0.8.2 # x-release-please-version
       run: |
         dir="$RUNNER_TEMP/bumpvet-$BUMPVET_VERSION"
         mkdir -p "$dir"
