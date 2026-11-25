@@ -9,6 +9,20 @@ const signal = <K extends SignalId>(id: K, before: string, after: string): Signa
   ({ id, group: SIGNALS[id], before, after }) as Signal;
 
 /**
+ * Why bumpvet cannot compare a change with the public registry, as a signal
+ * shows it: the problem with the entry, with where it comes from after it if
+ * known, or where it comes from; nothing when bumpvet can compare it.
+ */
+function formatSource(problem: string | undefined, source: string | undefined) {
+  return problem && source ? `${problem} (${source})` : (problem ?? source);
+}
+
+/** Whether bumpvet can compare the change with the public registry (see formatSource). */
+export function isComparable(change: Change): boolean {
+  return formatSource(change.problem, change.source) === undefined;
+}
+
+/**
  * Compares the new version with the versions before it and returns what
  * changed, from the registry's metadata; tarballSignals adds what the
  * tarballs say.
@@ -19,11 +33,14 @@ export function computeSignals(
   opts: SignalOptions,
 ): Signal[] {
   const { now, baselineSize = 20, freshHours = 72 } = opts;
-  if (change.source) {
+  const after = formatSource(change.problem, change.source);
+  if (after !== undefined) {
     // Nothing to compare against. Moving off the registry is how lockfile injection looks.
-    const moved = change.from !== null && !change.fromSource;
-    const before = change.fromSource ?? (change.from === null ? 'not installed' : 'npm registry');
-    return [signal(moved ? 'source-changed' : 'not-from-registry', before, change.source)];
+    const moved = change.from !== null && !change.fromSource && !change.fromProblem;
+    const before =
+      formatSource(change.fromProblem, change.fromSource) ??
+      (change.from === null ? 'not installed' : 'npm registry');
+    return [signal(moved ? 'source-changed' : 'not-from-registry', before, after)];
   }
 
   const signals: Signal[] = [];
@@ -118,7 +135,8 @@ export function tarballsToRead(
   packument: Packument | null,
   signals: Signal[],
 ): { next: VersionManifest; previous?: VersionManifest } | undefined {
-  if (change.source || !packument || signals.some((s) => s.group === 'tamper')) return undefined;
+  if (!isComparable(change) || !packument || signals.some((s) => s.group === 'tamper'))
+    return undefined;
   const versions = comparedVersions(change, packument);
   return versions && { next: versions.next, previous: versions.reference };
 }

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { vetChanges, vetLockfiles } from '../src/vet.js';
+import type { FetchPackument } from '../src/types/registry.js';
 import type { FetchTarball } from '../src/types/tarball.js';
 import { fakeRegistry, lockfile, packument, tarballsAsPublished } from './helpers.js';
 
@@ -114,6 +115,25 @@ describe('vetChanges: which tarballs are read', () => {
       ['not-from-registry'],
     ]);
     expect(read).toEqual([]);
+  });
+
+  it('does not look up an entry it cannot read, whose name may not be a package name', async () => {
+    const looked: string[] = [];
+    const fetchPackument: FetchPackument = (name, signal) => {
+      looked.push(name);
+      return registry(name, signal);
+    };
+    const { read, fetchTarball } = reading();
+    const change = {
+      name: '../evil',
+      from: null,
+      to: '1.0.0',
+      problem: 'invalid package name "../evil"',
+    };
+    const [r] = await vetChanges([change], fetchPackument, fetchTarball, { now });
+    expect(looked).toEqual([]);
+    expect(read).toEqual([]);
+    expect(r?.signals.map((s) => s.id)).toEqual(['not-from-registry']);
   });
 
   it('does not read the compared version when the new one was not read', async () => {
@@ -256,6 +276,26 @@ describe('vetLockfiles: what a change is compared with', () => {
       });
       expect(await vet(before, after)).toEqual([
         { name: 'semver', from: '6.3.1', to: '7.6.0', signals: ['install-scripts'] },
+      ]);
+    });
+
+    it('does not count an entry it could not read before as coming from the registry', async () => {
+      const before = lock({
+        'node_modules/x': { link: true },
+        'node_modules/y': { ...lockfileEntry('y', '1.0.0'), integrity: 5 },
+      });
+      const after = lock({
+        'node_modules/x': link('vendor/x'),
+        'node_modules/y': { version: '1.0.0', resolved: 'git+ssh://git@github.com/x/y.git#abc' },
+      });
+      expect(await vet(before, after)).toEqual([
+        {
+          name: 'x',
+          from: 'link to nothing',
+          to: 'link to vendor/x',
+          signals: ['not-from-registry'],
+        },
+        { name: 'y', from: '1.0.0', to: '1.0.0', signals: ['not-from-registry'] },
       ]);
     });
 

@@ -33,36 +33,42 @@ function invalidField(entry: JsonObject): string | undefined {
 }
 
 /**
- * Where an entry comes from, when bumpvet cannot vet it as a version of the
- * public registry. Without a `resolved` (or with an empty one) npm fetches the
- * version from the registry, as it does for omit-lockfile-registry-resolved
- * (DESIGN.md, threat model). A registry URL is not judged here: whether it is
- * the right tarball is checked against the registry itself (see
- * `tarball-mismatch` in signals.ts).
+ * Why bumpvet cannot read an entry as a version, if it cannot: a field of the
+ * wrong type, a name it cannot look up, or no version. A missing version counts
+ * only for an entry from the registry: npm writes an entry for a local tarball
+ * without a version when its package.json has none (DESIGN.md, threat model).
  */
-function elsewhere(
+function findEntryProblem(
   entry: JsonObject,
   name: string,
   version: string,
-  resolved: string | undefined,
+  source: string | undefined,
 ): string | undefined {
   const invalid = invalidField(entry);
   if (invalid) return invalid;
   if (!validName(name)) return `invalid package name ${JSON.stringify(name)}`;
-  if (resolved && !resolved.startsWith(REGISTRY)) return resolved;
-  if (!version) return 'no version in the lockfile';
+  if (!version && !source) return 'no version in the lockfile';
   return undefined;
 }
 
 export interface LockPackage {
   name: string;
-  /** Empty when the entry has none (then `elsewhere` says so); a link's target for a link. */
+  /** Empty when the entry has none; a link's target for a link. */
   version: string;
   integrity?: string;
   /** The URL the lockfile records, whatever the source. */
   resolved?: string;
-  /** Set when the package does not come from the public registry: what it comes from instead. */
-  elsewhere?: string;
+  /**
+   * Where the package comes from when that is not the public registry: the
+   * `resolved` URL, or `link to <target>` for a link. Without a `resolved` (or
+   * with an empty one) npm fetches the version from the registry, as it does
+   * for omit-lockfile-registry-resolved (DESIGN.md, threat model). A registry
+   * URL is not judged here: whether it is the right tarball is checked against
+   * the registry itself (see `tarball-mismatch` in signals.ts).
+   */
+  source?: string;
+  /** Why bumpvet cannot read the entry as a version, if it cannot. */
+  problem?: string;
   link?: true;
 }
 
@@ -98,19 +104,22 @@ export function parseLockfile(text: string, label = 'lockfile'): Map<string, Loc
       out.set(path, {
         name: pathName,
         version: target,
-        elsewhere: invalidField(entry) ?? target,
+        source: resolved && target,
+        problem: invalidField(entry) ?? (resolved ? undefined : target),
         link: true,
       });
       continue;
     }
     const name = str(entry.name) || pathName;
     const version = str(entry.version) ?? '';
+    const source = resolved && !resolved.startsWith(REGISTRY) ? resolved : undefined;
     out.set(path, {
       name,
       version,
       integrity: str(entry.integrity),
       resolved,
-      elsewhere: elsewhere(entry, name, version, resolved),
+      source,
+      problem: findEntryProblem(entry, name, version, source),
     });
   }
   return out;
@@ -124,7 +133,8 @@ export function parseLockfile(text: string, label = 'lockfile'): Map<string, Loc
  */
 function artifactKey(p: LockPackage): string {
   return JSON.stringify([
-    p.elsewhere,
+    p.source,
+    p.problem,
     p.integrity ? `integrity:${p.integrity}` : `url:${p.resolved ?? ''}`,
   ]);
 }
@@ -175,6 +185,7 @@ export function diffLockfiles(oldText: string | null, newText: string): Change[]
       artifact,
       change.from,
       change.fromSource,
+      change.fromProblem,
       change.fromIntegrity,
     ]);
     const listed = seen.get(key);
@@ -187,8 +198,10 @@ export function diffLockfiles(oldText: string | null, newText: string): Change[]
     if (pkg.link) {
       if (old?.link && old.version === pkg.version && artifactKey(old) === artifact) continue;
       const change: Change = { name: pkg.name, from: old?.version ?? null, to: pkg.version };
-      if (pkg.elsewhere) change.source = pkg.elsewhere;
-      if (old?.elsewhere) change.fromSource = old.elsewhere;
+      if (pkg.source) change.source = pkg.source;
+      if (pkg.problem) change.problem = pkg.problem;
+      if (old?.source) change.fromSource = old.source;
+      if (old?.problem) change.fromProblem = old.problem;
       add(path, change, artifact);
       continue;
     }
@@ -207,8 +220,10 @@ export function diffLockfiles(oldText: string | null, newText: string): Change[]
       integrity: pkg.integrity,
     };
     if (pkg.resolved) change.resolved = pkg.resolved;
-    if (pkg.elsewhere) change.source = pkg.elsewhere;
-    if (compared?.elsewhere) change.fromSource = compared.elsewhere;
+    if (pkg.source) change.source = pkg.source;
+    if (pkg.problem) change.problem = pkg.problem;
+    if (compared?.source) change.fromSource = compared.source;
+    if (compared?.problem) change.fromProblem = compared.problem;
     if (copy?.integrity && pkg.integrity && copy.integrity !== pkg.integrity) {
       change.fromIntegrity = copy.integrity;
     }

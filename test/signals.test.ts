@@ -299,6 +299,28 @@ describe('computeSignals', () => {
     });
   });
 
+  it('shows what an entry it cannot read comes from, after the problem', () => {
+    const [s] = computeSignals(
+      {
+        name: 'ms',
+        from: '2.1.3',
+        to: '2.1.3',
+        problem: 'invalid name 5',
+        source: 'git+ssh://x/ms.git#bbb',
+        fromProblem: 'invalid name 5',
+        fromSource: 'git+ssh://x/ms.git#aaa',
+      },
+      null,
+      { now },
+    );
+    expect(s).toEqual({
+      id: 'not-from-registry',
+      group: 'origin',
+      before: 'invalid name 5 (git+ssh://x/ms.git#aaa)',
+      after: 'invalid name 5 (git+ssh://x/ms.git#bbb)',
+    });
+  });
+
   it.each(['constructor', 'toString', '__proto__'])(
     'flags version %j, which only an inherited member would match, as not in the registry',
     (version) => {

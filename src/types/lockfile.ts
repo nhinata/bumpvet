@@ -11,10 +11,14 @@ export interface Change {
   integrity?: string;
   /** The URL the new lockfile records (`resolved`), if any. */
   resolved?: string;
-  /** Set when the new version does not come from the public registry. */
+  /** Where the new version comes from, when that is not the public registry (see LockPackage). */
   source?: string;
-  /** Set when the version being replaced did not come from the public registry. */
+  /** Why bumpvet cannot read the new lockfile's entry as a version, if it cannot. */
+  problem?: string;
+  /** Where the version being replaced came from, when that was not the public registry. */
   fromSource?: string;
+  /** Why bumpvet could not read the old lockfile's entry as a version, if it could not. */
+  fromProblem?: string;
   /** The old lockfile's integrity for this same version, when it differs. */
   fromIntegrity?: string;
   /** The paths in the new lockfile (`node_modules/...`) the change was found at, the least nested first. */
