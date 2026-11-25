@@ -2,19 +2,19 @@ import { createHash } from 'node:crypto';
 import { createGunzip } from 'node:zlib';
 import {
   NPM_FETCH_TIMEOUT,
-  Transient,
-  bodyFailed,
-  discard,
-  request,
-  wait,
-  withRetries,
+  TransientError,
+  createBodyError,
+  discardBody,
+  fetchRegistry,
+  waitDelay,
+  retry,
 } from './registry.js';
-import { isObject, str } from './utils/json.js';
+import { isObject, parseString } from './utils/json.js';
 import { NO_TARBALL, REGISTRY } from './types/registry.js';
 import {
   INSTALL_HOOKS,
-  type FetchTarball,
-  type NotChecked,
+  type TarballFetcher,
+  type UnreadTarball,
   type Tarball,
 } from './types/tarball.js';
 
@@ -23,44 +23,45 @@ const LIMITS = { downloadBytes: 256_000_000, unpackedBytes: 512_000_000, fileByt
 /** The largest PAX header node-tar reads; it ignores a larger one. */
 const MAX_META = 1024 * 1024;
 
-const MB = (bytes: number) => `${bytes / 1_000_000} MB`;
+const formatMegabytes = (bytes: number) => `${bytes / 1_000_000} MB`;
 
 /** A tarball bumpvet does not read: over a limit, or not in a form it reads (TarScanner). */
-class Unreadable extends Error {}
+class UnreadableError extends Error {}
 
 /**
  * Reads tarballs from the registry: the one a manifest names, checked against
  * the registry's hash, read as it arrives and never run. Network errors and
- * the statuses npm retries are tried again (withRetries). A tarball that does
+ * the statuses npm retries are tried again (retry). A tarball that does
  * not match the registry's hash fails the run, as a broken registry does.
  *
  * Each tarball is read once, and later calls share that read, whatever signal
  * they pass: give one fetcher one signal, as a run does.
  */
-export function tarballFetcher(
+export function createTarballFetcher(
   fetchImpl: typeof fetch = fetch,
-  waitImpl = wait,
+  waitDelayImpl = waitDelay,
   limits = LIMITS,
-): FetchTarball {
-  const cache = new Map<string, Promise<Tarball | NotChecked>>();
+): TarballFetcher {
+  const cache = new Map<string, Promise<Tarball | UnreadTarball>>();
   return (manifest, what, signal) => {
     const { tarball: url, integrity, shasum } = manifest.dist ?? {};
     const key = JSON.stringify([url, integrity, shasum]);
     let p = cache.get(key);
     if (!p) {
-      p = (async (): Promise<Tarball | NotChecked> => {
-        if (!url) return { notChecked: NO_TARBALL };
-        if (!url.startsWith(REGISTRY)) return { notChecked: `tarball not on the registry: ${url}` };
+      p = (async (): Promise<Tarball | UnreadTarball> => {
+        if (!url) return { unreadReason: NO_TARBALL };
+        if (!url.startsWith(REGISTRY))
+          return { unreadReason: `tarball not on the registry: ${url}` };
         // sha512 where the registry has it; versions from before 2017 have only sha1.
         const sha512 = integrity?.split(/\s+/).find((h) => h.startsWith('sha512-'));
-        if (!sha512 && !shasum) return { notChecked: 'no sha512 or sha1 hash in the registry' };
+        if (!sha512 && !shasum) return { unreadReason: 'no sha512 or sha1 hash in the registry' };
         const name = `the tarball of ${what}`;
-        const read = await withRetries(
-          () => readTarball(fetchImpl, url, name, signal, limits, sha512 ? 'sha512' : 'sha1'),
+        const read = await retry(
+          () => fetchTarballOnce(fetchImpl, url, name, signal, limits, sha512 ? 'sha512' : 'sha1'),
           signal,
-          waitImpl,
+          waitDelayImpl,
         );
-        if ('notChecked' in read) return read;
+        if ('unreadReason' in read) return read;
         const ok = sha512
           ? sha512 === `sha512-${read.digest.toString('base64')}`
           : shasum === read.digest.toString('hex');
@@ -79,35 +80,35 @@ export function tarballFetcher(
  * end, so that a damaged download fails the hash check instead of passing as
  * unreadable; one over a limit is not, since no more of it is downloaded.
  */
-async function readTarball(
+async function fetchTarballOnce(
   fetchImpl: typeof fetch,
   url: string,
   what: string,
   signal: AbortSignal | undefined,
   limits: typeof LIMITS,
   algorithm: 'sha512' | 'sha1',
-): Promise<NotChecked | { read: Tarball | NotChecked; digest: Buffer }> {
-  const res = await request(fetchImpl, url, what, signal, NPM_FETCH_TIMEOUT);
+): Promise<UnreadTarball | { read: Tarball | UnreadTarball; digest: Buffer }> {
+  const res = await fetchRegistry(fetchImpl, url, what, signal, NPM_FETCH_TIMEOUT);
   // The registry lists the version, so a missing tarball is the registry's fault.
-  if (!res) throw new Transient(`registry returned 404 for ${what}`);
-  const over = { notChecked: `over ${MB(limits.downloadBytes)} to download` };
+  if (!res) throw new TransientError(`registry returned 404 for ${what}`);
+  const over = { unreadReason: `over ${formatMegabytes(limits.downloadBytes)} to download` };
   if (Number(res.headers.get('content-length')) > limits.downloadBytes) {
-    await discard(res);
+    await discardBody(res);
     return over;
   }
   const hash = createHash(algorithm);
   const scanner = new TarScanner(limits);
   let unreadable: string | undefined;
-  // Anything but Unreadable from the scanner is a bug in bumpvet, not a
+  // Anything but UnreadableError from the scanner is a bug in bumpvet, not a
   // property of the tarball: it fails the run.
   let bug: Error | undefined;
   const gunzip = createGunzip();
   gunzip.on('data', (chunk: Buffer) => {
     if (unreadable || bug) return;
     try {
-      scanner.write(chunk);
+      scanner.scanChunk(chunk);
     } catch (err) {
-      if (err instanceof Unreadable) unreadable = err.message;
+      if (err instanceof UnreadableError) unreadable = err.message;
       else bug = err instanceof Error ? err : new Error(String(err));
     }
   });
@@ -131,33 +132,33 @@ async function readTarball(
       if (!unreadable && !bug && !gunzip.write(chunk)) {
         await new Promise<void>((resolve) => {
           // Whichever comes first; the other listener is taken off again.
-          const done = () => {
-            gunzip.off('drain', done);
-            gunzip.off('error', done);
+          const stopWaiting = () => {
+            gunzip.off('drain', stopWaiting);
+            gunzip.off('error', stopWaiting);
             resolve();
           };
-          gunzip.once('drain', done);
-          gunzip.once('error', done);
+          gunzip.once('drain', stopWaiting);
+          gunzip.once('error', stopWaiting);
         });
       }
     }
   } catch (err) {
     gunzip.destroy();
-    throw bodyFailed(err, what);
+    throw createBodyError(err, what);
   }
   gunzip.end();
   await ended;
   if (bug) throw bug;
-  let read: Tarball | NotChecked;
+  let read: Tarball | UnreadTarball;
   if (unreadable) {
-    read = { notChecked: unreadable };
+    read = { unreadReason: unreadable };
   } else {
     try {
-      scanner.end();
-      read = scanner.tarball();
+      scanner.endScan();
+      read = scanner.parseTarball();
     } catch (err) {
-      if (!(err instanceof Unreadable)) throw err;
-      read = { notChecked: err.message };
+      if (!(err instanceof UnreadableError)) throw err;
+      read = { unreadReason: err.message };
     }
   }
   return { read, digest: hash.digest() };
@@ -168,19 +169,19 @@ async function readTarball(
  * installs the package: a value that is not a string, or is empty, runs
  * nothing (read-package-json-fast drops it).
  */
-function packageJsonHooks(packageJson: Buffer | undefined): Tarball['scripts'] {
+function parseInstallHooks(packageJson: Buffer | undefined): Tarball['scripts'] {
   if (!packageJson) return {};
   let pkg: unknown;
   try {
     // npm's JSON parser drops a byte order mark.
     pkg = JSON.parse(packageJson.toString('utf8').replace(/^\uFEFF/, ''));
   } catch {
-    throw new Unreadable('package.json is not valid JSON');
+    throw new UnreadableError('package.json is not valid JSON');
   }
   const scripts = isObject(pkg) && isObject(pkg.scripts) ? pkg.scripts : {};
   return Object.fromEntries(
     INSTALL_HOOKS.flatMap((h) => {
-      const script = Object.hasOwn(scripts, h) ? str(scripts[h]) : undefined;
+      const script = Object.hasOwn(scripts, h) ? parseString(scripts[h]) : undefined;
       return script ? [[h, script]] : [];
     }),
   );
@@ -203,20 +204,20 @@ class TarScanner {
   private unpacked = 0;
   private ended = false;
   /** The entry whose body comes next: its bytes left, the padding after it, and what to keep. */
-  private entry?: { left: number; pad: number; keep?: Buffer[]; done: (body: Buffer) => void };
+  private entry?: { left: number; pad: number; keep?: Buffer[]; takeBody: (body: Buffer) => void };
   /** What PAX headers and GNU long names gave the next entry, merged in order as node-tar does. */
   private meta?: Meta;
 
   constructor(private readonly limits: typeof LIMITS) {}
 
-  write(chunk: Buffer): void {
+  scanChunk(chunk: Buffer): void {
     this.unpacked += chunk.length;
     if (this.unpacked > this.limits.unpackedBytes) {
-      throw new Unreadable(`over ${MB(this.limits.unpackedBytes)} unpacked`);
+      throw new UnreadableError(`over ${formatMegabytes(this.limits.unpackedBytes)} unpacked`);
     }
     if (this.ended) {
       // node-tar reads on after one zero block; only zeros may follow it here.
-      if (chunk.some((b) => b !== 0)) throw new Unreadable('tar: data after a zero block');
+      if (chunk.some((b) => b !== 0)) throw new UnreadableError('tar: data after a zero block');
       return;
     }
     this.pending = this.pending.length ? Buffer.concat([this.pending, chunk]) : chunk;
@@ -231,7 +232,7 @@ class TarScanner {
         if (this.pending.length < entry.pad) return;
         this.pending = this.pending.subarray(entry.pad);
         this.entry = undefined;
-        entry.done(Buffer.concat(entry.keep ?? []));
+        entry.takeBody(Buffer.concat(entry.keep ?? []));
         continue;
       }
       if (this.pending.length < 512) return;
@@ -239,46 +240,47 @@ class TarScanner {
       this.pending = this.pending.subarray(512);
       if (header.every((b) => b === 0)) {
         this.ended = true;
-        if (this.pending.some((b) => b !== 0)) throw new Unreadable('tar: data after a zero block');
+        if (this.pending.some((b) => b !== 0))
+          throw new UnreadableError('tar: data after a zero block');
         return;
       }
-      this.header(header);
+      this.scanHeader(header);
     }
   }
 
   /** npm reads an archive that ends after its last entry, without the zero blocks; not inside one. */
-  end(): void {
+  endScan(): void {
     if (this.entry || (!this.ended && this.pending.length)) {
-      throw new Unreadable('tar: ends inside an entry');
+      throw new UnreadableError('tar: ends inside an entry');
     }
   }
 
-  tarball(): Tarball {
-    return { scripts: packageJsonHooks(this.packageJson), bindingGyp: this.bindingGyp };
+  parseTarball(): Tarball {
+    return { scripts: parseInstallHooks(this.packageJson), bindingGyp: this.bindingGyp };
   }
 
-  private header(header: Buffer): void {
+  private scanHeader(header: Buffer): void {
     // A text field as node-tar reads it: up to a NUL, and on after a line
     // break that follows one.
-    const field = (start: number, length: number) =>
+    const parseField = (start: number, length: number) =>
       header
         .subarray(start, start + length)
         .toString('utf8')
         .replace(/\0.*/, '');
     // Every header carries a checksum; node-tar skips a header with a wrong one.
     const sum = header.reduce((s, b, i) => s + (i >= 148 && i < 156 ? 32 : b), 0);
-    if (octal(header, 148) !== sum) throw new Unreadable('tar: bad header');
-    const size = octal(header, 124);
-    if (size === undefined) throw new Unreadable('tar: size not in octal');
+    if (parseOctal(header, 148) !== sum) throw new UnreadableError('tar: bad header');
+    const size = parseOctal(header, 124);
+    if (size === undefined) throw new UnreadableError('tar: size not in octal');
     const type = String.fromCharCode(header[156]!);
-    const linkname = field(157, 100);
+    const linkname = parseField(157, 100);
     const hasLinkName = header.subarray(157, 257).some((b) => b !== 0);
     // The header's own path as node-tar reads it: the name, with the prefix
     // under the magic `ustar\0` `00`, joined on even when empty if byte 475 is
     // set.
-    let ownPath = field(0, 100);
+    let ownPath = parseField(0, 100);
     if (header.subarray(257, 265).toString('latin1') === 'ustar\u000000') {
-      const prefix = header[475] !== 0 ? field(345, 155) : field(345, 130);
+      const prefix = header[475] !== 0 ? parseField(345, 155) : parseField(345, 130);
       if (header[475] !== 0 || prefix) ownPath = `${prefix}/${ownPath}`;
     }
     const pad = (512 - (size % 512)) % 512;
@@ -289,59 +291,61 @@ class TarScanner {
       // name, which node-tar 7 reads in a PAX header. node-tar 6 also gives a
       // pending PAX size to the next header even when that is a meta header,
       // which node-tar 7 does not.
-      if (!ownPath) throw new Unreadable('tar: a meta header without a path');
-      if (hasLinkName) throw new Unreadable('tar: a link name on a meta header');
+      if (!ownPath) throw new UnreadableError('tar: a meta header without a path');
+      if (hasLinkName) throw new UnreadableError('tar: a link name on a meta header');
       if (this.meta?.size !== undefined) {
-        throw new Unreadable('tar: a meta header after a PAX size');
+        throw new UnreadableError('tar: a meta header after a PAX size');
       }
-      if (size > MAX_META) throw new Unreadable('tar: a meta header over 1 MiB');
+      if (size > MAX_META) throw new UnreadableError('tar: a meta header over 1 MiB');
       // node-tar does nothing with an empty one.
-      const done = (body: Buffer) => {
-        if (size) this.meta = { ...this.meta, ...metaOf(type, body) };
+      const applyMeta = (body: Buffer) => {
+        if (size) this.meta = { ...this.meta, ...parseMeta(type, body) };
       };
-      this.entry = { left: size, pad, keep: [], done };
+      this.entry = { left: size, pad, keep: [], takeBody: applyMeta };
       return;
     }
     const meta = this.meta;
     this.meta = undefined;
     // node-tar takes a PAX size over the header's.
     if (meta?.size !== undefined && meta.size !== size) {
-      throw new Unreadable('tar: a PAX size that differs from the header');
+      throw new UnreadableError('tar: a PAX size that differs from the header');
     }
     // A PAX or GNU long name comes before the header's own path.
     const path = meta?.path ?? ownPath;
     // node-tar skips a header without a path, a link without a target in its
     // own header, and a file or folder with one, keeping what PAX headers and
     // long names gave for the entry after it.
-    if (!path) throw new Unreadable('tar: an entry without a path');
+    if (!path) throw new UnreadableError('tar: an entry without a path');
     if (type === '1' || type === '2') {
-      if (!linkname) throw new Unreadable('tar: a link without a target');
+      if (!linkname) throw new UnreadableError('tar: a link without a target');
       // npm leaves links out (pacote).
-      this.entry = { left: size, pad, done: () => undefined };
+      this.entry = { left: size, pad, takeBody: () => undefined };
       return;
     }
-    if (hasLinkName) throw new Unreadable('tar: a link name on a file or folder');
+    if (hasLinkName) throw new UnreadableError('tar: a link name on a file or folder');
     if (type !== '0' && type !== '5')
-      throw new Unreadable(`tar: entry type ${JSON.stringify(type)}`);
-    if (type === '5' && size !== 0) throw new Unreadable('tar: a folder with a size');
-    const file = rootName(path, type === '5');
+      throw new UnreadableError(`tar: entry type ${JSON.stringify(type)}`);
+    if (type === '5' && size !== 0) throw new UnreadableError('tar: a folder with a size');
+    const file = parseRootName(path, type === '5');
 
-    const target = file === undefined ? undefined : sameFileAs(file);
+    const target = file === undefined ? undefined : parseAliasedFile(file);
     if (target) {
-      if (file !== target) throw new Unreadable(`${path}: another name for ${target}`);
+      if (file !== target) throw new UnreadableError(`${path}: another name for ${target}`);
       // npm runs node-gyp only for a binding.gyp that is a file (@npmcli/node-gyp).
       if (target === 'binding.gyp') this.bindingGyp ||= type === '0';
-      else if (type !== '0') throw new Unreadable('package.json is not a file');
-      else if (this.packageJson) throw new Unreadable('package.json twice');
+      else if (type !== '0') throw new UnreadableError('package.json is not a file');
+      else if (this.packageJson) throw new UnreadableError('package.json twice');
       else {
         if (size > this.limits.fileBytes) {
-          throw new Unreadable(`a package.json over ${MB(this.limits.fileBytes)}`);
+          throw new UnreadableError(
+            `a package.json over ${formatMegabytes(this.limits.fileBytes)}`,
+          );
         }
-        this.entry = { left: size, pad, keep: [], done: (body) => (this.packageJson = body) };
+        this.entry = { left: size, pad, keep: [], takeBody: (body) => (this.packageJson = body) };
         return;
       }
     }
-    this.entry = { left: size, pad, done: () => undefined };
+    this.entry = { left: size, pad, takeBody: () => undefined };
   }
 }
 
@@ -352,7 +356,7 @@ class TarScanner {
  * file by a short name such as `PACKAG~1.JSO` (Windows). Only these known
  * ways are covered (DESIGN.md, Known limitations).
  */
-function sameFileAs(name: string): 'package.json' | 'binding.gyp' | undefined {
+function parseAliasedFile(name: string): 'package.json' | 'binding.gyp' | undefined {
   const folded = name
     .normalize('NFKC')
     .toLowerCase()
@@ -360,7 +364,7 @@ function sameFileAs(name: string): 'package.json' | 'binding.gyp' | undefined {
   if (folded === 'package.json' || folded === 'binding.gyp') return folded;
   // A short name keeps the first three letters of the extension.
   if (/^[^.]{1,8}~[0-9]+\.(jso|gyp)$/.test(folded)) {
-    throw new Unreadable(`${name}: may be a short name for another file`);
+    throw new UnreadableError(`${name}: may be a short name for another file`);
   }
   return undefined;
 }
@@ -370,7 +374,7 @@ function sameFileAs(name: string): 'package.json' | 'binding.gyp' | undefined {
  * trimmed, in octal (so the checksum's 8-byte field runs into the type); only
  * when that is all octal digits.
  */
-function octal(header: Buffer, at: number): number | undefined {
+function parseOctal(header: Buffer, at: number): number | undefined {
   const text = header
     .subarray(at, at + 12)
     .toString('utf8')
@@ -384,12 +388,13 @@ function octal(header: Buffer, at: number): number | undefined {
  * if it is there. The path is a first folder and plain parts: none empty,
  * `.` or `..`, and no `\`; a folder may end in `/`, a file may not.
  */
-function rootName(path: string, folder: boolean): string | undefined {
+function parseRootName(path: string, folder: boolean): string | undefined {
   const parts = (folder && path.endsWith('/') ? path.slice(0, -1) : path).split('/');
   if (parts.some((p) => p === '' || p === '.' || p === '..' || p.includes('\\'))) {
-    throw new Unreadable(`tar: path ${JSON.stringify(path)}`);
+    throw new UnreadableError(`tar: path ${JSON.stringify(path)}`);
   }
-  if (parts.length < 2 && !folder) throw new Unreadable(`tar: a file outside a folder: ${path}`);
+  if (parts.length < 2 && !folder)
+    throw new UnreadableError(`tar: a file outside a folder: ${path}`);
   return parts.length === 2 ? parts[1] : undefined;
 }
 
@@ -408,7 +413,7 @@ interface Meta {
  * match, a `size` that is not a number, or a `path` node-tar would read as a
  * number, is not read.
  */
-function metaOf(type: 'x' | 'L' | 'K', body: Buffer): Meta {
+function parseMeta(type: 'x' | 'L' | 'K', body: Buffer): Meta {
   if (type === 'L') return { path: body.toString('utf8').replace(/\0.*/, '') };
   if (type === 'K') return {};
   const meta: Meta = {};
@@ -419,24 +424,24 @@ function metaOf(type: 'x' | 'L' | 'K', body: Buffer): Meta {
     const digits = body.subarray(at, space).toString('latin1');
     const length = Number(digits);
     if (space < 0 || !/^[1-9][0-9]*$/.test(digits) || at + length > body.length) {
-      throw new Unreadable('tar: bad PAX record');
+      throw new UnreadableError('tar: bad PAX record');
     }
     const record = body.subarray(space + 1, at + length).toString('utf8');
     const eq = record.indexOf('=');
     if (!record.endsWith('\n') || record.indexOf('\n') !== record.length - 1 || eq < 0) {
-      throw new Unreadable('tar: bad PAX record');
+      throw new UnreadableError('tar: bad PAX record');
     }
     const key = record.slice(0, eq);
     const value = record.slice(eq + 1, -1);
     if (key === 'path') {
-      if (/^[0-9]+$/.test(value)) throw new Unreadable('tar: a PAX path of digits');
+      if (/^[0-9]+$/.test(value)) throw new UnreadableError('tar: a PAX path of digits');
       meta.path = value;
     } else if (key === 'size') {
-      if (!/^[0-9]+$/.test(value)) throw new Unreadable('tar: a PAX size not a number');
+      if (!/^[0-9]+$/.test(value)) throw new UnreadableError('tar: a PAX size not a number');
       meta.size = Number(value);
     }
     at += length;
   }
-  if (body.subarray(at).some((b) => b !== 0)) throw new Unreadable('tar: bad PAX record');
+  if (body.subarray(at).some((b) => b !== 0)) throw new UnreadableError('tar: bad PAX record');
   return meta;
 }

@@ -21,7 +21,7 @@ const PAGE = 100;
  * @param {{ exitCode: string, hasBlock: string, hasReview: string, hasOk: string }} vet
  * @returns {Verdict}
  */
-export function verdictOf({ exitCode, hasBlock, hasReview, hasOk }) {
+export function decideReportedVerdict({ exitCode, hasBlock, hasReview, hasOk }) {
   const read = [hasBlock, hasReview, hasOk];
   if (!read.every((v) => v === 'true' || v === 'false')) return 'error';
   const [block, review, ok] = read.map((v) => v === 'true');
@@ -60,41 +60,45 @@ export function verdictOf({ exitCode, hasBlock, hasReview, hasOk }) {
  */
 export async function runComment(job, fetchImpl) {
   if (job.event !== 'pull_request') return [];
-  const place = placeOf(job.workspace, job.workingDirectory);
+  const place = computePlace(job.workspace, job.workingDirectory);
   const marker = `<!-- bumpvet: ${encodeURIComponent(place)} -->`;
   const deadline = AbortSignal.timeout(job.deadlineMs ?? DEADLINE_MS);
-  const call = caller(job, fetchImpl, deadline);
+  const fetchGitHub = createGitHubFetcher(job, fetchImpl, deadline);
   const issue = `/repos/${job.repository}/issues`;
 
   /** @type {number[]} */
   let earlier = [];
   let writing = false;
   try {
-    earlier = await ownComments(call, `${issue}/${job.pullRequest}/comments`, marker);
+    earlier = await fetchOwnCommentIds(fetchGitHub, `${issue}/${job.pullRequest}/comments`, marker);
     if (earlier.length === 0 && job.verdict === 'ok') return [];
-    const head = field(
-      await call('GET', `/repos/${job.repository}/pulls/${job.pullRequest}`),
+    const head = getField(
+      await fetchGitHub('GET', `/repos/${job.repository}/pulls/${job.pullRequest}`),
       'head',
     );
-    const headSha = field(head, 'sha');
+    const headSha = getField(head, 'sha');
     if (typeof headSha !== 'string') throw new Error('the pull request has no head');
     if (headSha !== job.headSha) return [];
 
     writing = true;
     const lines = { marker, place, job, updating: earlier.length > 0 };
-    await write(
-      call,
+    await writeComment(
+      fetchGitHub,
       issue,
       job.pullRequest,
       earlier,
-      commentBody({ ...lines, summary: job.summary }),
-      () => commentBody({ ...lines, summary: undefined, tooLong: true }),
+      formatCommentBody({ ...lines, summary: job.summary }),
+      () => formatCommentBody({ ...lines, summary: undefined, tooLong: true }),
     );
     return [];
   } catch (err) {
     const stale =
       writing && earlier.length ? ' A comment from an earlier run may be out of date.' : '';
-    return [escapeData(`The comment may not have been posted: ${messageOf(err)}${stale}`)];
+    return [
+      escapeCommandData(
+        `The comment may not have been posted: ${formatRequestFailure(err)}${stale}`,
+      ),
+    ];
   }
 }
 
@@ -104,7 +108,7 @@ export async function runComment(job, fetchImpl) {
  * @param {string} workspace
  * @param {string} workingDirectory
  */
-function placeOf(workspace, workingDirectory) {
+function computePlace(workspace, workingDirectory) {
   const rel = relative(workspace, resolve(workspace, workingDirectory));
   return rel === '' ? '.' : rel.split(sep).join('/');
 }
@@ -113,7 +117,7 @@ function placeOf(workspace, workingDirectory) {
  * @param {{ marker: string, place: string, job: CommentJob, updating: boolean, summary: string | undefined, tooLong?: boolean }} c
  * @returns {string}
  */
-function commentBody({ marker, place, job, updating, summary, tooLong }) {
+function formatCommentBody({ marker, place, job, updating, summary, tooLong }) {
   const label =
     job.verdict === 'error'
       ? 'error'
@@ -123,7 +127,7 @@ function commentBody({ marker, place, job, updating, summary, tooLong }) {
           : 'OK'
         : job.verdict.toUpperCase();
   const parts = [`**${label}**`];
-  if (place !== '.') parts.push(`in ${codeSpan(place)}`);
+  if (place !== '.') parts.push(`in ${formatCodeSpan(place)}`);
   parts.push(`head ${job.headSha.slice(0, 7)}`);
   if (job.verdict !== 'error' && job.baseSha) parts.push(`against base ${job.baseSha.slice(0, 7)}`);
   parts.push(`[run](${job.runUrl})`);
@@ -138,37 +142,38 @@ function commentBody({ marker, place, job, updating, summary, tooLong }) {
  * a command of its own.
  * @param {string} message
  */
-function escapeData(message) {
+function escapeCommandData(message) {
   return message.replace(/%/g, '%25').replace(/\r/g, '%0D').replace(/\n/g, '%0A');
 }
 
 /** @param {string} text */
-function codeSpan(text) {
+function formatCodeSpan(text) {
   const longest = Math.max(0, ...(text.match(/`+/g) ?? []).map((m) => m.length));
   const fence = '`'.repeat(longest + 1);
   return `${fence}${longest ? ` ${text} ` : text}${fence}`;
 }
 
 /**
- * @param {ReturnType<typeof caller>} call
+ * @param {ReturnType<typeof createGitHubFetcher>} fetchGitHub
  * @param {string} issue
  * @param {string} pullRequest
  * @param {number[]} earlier
  * @param {string} body
- * @param {() => string} shorter the body to send instead if GitHub refuses this one as too long
+ * @param {() => string} formatShorterBody the body to send instead if GitHub refuses this one as too long
  */
-async function write(call, issue, pullRequest, earlier, body, shorter) {
+async function writeComment(fetchGitHub, issue, pullRequest, earlier, body, formatShorterBody) {
   /** @param {string} b */
-  const send = async (b) => {
+  const writeBody = async (b) => {
     // Every earlier one: two runs that overlapped can each have posted one.
-    for (const id of earlier) await call('PATCH', `${issue}/comments/${id}`, { body: b });
-    if (earlier.length === 0) await call('POST', `${issue}/${pullRequest}/comments`, { body: b });
+    for (const id of earlier) await fetchGitHub('PATCH', `${issue}/comments/${id}`, { body: b });
+    if (earlier.length === 0)
+      await fetchGitHub('POST', `${issue}/${pullRequest}/comments`, { body: b });
   };
   try {
-    await send(body);
+    await writeBody(body);
   } catch (err) {
     if (!(err instanceof HttpError) || err.status !== 422) throw err;
-    await send(shorter());
+    await writeBody(formatShorterBody());
   }
 }
 
@@ -188,7 +193,7 @@ class HttpError extends Error {
  * @param {typeof fetch} fetchImpl
  * @param {AbortSignal} deadline
  */
-function caller(job, fetchImpl, deadline) {
+function createGitHubFetcher(job, fetchImpl, deadline) {
   /**
    * @param {string} method
    * @param {string} path
@@ -210,7 +215,7 @@ function caller(job, fetchImpl, deadline) {
     /** @type {unknown} */
     const json = await res.json().catch(() => undefined);
     if (!res.ok) {
-      const detail = field(json, 'message');
+      const detail = getField(json, 'message');
       throw new HttpError(
         `${method} ${path}: ${res.status}${typeof detail === 'string' ? ` ${detail}` : ''}.`,
         res.status,
@@ -223,24 +228,24 @@ function caller(job, fetchImpl, deadline) {
 
 /**
  * The ids of this working directory's comments by earlier runs.
- * @param {ReturnType<typeof caller>} call
+ * @param {ReturnType<typeof createGitHubFetcher>} fetchGitHub
  * @param {string} path
  * @param {string} marker
  * @returns {Promise<number[]>}
  */
-async function ownComments(call, path, marker) {
+async function fetchOwnCommentIds(fetchGitHub, path, marker) {
   /** @type {number[]} */
   const ids = [];
   for (let page = 1; ; page++) {
-    const comments = await call('GET', `${path}?per_page=${PAGE}&page=${page}`);
+    const comments = await fetchGitHub('GET', `${path}?per_page=${PAGE}&page=${page}`);
     if (!Array.isArray(comments)) throw new Error(`GET ${path}: the response is not a list.`);
     /** @type {unknown[]} */
     const list = comments;
     for (const c of list) {
-      const body = field(c, 'body');
-      if (field(field(c, 'user'), 'login') !== AUTHOR) continue;
+      const body = getField(c, 'body');
+      if (getField(getField(c, 'user'), 'login') !== AUTHOR) continue;
       if (typeof body !== 'string' || !body.startsWith(marker)) continue;
-      const id = field(c, 'id');
+      const id = getField(c, 'id');
       if (typeof id !== 'number') throw new Error(`GET ${path}: a comment has no id.`);
       ids.push(id);
     }
@@ -253,14 +258,14 @@ async function ownComments(call, path, marker) {
  * @param {string} key
  * @returns {unknown}
  */
-function field(value, key) {
+function getField(value, key) {
   return typeof value === 'object' && value !== null && Object.hasOwn(value, key)
     ? /** @type {Record<string, unknown>} */ (value)[key]
     : undefined;
 }
 
 /** @param {unknown} err */
-function messageOf(err) {
+function formatRequestFailure(err) {
   if (err instanceof Error && err.name === 'TimeoutError') return 'GitHub did not answer in time.';
   return err instanceof Error ? err.message : String(err);
 }

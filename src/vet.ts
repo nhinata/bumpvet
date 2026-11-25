@@ -1,16 +1,21 @@
 import { diffLockfiles } from './lockfile.js';
-import { computeSignals, isComparable, tarballSignals, tarballsToRead } from './signals.js';
-import { decide } from './verdict.js';
+import {
+  computeSignals,
+  isComparable,
+  computeTarballSignals,
+  findTarballVersions,
+} from './signals.js';
+import { decideVerdict } from './verdict.js';
 import type { Change } from './types/lockfile.js';
-import type { FetchPackument, VersionManifest } from './types/registry.js';
-import type { FetchTarball } from './types/tarball.js';
+import type { PackumentFetcher, VersionManifest } from './types/registry.js';
+import type { TarballFetcher } from './types/tarball.js';
 import type { SignalOptions } from './types/signals.js';
 import type { PackageResult } from './types/verdicts.js';
 
 export async function vetChanges(
   changes: Change[],
-  fetchPackument: FetchPackument,
-  fetchTarball: FetchTarball,
+  fetchPackument: PackumentFetcher,
+  fetchTarball: TarballFetcher,
   opts: SignalOptions,
   concurrency = 8,
 ): Promise<PackageResult[]> {
@@ -19,7 +24,7 @@ export async function vetChanges(
   // After one change fails the run has failed: start no more fetches, and stop
   // those under way, with any wait before a retry.
   const stop = new AbortController();
-  const worker = async () => {
+  const runWorker = async () => {
     while (!stop.signal.aborted && next < changes.length) {
       const i = next++;
       const change = changes[i]!;
@@ -28,14 +33,16 @@ export async function vetChanges(
       try {
         if (isComparable(change)) packument = await fetchPackument(change.name, stop.signal);
         signals = computeSignals(change, packument, opts);
-        const toRead = tarballsToRead(change, packument, signals);
+        const toRead = findTarballVersions(change, packument, signals);
         if (toRead) {
-          const read = (m: VersionManifest) =>
+          const fetchVersionTarball = (m: VersionManifest) =>
             fetchTarball(m, `${change.name}@${m.version}`, stop.signal);
-          const tarball = await read(toRead.next);
+          const tarball = await fetchVersionTarball(toRead.next);
           const previous =
-            toRead.previous && !('notChecked' in tarball) ? await read(toRead.previous) : undefined;
-          signals.push(...tarballSignals(tarball, previous));
+            toRead.previous && !('unreadReason' in tarball)
+              ? await fetchVersionTarball(toRead.previous)
+              : undefined;
+          signals.push(...computeTarballSignals(tarball, previous));
         }
       } catch (err) {
         stop.abort();
@@ -45,22 +52,22 @@ export async function vetChanges(
         name: change.name,
         from: change.from,
         to: change.to,
-        verdict: decide(signals),
+        verdict: decideVerdict(signals),
         signals,
       };
       if (change.paths) result.paths = change.paths;
       results[i] = result;
     }
   };
-  await Promise.all(Array.from({ length: Math.min(concurrency, changes.length) }, worker));
+  await Promise.all(Array.from({ length: Math.min(concurrency, changes.length) }, runWorker));
   return results;
 }
 
 export async function vetLockfiles(
   oldText: string | null,
   newText: string,
-  fetchPackument: FetchPackument,
-  fetchTarball: FetchTarball,
+  fetchPackument: PackumentFetcher,
+  fetchTarball: TarballFetcher,
   opts: SignalOptions,
 ): Promise<PackageResult[]> {
   return vetChanges(diffLockfiles(oldText, newText), fetchPackument, fetchTarball, opts);

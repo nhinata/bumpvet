@@ -1,5 +1,5 @@
 /** The message of anything thrown. */
-export const messageOf = (err: unknown): string =>
+export const getErrorMessage = (err: unknown): string =>
   err instanceof Error ? err.message : String(err);
 
 /**
@@ -9,12 +9,12 @@ export const messageOf = (err: unknown): string =>
  * cause is an AggregateError with an empty message, and the reasons are its
  * errors.
  */
-export function messageWithCause(err: unknown): string {
-  const message = messageOf(err);
+export function formatErrorChain(err: unknown): string {
+  const message = getErrorMessage(err);
   const cause = err instanceof Error ? err.cause : undefined;
   if (cause === undefined) return message;
   const reason =
-    messageOf(cause) ||
-    (cause instanceof AggregateError ? cause.errors.map(messageOf).join('; ') : '');
+    getErrorMessage(cause) ||
+    (cause instanceof AggregateError ? cause.errors.map(getErrorMessage).join('; ') : '');
   return reason && !message.includes(reason) ? `${message} (${reason})` : message;
 }

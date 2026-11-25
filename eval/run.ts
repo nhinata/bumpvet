@@ -12,15 +12,15 @@
  *
  *   npm run eval [-- --per-package 10] [--baseline 5]
  */
-import { tarballFetcher } from '../src/tarball.js';
+import { createTarballFetcher } from '../src/tarball.js';
 import type { Packument } from '../src/types/registry.js';
 import { SIGNALS, type SignalId } from '../src/types/signals.js';
 import type { PackageResult, Verdict } from '../src/types/verdicts.js';
-import { messageOf } from '../src/utils/errors.js';
+import { getErrorMessage } from '../src/utils/errors.js';
 import { vetChanges } from '../src/vet.js';
-import { PACKAGES, arg, load, pool, updates } from './updates.js';
+import { packages, parseArg, fetchCachedPackument, runPool, computeUpdates } from './updates.js';
 
-const baselineSize = arg('--baseline');
+const baselineSize = parseArg('--baseline');
 const DELAYS = [
   { label: '1h after publish', hours: 1 },
   { label: '7d after publish', hours: 24 * 7 },
@@ -38,11 +38,11 @@ interface Row {
 /** Packages and updates not measured (the registry or a download failed), with why. */
 const failed = new Map<string, string>();
 const packuments = new Map<string, Packument>();
-await pool(PACKAGES, 8, async (name) => {
+await runPool(packages, 8, async (name) => {
   try {
-    packuments.set(name, await load(name));
+    packuments.set(name, await fetchCachedPackument(name));
   } catch (err) {
-    failed.set(name, messageOf(err));
+    failed.set(name, getErrorMessage(err));
   }
 });
 const fetchPackument = (name: string) => Promise.resolve(packuments.get(name) ?? null);
@@ -52,7 +52,7 @@ const fetchPackument = (name: string) => Promise.resolve(packuments.get(name) ??
  * its length.
  */
 const tarballBytes = new Map<string, number>();
-const fetchTarball = tarballFetcher((async (url: string, init?: RequestInit) => {
+const fetchTarball = createTarballFetcher((async (url: string, init?: RequestInit) => {
   const res = await fetch(url, init);
   if (!res.body) return res;
   let bytes = 0;
@@ -73,7 +73,7 @@ const fetchTarball = tarballFetcher((async (url: string, init?: RequestInit) => 
 }) as typeof fetch);
 
 const tasks = [...packuments].flatMap(([name, p]) =>
-  updates(p).flatMap(({ from, to }) =>
+  computeUpdates(p).flatMap(({ from, to }) =>
     DELAYS.map((d) => ({
       change: { name, from, to },
       delay: d.label,
@@ -82,7 +82,7 @@ const tasks = [...packuments].flatMap(([name, p]) =>
   ),
 );
 const rows: Row[] = [];
-await pool(tasks, 8, async (t) => {
+await runPool(tasks, 8, async (t) => {
   const update = `${t.change.name} ${t.change.from} -> ${t.change.to}`;
   let result: PackageResult;
   try {
@@ -91,7 +91,7 @@ await pool(tasks, 8, async (t) => {
       await vetChanges([t.change], fetchPackument, fetchTarball, { now: t.now, baselineSize })
     )[0]!;
   } catch (err) {
-    failed.set(update, messageOf(err));
+    failed.set(update, getErrorMessage(err));
     return;
   }
   rows.push({
@@ -108,20 +108,20 @@ rows.sort((a, b) => a.update.localeCompare(b.update));
 // An update is measured only when both delays were: the two lines compare the same updates.
 const measured = rows.filter((r) => !failed.has(r.update));
 
-const pct = (n: number, total: number) => `${((100 * n) / total).toFixed(1)}%`;
+const formatPercent = (n: number, total: number) => `${((100 * n) / total).toFixed(1)}%`;
 for (const d of DELAYS) {
   const set = measured.filter((r) => r.delay === d.label);
   const n = set.length;
   console.log(`\n== ${d.label}: ${n} updates of ${packuments.size} packages`);
   for (const v of ['ok', 'review', 'block'] as const) {
     const c = set.filter((r) => r.verdict === v).length;
-    console.log(`  ${v.padEnd(7)} ${String(c).padStart(4)}  ${pct(c, n)}`);
+    console.log(`  ${v.padEnd(7)} ${String(c).padStart(4)}  ${formatPercent(c, n)}`);
   }
   // Every signal, so one that never fired reads as 0.
   console.log('  signals fired:');
   for (const s of Object.keys(SIGNALS) as SignalId[]) {
     const c = set.filter((r) => r.signals.includes(s)).length;
-    console.log(`    ${s.padEnd(20)} ${String(c).padStart(4)}  ${pct(c, n)}`);
+    console.log(`    ${s.padEnd(20)} ${String(c).padStart(4)}  ${formatPercent(c, n)}`);
   }
 }
 
@@ -135,11 +135,12 @@ for (const d of DELAYS) {
 }
 
 const sizes = [...tarballBytes].sort((a, b) => b[1] - a[1]);
-const mb = (bytes: number) => `${(bytes / 1_000_000).toFixed(1)} MB`;
+const formatRoundedMegabytes = (bytes: number) => `${(bytes / 1_000_000).toFixed(1)} MB`;
 console.log(
-  `\n== tarballs read: ${sizes.length}, ${mb(sizes.reduce((sum, [, b]) => sum + b, 0))} in all`,
+  `\n== tarballs read: ${sizes.length}, ${formatRoundedMegabytes(sizes.reduce((sum, [, b]) => sum + b, 0))} in all`,
 );
-for (const [url, bytes] of sizes.slice(0, 5)) console.log(`  ${mb(bytes).padStart(9)}  ${url}`);
+for (const [url, bytes] of sizes.slice(0, 5))
+  console.log(`  ${formatRoundedMegabytes(bytes).padStart(9)}  ${url}`);
 
 if (failed.size) {
   console.log(`\n== not measured (${failed.size})`);

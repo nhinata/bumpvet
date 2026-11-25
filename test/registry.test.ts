@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { registryFetcher, slim } from '../src/registry.js';
+import { createPackumentFetcher, parsePackument } from '../src/registry.js';
 import { REGISTRY } from '../src/types/registry.js';
 
-const raw = {
+const RAW = {
   name: 'pkg',
   readme: 'x'.repeat(1000),
   time: { '1.0.0': '2025-01-01T00:00:00Z' },
@@ -21,9 +21,9 @@ const raw = {
   },
 };
 
-describe('slim', () => {
+describe('parsePackument', () => {
   it('keeps what the signals read and drops the rest', () => {
-    expect(slim(raw, 'pkg')).toEqual({
+    expect(parsePackument(RAW, 'pkg')).toEqual({
       name: 'pkg',
       time: { '1.0.0': '2025-01-01T00:00:00Z' },
       versions: {
@@ -42,24 +42,24 @@ describe('slim', () => {
   });
 
   it('keeps a shasum only when it is a sha1, in lowercase', () => {
-    const shasum = (v: unknown) =>
-      slim({ versions: { '1.0.0': { dist: { shasum: v } } } }, 'pkg').versions['1.0.0']!.dist!
-        .shasum;
-    expect(shasum('AB8ECE0C4062DA5F6D2FA1D07FC4CDB5F8B9B25B')).toBe(
+    const parseShasum = (v: unknown) =>
+      parsePackument({ versions: { '1.0.0': { dist: { shasum: v } } } }, 'pkg').versions['1.0.0']!
+        .dist!.shasum;
+    expect(parseShasum('AB8ECE0C4062DA5F6D2FA1D07FC4CDB5F8B9B25B')).toBe(
       'ab8ece0c4062da5f6d2fa1d07fc4cdb5f8b9b25b',
     );
-    expect(shasum('ab8ece0c')).toBeUndefined();
-    expect(shasum('zz'.repeat(20))).toBeUndefined();
-    expect(shasum(42)).toBeUndefined();
+    expect(parseShasum('ab8ece0c')).toBeUndefined();
+    expect(parseShasum('zz'.repeat(20))).toBeUndefined();
+    expect(parseShasum(42)).toBeUndefined();
   });
 
   it('tolerates missing fields, using the requested name', () => {
-    expect(slim({ name: '', versions: {} }, 'pkg')).toEqual({
+    expect(parsePackument({ name: '', versions: {} }, 'pkg')).toEqual({
       name: 'pkg',
       time: {},
       versions: {},
     });
-    expect(slim({ versions: { '1.0.0': {} } }, 'pkg').versions['1.0.0']).toEqual({
+    expect(parsePackument({ versions: { '1.0.0': {} } }, 'pkg').versions['1.0.0']).toEqual({
       version: '1.0.0',
       _npmUser: undefined,
       dist: {
@@ -74,14 +74,17 @@ describe('slim', () => {
   it.each([[null], [[]], ['text'], [{ error: 'not found' }]])(
     'rejects a response that is not a packument: %j',
     (raw) => {
-      expect(() => slim(raw, 'pkg')).toThrow(
+      expect(() => parsePackument(raw, 'pkg')).toThrow(
         'registry sent something that is not a packument for pkg',
       );
     },
   );
 
   it('keeps a `__proto__` key as an ordinary key', () => {
-    const p = slim(JSON.parse('{"versions": {"__proto__": {"_npmUser": {"name": "x"}}}}'), 'pkg');
+    const p = parsePackument(
+      JSON.parse('{"versions": {"__proto__": {"_npmUser": {"name": "x"}}}}'),
+      'pkg',
+    );
     expect(Object.getPrototypeOf(p.versions)).toBeNull();
     expect(Object.keys(p.versions)).toEqual(['__proto__']);
   });
@@ -95,7 +98,7 @@ describe('slim', () => {
         unpublished: { time: '2021-01-01T00:00:00Z', versions: ['1.0.0'] },
       },
     };
-    expect(slim(unpublished, 'gone')).toEqual({
+    expect(parsePackument(unpublished, 'gone')).toEqual({
       name: 'gone',
       time: { created: '2020-01-01T00:00:00Z', modified: '2021-01-01T00:00:00Z' },
       versions: {},
@@ -114,7 +117,7 @@ describe('slim', () => {
         },
       },
     };
-    expect(slim(odd, 'pkg')).toEqual({
+    expect(parsePackument(odd, 'pkg')).toEqual({
       name: 'pkg',
       time: {},
       versions: {
@@ -133,104 +136,115 @@ describe('slim', () => {
   });
 });
 
-describe('registryFetcher', () => {
-  const respond = (status: number, body?: unknown, headers?: Record<string, string>) => () =>
-    Promise.resolve(
-      new Response(body === undefined ? null : JSON.stringify(body), { status, headers }),
-    );
+describe('createPackumentFetcher', () => {
+  const createResponder =
+    (status: number, body?: unknown, headers?: Record<string, string>) => () =>
+      Promise.resolve(
+        new Response(body === undefined ? null : JSON.stringify(body), { status, headers }),
+      );
   /** Records each wait instead of waiting. */
-  const waits = () => {
+  const createWaitRecorder = () => {
     const ms: number[] = [];
-    const wait = (n: number) => {
+    const waitDelay = (n: number) => {
       ms.push(n);
       return Promise.resolve();
     };
-    return { ms, wait };
+    return { ms, waitDelay };
   };
   /** Gives each response in turn, the last one for every later request. */
-  const inTurn = (...responses: (() => Promise<Response>)[]) => {
+  const createSequentialServer = (...responses: (() => Promise<Response>)[]) => {
     let calls = 0;
     const fetchImpl = (() =>
       responses[Math.min(calls++, responses.length - 1)]!()) as unknown as typeof fetch;
-    return { fetchImpl, calls: () => calls };
+    return { fetchImpl, countCalls: () => calls };
   };
-  const down = (cause: unknown) => () => Promise.reject(new TypeError('fetch failed', { cause }));
+  const createFailingResponder = (cause: unknown) => () =>
+    Promise.reject(new TypeError('fetch failed', { cause }));
 
   it('encodes scoped names and caches by name', async () => {
     const urls: string[] = [];
     const fetchImpl = (async (url: string) => {
       urls.push(url);
-      return respond(200, raw)();
+      return createResponder(200, RAW)();
     }) as unknown as typeof fetch;
-    const get = registryFetcher(fetchImpl);
-    await get('@scope/pkg');
-    await get('@scope/pkg');
+    const fetchPackument = createPackumentFetcher(fetchImpl);
+    await fetchPackument('@scope/pkg');
+    await fetchPackument('@scope/pkg');
     expect(urls).toEqual([`${REGISTRY}@scope%2fpkg`]);
   });
 
   it('returns null for a package the registry does not have, without retrying', async () => {
-    const r = inTurn(respond(404));
-    expect(await registryFetcher(r.fetchImpl, waits().wait)('nope')).toBeNull();
-    expect(r.calls()).toBe(1);
+    const r = createSequentialServer(createResponder(404));
+    expect(
+      await createPackumentFetcher(r.fetchImpl, createWaitRecorder().waitDelay)('nope'),
+    ).toBeNull();
+    expect(r.countCalls()).toBe(1);
   });
 
   it('names the package when the body is not JSON, without retrying', async () => {
-    const r = inTurn(() => Promise.resolve(new Response('<!DOCTYPE html>', { status: 200 })));
-    await expect(registryFetcher(r.fetchImpl, waits().wait)('pkg')).rejects.toThrow(
-      'registry sent invalid JSON for pkg',
+    const r = createSequentialServer(() =>
+      Promise.resolve(new Response('<!DOCTYPE html>', { status: 200 })),
     );
-    expect(r.calls()).toBe(1);
+    await expect(
+      createPackumentFetcher(r.fetchImpl, createWaitRecorder().waitDelay)('pkg'),
+    ).rejects.toThrow('registry sent invalid JSON for pkg');
+    expect(r.countCalls()).toBe(1);
   });
 
   it('fails on other client errors without retrying', async () => {
-    const r = inTurn(respond(400));
-    await expect(registryFetcher(r.fetchImpl, waits().wait)('pkg')).rejects.toThrow(
-      /^registry returned 400 for pkg$/,
-    );
-    expect(r.calls()).toBe(1);
+    const r = createSequentialServer(createResponder(400));
+    await expect(
+      createPackumentFetcher(r.fetchImpl, createWaitRecorder().waitDelay)('pkg'),
+    ).rejects.toThrow(/^registry returned 400 for pkg$/);
+    expect(r.countCalls()).toBe(1);
   });
 
   // npm's waits (fetch-retries 2, mintimeout 10 s, factor 10, maxtimeout 60 s).
   it('retries a server error after 10 and 60 seconds, then says how often it tried', async () => {
-    const r = inTurn(respond(503));
-    const w = waits();
-    await expect(registryFetcher(r.fetchImpl, w.wait)('pkg')).rejects.toThrow(
+    const r = createSequentialServer(createResponder(503));
+    const w = createWaitRecorder();
+    await expect(createPackumentFetcher(r.fetchImpl, w.waitDelay)('pkg')).rejects.toThrow(
       'registry returned 503 for pkg; gave up after 3 attempts',
     );
-    expect(r.calls()).toBe(3);
+    expect(r.countCalls()).toBe(3);
     expect(w.ms).toEqual([10_000, 60_000]);
   });
 
   it('returns the packument when a retry succeeds', async () => {
-    const r = inTurn(respond(429), respond(200, raw));
-    const p = await registryFetcher(r.fetchImpl, waits().wait)('pkg');
+    const r = createSequentialServer(createResponder(429), createResponder(200, RAW));
+    const p = await createPackumentFetcher(r.fetchImpl, createWaitRecorder().waitDelay)('pkg');
     expect(p?.versions['1.0.0']?._npmUser).toEqual({ name: 'alice' });
   });
 
   it('waits as long as Retry-After asks, in seconds or as a date, up to 60 seconds', async () => {
-    const r = inTurn(
-      respond(429, undefined, { 'retry-after': '30' }),
-      respond(503, undefined, { 'retry-after': '90' }),
-      respond(200, raw),
+    const r = createSequentialServer(
+      createResponder(429, undefined, { 'retry-after': '30' }),
+      createResponder(503, undefined, { 'retry-after': '90' }),
+      createResponder(200, RAW),
     );
-    const w = waits();
-    await registryFetcher(r.fetchImpl, w.wait)('pkg');
+    const w = createWaitRecorder();
+    await createPackumentFetcher(r.fetchImpl, w.waitDelay)('pkg');
     expect(w.ms).toEqual([30_000, 60_000]);
     // A date 30 seconds ahead; HTTP dates have whole seconds.
     const soon = new Date(Date.now() + 30_000).toUTCString();
-    const d = inTurn(respond(503, undefined, { 'retry-after': soon }), respond(200, raw));
-    const dw = waits();
-    await registryFetcher(d.fetchImpl, dw.wait)('pkg');
+    const d = createSequentialServer(
+      createResponder(503, undefined, { 'retry-after': soon }),
+      createResponder(200, RAW),
+    );
+    const dw = createWaitRecorder();
+    await createPackumentFetcher(d.fetchImpl, dw.waitDelay)('pkg');
     expect(dw.ms[0]).toBeGreaterThan(28_000);
     expect(dw.ms[0]).toBeLessThanOrEqual(30_000);
   });
 
   it('retries when the request itself fails, and names the package and the reason', async () => {
-    const r = inTurn(down(new Error('getaddrinfo ENOTFOUND r')));
-    await expect(registryFetcher(r.fetchImpl, waits().wait)('pkg')).rejects.toThrow(
+    const r = createSequentialServer(createFailingResponder(new Error('getaddrinfo ENOTFOUND r')));
+    await expect(
+      createPackumentFetcher(r.fetchImpl, createWaitRecorder().waitDelay)('pkg'),
+    ).rejects.toThrow(
       'fetching pkg from the registry failed: fetch failed (getaddrinfo ENOTFOUND r); gave up after 3 attempts',
     );
-    expect(r.calls()).toBe(3);
+    expect(r.countCalls()).toBe(3);
   });
 
   // The shapes Node.js 22 and 24 give (issue #8).
@@ -245,15 +259,17 @@ describe('registryFetcher', () => {
       ),
       { code: 'ECONNREFUSED' },
     );
-    const r = inTurn(down(refused));
-    await expect(registryFetcher(r.fetchImpl, waits().wait)('pkg')).rejects.toThrow(
+    const r = createSequentialServer(createFailingResponder(refused));
+    await expect(
+      createPackumentFetcher(r.fetchImpl, createWaitRecorder().waitDelay)('pkg'),
+    ).rejects.toThrow(
       'fetching pkg from the registry failed: fetch failed (connect ECONNREFUSED ::1:443; connect ECONNREFUSED 127.0.0.1:443)',
     );
   });
 
   // Not "invalid JSON": the body never arrived.
   it('retries when the connection closes while the body is read', async () => {
-    const closing = () => {
+    const respondClosing = () => {
       const body = new ReadableStream({
         pull(controller) {
           controller.error(new TypeError('terminated', { cause: new Error('other side closed') }));
@@ -261,10 +277,14 @@ describe('registryFetcher', () => {
       });
       return Promise.resolve(new Response(body, { status: 200 }));
     };
-    const r = inTurn(closing, respond(200, raw));
-    expect(await registryFetcher(r.fetchImpl, waits().wait)('pkg')).not.toBeNull();
-    const failing = inTurn(closing);
-    await expect(registryFetcher(failing.fetchImpl, waits().wait)('pkg')).rejects.toThrow(
+    const r = createSequentialServer(respondClosing, createResponder(200, RAW));
+    expect(
+      await createPackumentFetcher(r.fetchImpl, createWaitRecorder().waitDelay)('pkg'),
+    ).not.toBeNull();
+    const failing = createSequentialServer(respondClosing);
+    await expect(
+      createPackumentFetcher(failing.fetchImpl, createWaitRecorder().waitDelay)('pkg'),
+    ).rejects.toThrow(
       'reading the registry response for pkg failed: terminated (other side closed)',
     );
   });
@@ -275,23 +295,25 @@ describe('registryFetcher', () => {
       calls++;
       return Promise.reject(new Error('aborted'));
     }) as unknown as typeof fetch;
-    const w = waits();
+    const w = createWaitRecorder();
     const stop = new AbortController();
     stop.abort();
-    await expect(registryFetcher(fetchImpl, w.wait)('pkg', stop.signal)).rejects.toThrow(/abort/i);
+    await expect(
+      createPackumentFetcher(fetchImpl, w.waitDelay)('pkg', stop.signal),
+    ).rejects.toThrow(/abort/i);
     expect(calls).toBe(1);
     expect(w.ms).toEqual([]);
   });
 
   it('stops waiting for a retry when the signal is aborted', async () => {
-    const r = inTurn(respond(503));
+    const r = createSequentialServer(createResponder(503));
     const stop = new AbortController();
-    const get = registryFetcher(r.fetchImpl);
-    const p = get('pkg', stop.signal);
+    const fetchPackument = createPackumentFetcher(r.fetchImpl);
+    const p = fetchPackument('pkg', stop.signal);
     // Let the first request fail and the 10-second wait start.
     await new Promise((resolve) => setTimeout(resolve, 0));
     stop.abort();
     await expect(p).rejects.toThrow(/abort/i);
-    expect(r.calls()).toBe(1);
+    expect(r.countCalls()).toBe(1);
   });
 });

@@ -7,7 +7,7 @@ import { VERDICTS, type PackageResult, type Verdict } from './types/verdicts.js'
  * has `+` at column 6, a signal line has spaces up to column 10 and then a
  * signal id (one of SIGNALS), and a path line has spaces up to column 12 and
  * then `in `. Text from the lockfile or the registry (names, versions, paths,
- * signal values) comes only after the start of its own line, and printable
+ * signal values) comes only after the start of its own line, and escapeText
  * keeps it from starting a new one, so a package cannot make a line look like
  * a line of another kind.
  */
@@ -21,7 +21,7 @@ export const LINE_START = {
 } as const;
 
 /** A lockfile entry without a version has '' (see LockPackage). */
-const shown = (version: string | null) => (version === '' ? '(no version)' : version);
+const formatVersion = (version: string | null) => (version === '' ? '(no version)' : version);
 
 const ESCAPES: Record<string, string> = { '\\': '\\\\', '\n': '\\n', '\r': '\\r', '\t': '\\t' };
 
@@ -38,7 +38,7 @@ const ESCAPES: Record<string, string> = { '\\': '\\\\', '\n': '\\n', '\r': '\\r'
  * format characters. Backslashes are escaped as well, so that a newline and
  * the two characters `\n` do not look the same.
  */
-export const printable = (text: string): string =>
+export const escapeText = (text: string): string =>
   text.replace(/\\|[^\p{L}\p{M}\p{N}\p{P}\p{S}\p{Zs}]/gu, (c) => {
     const hex = c.codePointAt(0)!.toString(16);
     return ESCAPES[c] ?? (hex.length > 4 ? `\\u{${hex}}` : `\\u${hex.padStart(4, '0')}`);
@@ -60,7 +60,7 @@ const PER_PACKAGE = { name: undefined, paths: undefined } satisfies Partial<
  * long as it is JSON data like the rest of the result, so that results that
  * differ in anything else are never listed together.
  */
-const shared = (r: PackageResult) => JSON.stringify({ ...r, ...PER_PACKAGE });
+const computeSharedKey = (r: PackageResult) => JSON.stringify({ ...r, ...PER_PACKAGE });
 
 /**
  * The text report. Each REVIEW and BLOCK package is followed by the lockfile
@@ -78,17 +78,21 @@ export function formatText(results: PackageResult[]): string {
         );
       continue;
     }
-    const keys = group.map(shared);
+    const keys = group.map(computeSharedKey);
     group.forEach((r, i) => {
       const sameAsNext = keys[i] === keys[i + 1];
       const start = keys[i] === keys[i - 1] ? LINE_START.sameAsAbove : LINE_START[verdict];
-      lines.push(printable(`${start}${r.name} ${shown(r.from) ?? '(new)'} -> ${shown(r.to)}`));
-      for (const path of r.paths ?? []) lines.push(printable(`${LINE_START.path}${path}`));
+      lines.push(
+        escapeText(
+          `${start}${r.name} ${formatVersion(r.from) ?? '(new)'} -> ${formatVersion(r.to)}`,
+        ),
+      );
+      for (const path of r.paths ?? []) lines.push(escapeText(`${LINE_START.path}${path}`));
       if (sameAsNext) return;
       const width = Math.max(...r.signals.map((s) => s.id.length));
       for (const s of r.signals)
         lines.push(
-          printable(`${LINE_START.signal}${s.id.padEnd(width)}  ${s.before} -> ${s.after}`),
+          escapeText(`${LINE_START.signal}${s.id.padEnd(width)}  ${s.before} -> ${s.after}`),
         );
     });
   }
@@ -96,11 +100,11 @@ export function formatText(results: PackageResult[]): string {
 }
 
 export function formatJson(results: PackageResult[]): string {
-  const count = (v: Verdict) => results.filter((r) => r.verdict === v).length;
+  const countVerdict = (v: Verdict) => results.filter((r) => r.verdict === v).length;
   return (
     JSON.stringify(
       {
-        summary: Object.fromEntries(VERDICTS.map((v) => [v, count(v)])),
+        summary: Object.fromEntries(VERDICTS.map((v) => [v, countVerdict(v)])),
         packages: results,
       },
       null,

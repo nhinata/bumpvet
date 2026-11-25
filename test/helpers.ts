@@ -2,18 +2,18 @@ import { createHash } from 'node:crypto';
 import { gzipSync } from 'node:zlib';
 import {
   REGISTRY,
-  type FetchPackument,
+  type PackumentFetcher,
   type Packument,
   type VersionManifest,
 } from '../src/types/registry.js';
-import { INSTALL_HOOKS, type FetchTarball, type Tarball } from '../src/types/tarball.js';
+import { INSTALL_HOOKS, type TarballFetcher, type Tarball } from '../src/types/tarball.js';
 
 export interface FakeVersion {
   version: string;
   time: string;
   publisher?: string;
   provenance?: boolean;
-  /** What its tarball's package.json has; tarballsAsPublished serves it. */
+  /** What its tarball's package.json has; fetchPublishedTarball serves it. */
   scripts?: Record<string, string>;
   /** Whether its tarball has a root binding.gyp. */
   bindingGyp?: boolean;
@@ -22,7 +22,7 @@ export interface FakeVersion {
   removed?: boolean;
 }
 
-export function packument(name: string, versions: FakeVersion[]): Packument {
+export function createPackument(name: string, versions: FakeVersion[]): Packument {
   const p: Packument = {
     name,
     time: { created: versions[0]!.time, modified: versions.at(-1)!.time },
@@ -36,7 +36,7 @@ export function packument(name: string, versions: FakeVersion[]): Packument {
       _npmUser: v.publisher ? { name: v.publisher } : undefined,
       dist: {
         integrity: v.integrity ?? `sha512-${name}-${v.version}`,
-        tarball: tarballUrl(name, v.version),
+        tarball: computeTarballUrl(name, v.version),
         attestations: v.provenance ? { url: 'x' } : undefined,
       },
     };
@@ -51,19 +51,19 @@ export function packument(name: string, versions: FakeVersion[]): Packument {
   return p;
 }
 
-export function fakeRegistry(...packuments: Packument[]): FetchPackument {
+export function createFakeRegistry(...packuments: Packument[]): PackumentFetcher {
   const byName = new Map(packuments.map((p) => [p.name, p]));
   return (name) => Promise.resolve(byName.get(name) ?? null);
 }
 
-/** What packument() gave each version's tarball. */
+/** What createPackument() gave each version's tarball. */
 const published = new WeakMap<VersionManifest, Tarball>();
 
-/** The tarballs of the versions packument() made, as their FakeVersion describes them. */
-export const tarballsAsPublished: FetchTarball = (manifest) =>
+/** The tarballs of the versions createPackument() made, as their FakeVersion describes them. */
+export const fetchPublishedTarball: TarballFetcher = (manifest) =>
   Promise.resolve(published.get(manifest) ?? { scripts: {}, bindingGyp: false });
 
-export function lockfile(
+export function createLockfile(
   packages: Record<
     string,
     { version: string; name?: string; integrity?: string; resolved?: string; link?: boolean }
@@ -75,7 +75,7 @@ export function lockfile(
     const name = p.name || path.slice(path.lastIndexOf('node_modules/') + 'node_modules/'.length);
     entries[path] = {
       resolved: `https://registry.npmjs.org/${name}/-/x-${p.version}.tgz`,
-      // The same integrity packument() gives the version, as npm would record it.
+      // The same integrity createPackument() gives the version, as npm would record it.
       integrity: `sha512-${name}-${p.version}`,
       ...p,
     };
@@ -83,7 +83,7 @@ export function lockfile(
   return JSON.stringify({ name: 'app', lockfileVersion: 3, packages: entries });
 }
 
-const tarballUrl = (name: string, version: string) =>
+const computeTarballUrl = (name: string, version: string) =>
   `https://registry.npmjs.org/${name}/-/x-${version}.tgz`;
 
 /** One entry of a test tarball: a regular file unless `type` says otherwise. */
@@ -101,7 +101,7 @@ export interface TarEntry {
 }
 
 /** A tar header as node-tar writes one, with any field overridden. */
-export function tarHeader(e: TarEntry, size: number): Buffer {
+export function createTarHeader(e: TarEntry, size: number): Buffer {
   const h = Buffer.alloc(512);
   h.write(e.path, 0, 100, 'utf8');
   h.write('0000644\0', 100);
@@ -120,38 +120,42 @@ export function tarHeader(e: TarEntry, size: number): Buffer {
 }
 
 /** An entry's header, body and padding. */
-export function tarBlocks(e: TarEntry): Buffer {
+export function createTarBlocks(e: TarEntry): Buffer {
   const body = Buffer.from(e.body ?? '');
   const pad = Buffer.alloc((512 - (body.length % 512)) % 512);
-  return Buffer.concat([tarHeader(e, e.size ?? body.length), body, pad]);
+  return Buffer.concat([createTarHeader(e, e.size ?? body.length), body, pad]);
 }
 
 /** A tarball as npm packs one, gzipped, with the end-of-archive blocks; a Buffer is put in as it is. */
-export function tarball(entries: (TarEntry | Buffer)[], { gzip = true, end = true } = {}): Buffer {
-  const parts = entries.map((e) => (Buffer.isBuffer(e) ? e : tarBlocks(e)));
+export function createTgz(
+  entries: (TarEntry | Buffer)[],
+  { gzip = true, end = true } = {},
+): Buffer {
+  const parts = entries.map((e) => (Buffer.isBuffer(e) ? e : createTarBlocks(e)));
   if (end) parts.push(Buffer.alloc(1024));
   const tar = Buffer.concat(parts);
   return gzip ? gzipSync(tar) : tar;
 }
 
 /** A PAX header (`x`) of `records`, each `<length> <key>=<value>\n` with its length right. */
-export function paxHeader(records: [string, string][]): TarEntry {
+export function createPaxHeader(records: [string, string][]): TarEntry {
   const body = records
     .map(([key, value]) => {
-      const record = (len: number) => `${len} ${key}=${value}\n`;
-      let len = record(0).length;
-      while (Buffer.byteLength(record(len)) !== len) len = Buffer.byteLength(record(len));
-      return record(len);
+      const createRecord = (len: number) => `${len} ${key}=${value}\n`;
+      let len = createRecord(0).length;
+      while (Buffer.byteLength(createRecord(len)) !== len)
+        len = Buffer.byteLength(createRecord(len));
+      return createRecord(len);
     })
     .join('');
   return { path: 'PaxHeader', type: 'x', body };
 }
 
 /** A PAX header giving the next entry a long `path`. */
-export const paxPath = (path: string) => paxHeader([['path', path]]);
+export const createPaxPath = (path: string) => createPaxHeader([['path', path]]);
 
 /** A manifest for `tgz` and a fetch that serves it at its tarball URL. */
-export function served(tgz: Buffer, url = `${REGISTRY}pkg/-/pkg-1.0.0.tgz`) {
+export function createTgzServer(tgz: Buffer, url = `${REGISTRY}pkg/-/pkg-1.0.0.tgz`) {
   const manifest: VersionManifest = {
     version: '1.0.0',
     dist: {
@@ -166,5 +170,5 @@ export function served(tgz: Buffer, url = `${REGISTRY}pkg/-/pkg-1.0.0.tgz`) {
       requested === url ? new Response(new Uint8Array(tgz)) : new Response(null, { status: 404 }),
     );
   }) as unknown as typeof fetch;
-  return { manifest, fetchImpl, calls: () => calls };
+  return { manifest, fetchImpl, countCalls: () => calls };
 }

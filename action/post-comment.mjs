@@ -2,10 +2,10 @@
 // values, and its warnings appended to WARNINGS, which action.yml turns into
 // warnings.
 import { appendFileSync, readFileSync } from 'node:fs';
-import { runComment, verdictOf } from './comment.mjs';
+import { runComment, decideReportedVerdict } from './comment.mjs';
 
 /** @param {string | undefined} path */
-function readIfThere(path) {
+function readOptionalFile(path) {
   try {
     return path ? readFileSync(path, 'utf8') : undefined;
   } catch {
@@ -23,7 +23,7 @@ const warnings = await runComment(
     pullRequest: env.PULL_REQUEST ?? '',
     headSha: env.HEAD_SHA ?? '',
     baseSha: env.BASE_SHA ?? '',
-    verdict: verdictOf({
+    verdict: decideReportedVerdict({
       exitCode: env.EXIT_CODE ?? '',
       hasBlock: env.HAS_BLOCK ?? '',
       hasReview: env.HAS_REVIEW ?? '',
@@ -31,7 +31,7 @@ const warnings = await runComment(
     }),
     workspace: env.GITHUB_WORKSPACE ?? process.cwd(),
     workingDirectory: env.WORKING_DIRECTORY ?? '.',
-    summary: readIfThere(env.SUMMARY),
+    summary: readOptionalFile(env.SUMMARY),
     runUrl: `${env.GITHUB_SERVER_URL ?? ''}/${repository}/actions/runs/${env.GITHUB_RUN_ID ?? ''}/attempts/${env.GITHUB_RUN_ATTEMPT ?? ''}`,
     token: env.GITHUB_TOKEN ?? '',
   },

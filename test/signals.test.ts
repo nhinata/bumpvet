@@ -1,21 +1,21 @@
 import { describe, expect, it } from 'vitest';
-import { computeSignals, tarballSignals } from '../src/signals.js';
+import { computeSignals, computeTarballSignals } from '../src/signals.js';
 import type { Tarball } from '../src/types/tarball.js';
-import { decide } from '../src/verdict.js';
-import { packument } from './helpers.js';
+import { decideVerdict } from '../src/verdict.js';
+import { createPackument } from './helpers.js';
 import type { Signal } from '../src/types/signals.js';
 
-const now = new Date('2026-01-10T00:00:00Z');
-const ids = (signals: Signal[]) => signals.map((s) => s.id);
-
-const history = [
-  { version: '1.0.0', time: '2025-01-01T00:00:00Z', publisher: 'alice', provenance: true },
-  { version: '1.1.0', time: '2025-06-01T00:00:00Z', publisher: 'bob', provenance: true },
-];
-
 describe('computeSignals', () => {
+  const now = new Date('2026-01-10T00:00:00Z');
+  const getIds = (signals: Signal[]) => signals.map((s) => s.id);
+
+  const history = [
+    { version: '1.0.0', time: '2025-01-01T00:00:00Z', publisher: 'alice', provenance: true },
+    { version: '1.1.0', time: '2025-06-01T00:00:00Z', publisher: 'bob', provenance: true },
+  ];
+
   it('finds nothing in an ordinary release', () => {
-    const p = packument('pkg', [
+    const p = createPackument('pkg', [
       ...history,
       { version: '1.2.0', time: '2025-12-01T00:00:00Z', publisher: 'alice', provenance: true },
     ]);
@@ -23,12 +23,12 @@ describe('computeSignals', () => {
   });
 
   it('flags a publisher who did not publish any of the recent versions', () => {
-    const p = packument('pkg', [
+    const p = createPackument('pkg', [
       ...history,
       { version: '1.2.0', time: '2025-12-01T00:00:00Z', publisher: 'mallory' },
     ]);
     const signals = computeSignals({ name: 'pkg', from: '1.1.0', to: '1.2.0' }, p, { now });
-    expect(ids(signals)).toEqual(['publisher-changed', 'provenance-lost']);
+    expect(getIds(signals)).toEqual(['publisher-changed', 'provenance-lost']);
     expect(signals[0]).toEqual({
       id: 'publisher-changed',
       group: 'origin',
@@ -38,7 +38,7 @@ describe('computeSignals', () => {
   });
 
   it('does not flag a new publisher when the release has provenance', () => {
-    const p = packument('pkg', [
+    const p = createPackument('pkg', [
       ...history,
       {
         version: '1.2.0',
@@ -51,18 +51,18 @@ describe('computeSignals', () => {
   });
 
   it('flags provenance that the previous version had and the new one lacks', () => {
-    const p = packument('pkg', [
+    const p = createPackument('pkg', [
       ...history,
       { version: '1.2.0', time: '2025-12-01T00:00:00Z', publisher: 'alice' },
     ]);
-    expect(ids(computeSignals({ name: 'pkg', from: '1.1.0', to: '1.2.0' }, p, { now }))).toEqual([
-      'provenance-lost',
-    ]);
+    expect(getIds(computeSignals({ name: 'pkg', from: '1.1.0', to: '1.2.0' }, p, { now }))).toEqual(
+      ['provenance-lost'],
+    );
   });
 
   // Issue #68: the lockfile's version can predate the move to provenance.
   it('flags lost provenance when the version upgraded from predates provenance', () => {
-    const p = packument('pkg', [
+    const p = createPackument('pkg', [
       { version: '0.9.0', time: '2024-06-01T00:00:00Z', publisher: 'alice' },
       ...history,
       { version: '1.2.0', time: '2025-12-01T00:00:00Z', publisher: 'alice' },
@@ -73,7 +73,7 @@ describe('computeSignals', () => {
   });
 
   it('does not hold a stable release to a prerelease built with provenance', () => {
-    const p = packument('pkg', [
+    const p = createPackument('pkg', [
       { version: '2.0.0', time: '2025-01-01T00:00:00Z', publisher: 'alice' },
       {
         version: '2.1.0-canary.0',
@@ -87,7 +87,7 @@ describe('computeSignals', () => {
   });
 
   it('does not compare a new package with a prerelease built with provenance', () => {
-    const p = packument('pkg', [
+    const p = createPackument('pkg', [
       { version: '2.0.0', time: '2025-01-01T00:00:00Z', publisher: 'alice' },
       {
         version: '2.1.0-canary.0',
@@ -102,7 +102,7 @@ describe('computeSignals', () => {
 
   // Below 1.0.0 a caret range stays within a minor, so 0.7.x is a line of its own.
   it('does not hold a 0.x line to the next minor', () => {
-    const p = packument('pkg', [
+    const p = createPackument('pkg', [
       { version: '0.7.30', time: '2025-01-01T00:00:00Z', publisher: 'alice' },
       { version: '0.8.0', time: '2025-06-01T00:00:00Z', publisher: 'alice', provenance: true },
       { version: '0.7.31', time: '2025-12-01T00:00:00Z', publisher: 'alice' },
@@ -111,7 +111,7 @@ describe('computeSignals', () => {
   });
 
   it('does not flag an old line published without provenance beside a newer one with it', () => {
-    const p = packument('pkg', [
+    const p = createPackument('pkg', [
       { version: '1.5.0', time: '2025-01-01T00:00:00Z', publisher: 'alice' },
       { version: '2.0.0', time: '2025-06-01T00:00:00Z', publisher: 'alice', provenance: true },
       { version: '1.5.1', time: '2025-12-01T00:00:00Z', publisher: 'alice' },
@@ -120,7 +120,7 @@ describe('computeSignals', () => {
   });
 
   it('does not flag a package that never had provenance', () => {
-    const p = packument('pkg', [
+    const p = createPackument('pkg', [
       { version: '1.0.0', time: '2025-01-01T00:00:00Z', publisher: 'alice' },
       { version: '1.1.0', time: '2025-12-01T00:00:00Z', publisher: 'alice' },
     ]);
@@ -128,7 +128,7 @@ describe('computeSignals', () => {
   });
 
   it('flags a version published within the fresh window', () => {
-    const p = packument('pkg', [
+    const p = createPackument('pkg', [
       ...history,
       { version: '1.2.0', time: '2026-01-09T22:00:00Z', publisher: 'alice', provenance: true },
     ]);
@@ -137,17 +137,17 @@ describe('computeSignals', () => {
   });
 
   it('compares a newly added package with the version published before it', () => {
-    const p = packument('pkg', [
+    const p = createPackument('pkg', [
       ...history,
       { version: '1.2.0', time: '2025-12-01T00:00:00Z', publisher: 'alice' },
     ]);
-    expect(ids(computeSignals({ name: 'pkg', from: null, to: '1.2.0' }, p, { now }))).toEqual([
+    expect(getIds(computeSignals({ name: 'pkg', from: null, to: '1.2.0' }, p, { now }))).toEqual([
       'provenance-lost',
     ]);
   });
 
   it('flags a lockfile integrity that differs from the registry', () => {
-    const p = packument('pkg', [
+    const p = createPackument('pkg', [
       ...history,
       {
         version: '1.2.0',
@@ -162,22 +162,22 @@ describe('computeSignals', () => {
       p,
       { now },
     );
-    expect(ids(signals)).toEqual(['integrity-mismatch']);
+    expect(getIds(signals)).toEqual(['integrity-mismatch']);
   });
 
   // npm checks only the strongest algorithm's hashes and accepts content that
   // matches any one of them (DESIGN.md, threat model). With `resolved` at another
   // server, each of these installs that server's tarball.
   describe('the registry hash listed beside another one', () => {
-    const p = packument('pkg', [
+    const p = createPackument('pkg', [
       ...history,
       { version: '1.2.0', time: '2025-12-01T00:00:00Z', publisher: 'alice', provenance: true },
     ]);
     const registry = 'sha512-pkg-1.2.0';
     const shasum = 'ab8ece0c4062da5f6d2fa1d07fc4cdb5f8b9b25b';
     p.versions['1.2.0']!.dist!.shasum = shasum;
-    const vet = (integrity: string) =>
-      ids(
+    const computeIntegritySignals = (integrity: string) =>
+      getIds(
         computeSignals(
           {
             name: 'pkg',
@@ -192,28 +192,28 @@ describe('computeSignals', () => {
       );
 
     it('flags a second sha512 hash', () => {
-      expect(vet(`${registry} sha512-evil`)).toEqual(['integrity-mismatch']);
+      expect(computeIntegritySignals(`${registry} sha512-evil`)).toEqual(['integrity-mismatch']);
     });
 
     it('flags a sha512 hash after the registry sha1', () => {
       const sha1 = `sha1-${Buffer.from(shasum, 'hex').toString('base64')}`;
-      expect(vet(`${sha1} sha512-evil`)).toEqual(['integrity-mismatch']);
+      expect(computeIntegritySignals(`${sha1} sha512-evil`)).toEqual(['integrity-mismatch']);
     });
 
     it('checks `resolved` when the first hash uses an algorithm the registry does not give', () => {
-      expect(vet('sha384-x sha512-evil')).toEqual(['tarball-mismatch']);
+      expect(computeIntegritySignals('sha384-x sha512-evil')).toEqual(['tarball-mismatch']);
     });
   });
 
   // npm writes a single hash, so a second one counts against the registry even
   // where npm would not check it (DESIGN.md, decisions).
   it('flags a sha1 hash beside the registry sha512', () => {
-    const p = packument('pkg', [
+    const p = createPackument('pkg', [
       ...history,
       { version: '1.2.0', time: '2025-12-01T00:00:00Z', publisher: 'alice', provenance: true },
     ]);
     expect(
-      ids(
+      getIds(
         computeSignals(
           { name: 'pkg', from: '1.1.0', to: '1.2.0', integrity: 'sha512-pkg-1.2.0 sha1-x' },
           p,
@@ -224,7 +224,7 @@ describe('computeSignals', () => {
   });
 
   it('does not compare integrities that use different algorithms', () => {
-    const p = packument('pkg', [
+    const p = createPackument('pkg', [
       ...history,
       {
         version: '1.2.0',
@@ -242,7 +242,7 @@ describe('computeSignals', () => {
   });
 
   it('flags a lockfile integrity that changed for the same version', () => {
-    const p = packument('pkg', [
+    const p = createPackument('pkg', [
       ...history,
       {
         version: '1.2.0',
@@ -324,21 +324,21 @@ describe('computeSignals', () => {
   it.each(['constructor', 'toString', '__proto__'])(
     'flags version %j, which only an inherited member would match, as not in the registry',
     (version) => {
-      const p = packument('pkg', history);
-      expect(ids(computeSignals({ name: 'pkg', from: '1.1.0', to: version }, p, { now }))).toEqual([
-        'not-in-registry',
-      ]);
+      const p = createPackument('pkg', history);
+      expect(
+        getIds(computeSignals({ name: 'pkg', from: '1.1.0', to: version }, p, { now })),
+      ).toEqual(['not-in-registry']);
     },
   );
 
   describe('tarball-mismatch', () => {
-    const p = packument('lodash', [
+    const p = createPackument('lodash', [
       ...history,
       { version: '1.2.0', time: '2025-12-01T00:00:00Z', publisher: 'alice', provenance: true },
     ]);
     const canonical = 'https://registry.npmjs.org/lodash/-/x-1.2.0.tgz';
-    const vet = (resolved: string, integrity?: string) =>
-      ids(
+    const computeSourceSignals = (resolved: string, integrity?: string) =>
+      getIds(
         computeSignals({ name: 'lodash', from: '1.1.0', to: '1.2.0', resolved, integrity }, p, {
           now,
         }),
@@ -354,17 +354,17 @@ describe('computeSignals', () => {
         'https://registry.npmjs.org/lodash/-/..\\..\\evil.tgz',
       ],
     ])('flags %s when there is no integrity to pin the content', (_, resolved) => {
-      expect(vet(resolved)).toEqual(['tarball-mismatch']);
+      expect(computeSourceSignals(resolved)).toEqual(['tarball-mismatch']);
     });
 
     it('flags it when the lockfile integrity cannot be compared (sha1 against sha512)', () => {
-      expect(vet('https://registry.npmjs.org/evil/-/evil-1.0.0.tgz', 'sha1-abc')).toEqual([
-        'tarball-mismatch',
-      ]);
+      expect(
+        computeSourceSignals('https://registry.npmjs.org/evil/-/evil-1.0.0.tgz', 'sha1-abc'),
+      ).toEqual(['tarball-mismatch']);
     });
 
     it('flags a URL the registry gives nothing to compare with', () => {
-      const bare = packument('lodash', [{ version: '1.2.0', time: '2025-12-01T00:00:00Z' }]);
+      const bare = createPackument('lodash', [{ version: '1.2.0', time: '2025-12-01T00:00:00Z' }]);
       delete bare.versions['1.2.0']!.dist!.tarball;
       const change = { name: 'lodash', from: null, to: '1.2.0', resolved: canonical };
       expect(computeSignals(change, bare, { now })[0]).toEqual({
@@ -376,10 +376,10 @@ describe('computeSignals', () => {
     });
 
     it('compares a sha1 integrity with the registry shasum', () => {
-      const old = packument('lodash', [{ version: '1.2.0', time: '2025-12-01T00:00:00Z' }]);
+      const old = createPackument('lodash', [{ version: '1.2.0', time: '2025-12-01T00:00:00Z' }]);
       // async@0.1.0's shasum, and the same hash as a lockfile writes it
       old.versions['1.2.0']!.dist!.shasum = 'ab8ece0c4062da5f6d2fa1d07fc4cdb5f8b9b25b';
-      const change = (integrity: string) => ({
+      const createChange = (integrity: string) => ({
         name: 'lodash',
         from: null,
         to: '1.2.0',
@@ -387,15 +387,15 @@ describe('computeSignals', () => {
         resolved: 'https://registry.npmjs.org/elsewhere.tgz',
       });
       expect(
-        ids(computeSignals(change('sha1-q47ODEBi2l9tL6HQf8TNtfi5sls='), old, { now })),
+        getIds(computeSignals(createChange('sha1-q47ODEBi2l9tL6HQf8TNtfi5sls='), old, { now })),
       ).toEqual([]);
-      expect(ids(computeSignals(change('sha1-evil'), old, { now }))).toEqual([
+      expect(getIds(computeSignals(createChange('sha1-evil'), old, { now }))).toEqual([
         'integrity-mismatch',
       ]);
     });
 
     it('falls back to a sha1 `integrity` when the registry has no usable shasum', () => {
-      const old = packument('lodash', [{ version: '1.2.0', time: '2025-12-01T00:00:00Z' }]);
+      const old = createPackument('lodash', [{ version: '1.2.0', time: '2025-12-01T00:00:00Z' }]);
       old.versions['1.2.0']!.dist!.integrity = 'sha1-good';
       const change = {
         name: 'lodash',
@@ -404,44 +404,52 @@ describe('computeSignals', () => {
         integrity: 'sha1-evil',
         resolved: 'https://registry.npmjs.org/lodash/-/x-1.2.0.tgz',
       };
-      expect(ids(computeSignals(change, old, { now }))).toEqual(['integrity-mismatch']);
+      expect(getIds(computeSignals(change, old, { now }))).toEqual(['integrity-mismatch']);
     });
 
     it("trusts the registry's own tarball URL without an integrity", () => {
-      expect(vet(canonical)).toEqual([]);
+      expect(computeSourceSignals(canonical)).toEqual([]);
     });
 
     it('leaves the URL alone when the integrity matches the registry: npm checks the content', () => {
       expect(
-        vet('https://registry.npmjs.org/evil/-/evil-1.0.0.tgz', 'sha512-lodash-1.2.0'),
+        computeSourceSignals(
+          'https://registry.npmjs.org/evil/-/evil-1.0.0.tgz',
+          'sha512-lodash-1.2.0',
+        ),
       ).toEqual([]);
     });
   });
 
   it('flags a version the registry does not serve', () => {
-    const p = packument('pkg', [
+    const p = createPackument('pkg', [
       ...history,
       { version: '1.2.0', time: '2025-12-01T00:00:00Z', removed: true },
     ]);
-    expect(ids(computeSignals({ name: 'pkg', from: '1.1.0', to: '1.2.0' }, p, { now }))).toEqual([
-      'not-in-registry',
-    ]);
-    expect(ids(computeSignals({ name: 'nope', from: null, to: '1.0.0' }, null, { now }))).toEqual([
-      'not-in-registry',
-    ]);
+    expect(getIds(computeSignals({ name: 'pkg', from: '1.1.0', to: '1.2.0' }, p, { now }))).toEqual(
+      ['not-in-registry'],
+    );
+    expect(
+      getIds(computeSignals({ name: 'nope', from: null, to: '1.0.0' }, null, { now })),
+    ).toEqual(['not-in-registry']);
   });
 });
 
 // What npm can run from a release, read from its tarball and compared with
 // the version before it (DESIGN.md, Decisions).
-describe('tarballSignals', () => {
-  const t = (scripts: Tarball['scripts'] = {}, bindingGyp = false): Tarball => ({
+describe('computeTarballSignals', () => {
+  const createScannedTarball = (scripts: Tarball['scripts'] = {}, bindingGyp = false): Tarball => ({
     scripts,
     bindingGyp,
   });
 
   it('flags an install hook added or changed against the compared version', () => {
-    expect(tarballSignals(t({ postinstall: 'node x.js' }), t())).toEqual([
+    expect(
+      computeTarballSignals(
+        createScannedTarball({ postinstall: 'node x.js' }),
+        createScannedTarball(),
+      ),
+    ).toEqual([
       {
         id: 'install-scripts',
         group: 'content',
@@ -449,13 +457,16 @@ describe('tarballSignals', () => {
         after: 'postinstall: node x.js',
       },
     ]);
-    const [s] = tarballSignals(t({ install: 'node b.js' }), t({ install: 'node a.js' }));
+    const [s] = computeTarballSignals(
+      createScannedTarball({ install: 'node b.js' }),
+      createScannedTarball({ install: 'node a.js' }),
+    );
     expect([s?.before, s?.after]).toEqual(['install: node a.js', 'install: node b.js']);
   });
 
   // npm runs node-gyp for it (DESIGN.md, threat model).
   it('flags a binding.gyp the compared version did not have', () => {
-    const [s] = tarballSignals(t({}, true), t());
+    const [s] = computeTarballSignals(createScannedTarball({}, true), createScannedTarball());
     expect([s?.id, s?.before, s?.after]).toEqual([
       'install-scripts',
       'binding.gyp: none',
@@ -464,25 +475,30 @@ describe('tarballSignals', () => {
   });
 
   it('does not flag what is unchanged, or removed', () => {
-    const native = t({ install: 'node-gyp rebuild' }, true);
-    expect(tarballSignals(native, native)).toEqual([]);
-    expect(tarballSignals(t(), native)).toEqual([]);
+    const native = createScannedTarball({ install: 'node-gyp rebuild' }, true);
+    expect(computeTarballSignals(native, native)).toEqual([]);
+    expect(computeTarballSignals(createScannedTarball(), native)).toEqual([]);
   });
 
   it('compares a version with nothing before it with no hooks', () => {
-    expect(tarballSignals(t({ preinstall: 'node p.js' }), undefined)[0]?.before).toBe(
-      'preinstall: none',
-    );
+    expect(
+      computeTarballSignals(createScannedTarball({ preinstall: 'node p.js' }), undefined)[0]
+        ?.before,
+    ).toBe('preinstall: none');
   });
 
   it('names the compared version that was not read', () => {
     expect(
-      tarballSignals(t({ preinstall: 'node p.js' }), { notChecked: 'tar: bad header' })[0]?.before,
+      computeTarballSignals(createScannedTarball({ preinstall: 'node p.js' }), {
+        unreadReason: 'tar: bad header',
+      })[0]?.before,
     ).toBe('not read: tar: bad header');
   });
 
   it('is tarball-not-read when the new version was not read', () => {
-    expect(tarballSignals({ notChecked: 'over 256 MB to download' }, t())).toEqual([
+    expect(
+      computeTarballSignals({ unreadReason: 'over 256 MB to download' }, createScannedTarball()),
+    ).toEqual([
       {
         id: 'tarball-not-read',
         group: 'tamper',
@@ -494,7 +510,7 @@ describe('tarballSignals', () => {
 });
 
 // The verdict table in DESIGN.md, row by row.
-describe('decide', () => {
+describe('decideVerdict', () => {
   // A real signal of each group, so the rows read like what bumpvet reports.
   const of: Record<Signal['group'], Signal> = {
     origin: { id: 'publisher-changed', group: 'origin', before: 'alice', after: 'mallory' },
@@ -513,6 +529,6 @@ describe('decide', () => {
     [['origin', 'content'], 'block'],
     [['tamper'], 'block'],
   ] as const)('%j -> %s', (groups, verdict) => {
-    expect(decide(groups.map((g) => of[g]))).toBe(verdict);
+    expect(decideVerdict(groups.map((g) => of[g]))).toBe(verdict);
   });
 });
