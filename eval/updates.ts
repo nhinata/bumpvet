@@ -33,7 +33,7 @@ const fetchPackument = registryFetcher();
 
 /** A packument as bumpvet fetches it, kept in eval/.cache/ (as slim leaves it) for later runs. */
 export async function load(name: string): Promise<Packument> {
-  const file = join(CACHE, name.replace('/', '__') + '.json');
+  const file = join(CACHE, name.replaceAll('/', '__') + '.json');
   if (existsSync(file)) return slim(JSON.parse(readFileSync(file, 'utf8')), name);
   const packument = await fetchPackument(name);
   if (!packument) throw new Error(`${name}: not in the registry`);
