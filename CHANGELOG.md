@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.2](https://github.com/nhinata/bumpvet/compare/v0.8.1...v0.8.2) (2026-11-25)
+
+
+### Bug Fixes
+
+* keep where a lockfile entry comes from apart from why bumpvet cannot read it ([#131](https://github.com/nhinata/bumpvet/issues/131)) ([c6464d9](https://github.com/nhinata/bumpvet/commit/c6464d91ec21adeb38873b634e759bc26453ddf6))
+
 ## [0.8.1](https://github.com/nhinata/bumpvet/compare/v0.8.0...v0.8.1) (2026-11-22)
 
 
