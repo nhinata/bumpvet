@@ -2,8 +2,9 @@ name: bumpvet
 
 # Vets the dependency changes of a pull request with the action in this
 # repository, as other repositories use it. BLOCK fails the job and REVIEW adds
-# a warning; what to do about either is in README, "When bumpvet says BLOCK or
-# REVIEW". Not a required check yet.
+# a warning, and the action comments on the pull request as README, "GitHub
+# Actions", says. What to do about either is in README, "When bumpvet says
+# BLOCK or REVIEW". Not a required check yet.
 on:
   pull_request:
     paths:
@@ -22,6 +23,10 @@ jobs:
     name: bumpvet
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    permissions:
+      contents: read
+      # Posts the verdict on the pull request.
+      pull-requests: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -42,3 +47,4 @@ jobs:
       - uses: ./base
         with:
           working-directory: pr
+          comment: true
