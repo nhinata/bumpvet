@@ -45,8 +45,8 @@
     "tar6": "npm:tar@6.2.1",
     "tar7": "npm:tar@7.5.22",
     "typescript": "5.9.3",
-    "typescript-eslint": "8.73.0",
-    "vitest": "5.1.0"
+    "typescript-eslint": "8.74.0",
+    "vitest": "5.1.1"
   },
   "exports": {
     "./package.json": "./package.json"
